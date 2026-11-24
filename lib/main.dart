@@ -194,6 +194,7 @@ void _bootstrapApp() {
       onCommitted: (dependencies) => _startNonessentialInitialization(dependencies.settings),
       lightTheme: monoTheme(MonoPalette.light),
       darkTheme: monoTheme(MonoPalette.dark),
+      themeMode: material.ThemeMode.dark,
       resolveTheme: _resolveStartupTheme,
       // Android runs the Flutter surface in transparent mode over a window
       // whose background PlezyActivity already restored, so the loading frame
@@ -1203,6 +1204,10 @@ FutureOr<SentryEvent?> _beforeSend(SentryEvent event, Hint _) {
 /// the event never finishes enriching. The collectors are lazy, so registering
 /// them here loads nothing until a reader runs.
 void _registerAppLicenses() {
+  LicenseRegistry.addLicense(() async* {
+    final notice = await rootBundle.loadString('assets/licenses/InterTight.txt');
+    yield LicenseEntryWithLineBreaks(const ['Inter Tight'], notice);
+  });
   _registerShaderLicenses();
   // iOS covers iPhone, iPad, and Apple TV; mpv-build links SpatialAudioBridge
   // into libmpv there and not on macOS.

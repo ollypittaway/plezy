@@ -88,16 +88,18 @@ void main() {
     }
   });
 
-  test('built-in palettes stay monochrome: accent is the text colour', () {
+  test('built-in palettes apply teal to actions and keep text neutral', () {
     for (final MapEntry(key: name, value: palette) in _builtIns.entries) {
       final theme = monoTheme(palette);
       final tokens = theme.extension<MonoTokens>()!;
       final button = theme.filledButtonTheme.style!;
-      expect(palette.accent, palette.text, reason: name);
-      expect(tokens.accent, tokens.text, reason: name);
-      expect(theme.colorScheme.primary, palette.text, reason: name);
-      expect(button.backgroundColor!.resolve(const {}), palette.text, reason: name);
+      expect(palette.accent, isNot(palette.text), reason: name);
+      expect(tokens.accent, palette.accent, reason: name);
+      expect(theme.colorScheme.primary, palette.accent, reason: name);
+      expect(button.backgroundColor!.resolve(const {}), palette.accent, reason: name);
       expect(theme.colorScheme.surfaceTint, palette.text, reason: name);
+      expect(theme.textTheme.headlineMedium!.fontFamily, 'Inter Tight', reason: name);
+      expect(theme.textTheme.labelLarge!.fontFamily, 'Inter Tight', reason: name);
     }
     // The colour drawn on a filled button is unchanged: page background on
     // the dark built-ins, white on Light.

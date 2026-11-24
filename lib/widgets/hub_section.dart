@@ -149,6 +149,8 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
       ? 0.0
       : isTv
       ? TvLayoutConstants.shelfHorizontalInset
+      : ScreenBreakpoints.isWideTabletOrLarger(MediaQuery.sizeOf(context).width)
+      ? 36.0
       : 12.0;
   double get _leadingPadding => _leadingPaddingFor(PlatformDetector.isTV());
   String get _focusMemoryKey {
@@ -497,7 +499,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
     final leadingPadding = _leadingPaddingFor(isTv);
     final titleStyle = Theme.of(
       context,
-    ).textTheme.titleLarge?.copyWith(fontSize: isTv ? 26 : null, fontWeight: isTv ? FontWeight.w700 : null);
+    ).textTheme.titleLarge?.copyWith(fontSize: isTv ? 26 : null, fontWeight: FontWeight.w700, letterSpacing: -0.6);
 
     return Padding(
       padding: .only(
@@ -513,7 +515,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
           Padding(
             padding: widget.inset
                 ? EdgeInsets.symmetric(vertical: isTv ? 6 : 2)
-                : EdgeInsets.fromLTRB(leadingPadding - 4, isTv ? 6 : 2, 8, isTv ? 8 : 2),
+                : EdgeInsets.fromLTRB(leadingPadding - 4, isTv ? 6 : 2, 8, isTv ? 8 : 6),
             child: ExcludeFocus(
               child: InkWell(
                 mouseCursor: widget.hub.more ? SystemMouseCursors.click : MouseCursor.defer,
@@ -683,7 +685,10 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
                           scrollCacheExtent: isTv ? null : const ScrollCacheExtent.pixels(0),
                           padding: widget.inset
                               ? EdgeInsets.symmetric(vertical: isTv ? 6 : 2)
-                              : EdgeInsets.symmetric(horizontal: isTv ? leadingPadding : 8, vertical: isTv ? 6 : 2),
+                              : EdgeInsets.symmetric(
+                                  horizontal: isTv ? leadingPadding : leadingPadding - 4,
+                                  vertical: isTv ? 6 : 2,
+                                ),
                           itemCount: isKeyboardMode ? _totalItemCount : widget.hub.items.length,
                           itemBuilder: (context, index) {
                             final isItemFocused = hasFocus && index == _focusedIndex;

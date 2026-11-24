@@ -160,7 +160,9 @@ dependency_overrides:
 flutter:
   uses-material-design: true
   assets:
+    - assets/licenses/InterTight.txt
     - assets/licenses/SpatialAudioBridge.txt
+    - assets/harbor.jpg
     - assets/plezy.png
     - assets/plezy_adaptive_foreground.svg
     - assets/plex_chevron.svg
@@ -187,6 +189,9 @@ flutter:
   # Registered as UI font families so the Linux build, whose fontconfig may
   # lack CJK fonts, can fall back to the bundled subtitle fonts (mono_theme).
   fonts:
+    - family: Inter Tight
+      fonts:
+        - asset: assets/InterTight-Variable.ttf
     - family: Go Noto Current
       fonts:
         - asset: assets/go-noto-current-regular.ttf

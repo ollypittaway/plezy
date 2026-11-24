@@ -51,8 +51,8 @@ void main() {
   group('ThemeProvider', () {
     test('exposes a non-null themeMode immediately and flips after init', () async {
       final p = _provider();
-      // The constructor synchronously sets _themeMode to system.
-      expect(p.themeMode, settings.ThemeMode.system);
+      // The first frame uses the cinematic dark default.
+      expect(p.themeMode, settings.ThemeMode.dark);
 
       // After init the value reflects what's persisted (default).
       // First-run default is computed by the EnumPref; it is one of the four
@@ -69,7 +69,7 @@ void main() {
       var notified = 0;
       p.addListener(() => notified++);
 
-      // Pick a mode that is guaranteed different from default `system`/`oled`
+      // Pick a mode that is guaranteed different from default `dark`/`oled`
       // on either pathway: cycle through values until we hit one that differs.
       final initial = p.themeMode;
       final next = settings.ThemeMode.values.firstWhere((m) => m != initial);
@@ -298,8 +298,8 @@ void main() {
         final p = _provider(supporter);
         await Future.delayed(Duration.zero);
 
-        expect(p.themeMode, settings.ThemeMode.system);
-        expect(p.materialThemeMode, material.ThemeMode.system);
+        expect(p.themeMode, settings.ThemeMode.dark);
+        expect(p.materialThemeMode, material.ThemeMode.dark);
         expect(identical(p.lightTheme, monoTheme(MonoPalette.light)), isTrue);
         expect(identical(p.darkTheme, monoTheme(MonoPalette.dark)), isTrue);
         expect(svc.read(settings.SettingsService.themeMode), mode);
@@ -322,7 +322,7 @@ void main() {
       });
     }
 
-    test('losing the entitlement falls back to System without touching the stored choice', () async {
+    test('losing the entitlement falls back to Dark without touching the stored choice', () async {
       final svc = await _store(settings.ThemeMode.glacier);
       await svc.write(settings.SettingsService.supporterEntitlementCached, true);
       final platform = FakeInAppPurchasePlatform();
@@ -340,7 +340,7 @@ void main() {
       await supporter.init();
 
       expect(supporter.isUnlocked, isFalse);
-      expect(p.themeMode, settings.ThemeMode.system);
+      expect(p.themeMode, settings.ThemeMode.dark);
       expect(svc.read(settings.SettingsService.themeMode), settings.ThemeMode.glacier);
     });
 
@@ -356,13 +356,13 @@ void main() {
       expect(p.lockedStoredThemeMode, settings.ThemeMode.glacier);
       notified = 0;
 
-      // Another locked perk paints the same System, but the saved choice moved.
+      // Another locked perk paints the same Dark, but the saved choice moved.
       await svc.write(settings.SettingsService.themeMode, settings.ThemeMode.forest);
       expect(notified, 1);
-      expect(p.themeMode, settings.ThemeMode.system);
+      expect(p.themeMode, settings.ThemeMode.dark);
       expect(p.lockedStoredThemeMode, settings.ThemeMode.forest);
 
-      // Custom with nothing saved would paint System even if unlocked.
+      // Custom with nothing saved would paint Dark even if unlocked.
       await svc.write(settings.SettingsService.themeMode, settings.ThemeMode.custom);
       expect(p.lockedStoredThemeMode, isNull);
     });
@@ -379,7 +379,7 @@ void main() {
       final svc = await _store(settings.ThemeMode.forest);
       final p = _provider(_supporter(SupporterAvailability.hidden));
       await Future.delayed(Duration.zero);
-      expect(p.themeMode, settings.ThemeMode.system);
+      expect(p.themeMode, settings.ThemeMode.dark);
       expect(svc.read(settings.SettingsService.themeMode), settings.ThemeMode.forest);
 
       await p.setThemeMode(settings.ThemeMode.oled);
@@ -391,7 +391,7 @@ void main() {
       await _store(settings.ThemeMode.custom);
       final p = _provider();
       await Future.delayed(Duration.zero);
-      expect(p.themeMode, settings.ThemeMode.system);
+      expect(p.themeMode, settings.ThemeMode.dark);
       expect(p.customPalette, isNull);
     });
 

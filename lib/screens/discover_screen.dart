@@ -9,6 +9,7 @@ import '../widgets/server_activities_button.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import '../focus/covered_route_focus_boundary.dart';
+import '../focus/dpad_navigator.dart';
 import '../focus/focusable_action_bar.dart';
 import '../focus/hub_vertical_navigation.dart';
 import '../focus/locked_hub_controller.dart';
@@ -482,6 +483,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   /// Handle key events for the hero section.
   KeyEventResult _handleHeroKeyEvent(FocusNode node, KeyEvent event) {
+    // Let the focused Play or View details button activate itself.
+    if (!node.hasPrimaryFocus && event.logicalKey.isSelectKey) return KeyEventResult.ignored;
     final backResult = handleBackKeyAction(event, _navigateToSidebar);
     if (backResult != KeyEventResult.ignored) return backResult;
 
@@ -855,11 +858,17 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       child: Row(
         children: [
           if (!PlatformDetector.isTV())
-            Text(
-              t.discover.title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(color: foregroundColor, fontWeight: .bold),
+            Expanded(
+              child: Text(
+                t.discover.title,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(color: foregroundColor, fontWeight: .w700, letterSpacing: -0.7),
+              ),
             ),
-          const Spacer(),
+          if (PlatformDetector.isTV()) const Spacer(),
           // TV only: a fullscreen leanback app hides the system clock, while a
           // phone status bar and a desktop menu bar already show one.
           if (PlatformDetector.isTV()) ...[
@@ -881,95 +890,105 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 }
               }
 
-              return FocusableActionBar(
-                key: _actionBarKey,
-                onNavigateLeft: _navigateToSidebar,
-                onNavigateDown: _focusContentFromAppBar,
-                actions: [
-                  FocusableAction(icon: Symbols.refresh_rounded, iconColor: foregroundColor, onPressed: manualRefresh),
-                  // Watch Together
-                  FocusableAction(
-                    onPressed: openWatchTogether,
-                    child: Stack(
-                      children: [
-                        IconButton(
-                          icon: AppIcon(
-                            Symbols.group_rounded,
-                            fill: watchTogether.isInSession ? 1 : 0,
-                            color: watchTogether.isInSession ? colorScheme.primary : foregroundColor,
-                          ),
-                          onPressed: openWatchTogether,
-                          tooltip: t.watchTogether.title,
-                        ),
-                        // Badges sit over the button they label, so they must
-                        // not swallow its hover and clicks (#2846).
-                        if (watchTogether.isInSession && watchTogether.participantCount > 1)
-                          Positioned(
-                            top: 6,
-                            right: 6,
-                            child: IgnorePointer(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary,
-                                  borderRadius: const BorderRadius.all(Radius.circular(8)),
-                                ),
-                                child: Text(
-                                  '${watchTogether.participantCount}',
-                                  style: TextStyle(color: colorScheme.onPrimary, fontSize: 10, fontWeight: .bold),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  // Companion Remote
-                  FocusableAction(
-                    onPressed: openCompanionRemote,
-                    child: Stack(
-                      children: [
-                        IconButton(
-                          icon: AppIcon(
-                            Symbols.phone_android_rounded,
-                            fill: companionRemote.isConnected ? 1 : 0,
-                            color: companionRemote.isConnected ? colorScheme.primary : foregroundColor,
-                          ),
-                          onPressed: openCompanionRemote,
-                          tooltip: t.companionRemote.title,
-                        ),
-                        if (companionRemote.isConnected)
-                          Positioned(
-                            top: 6,
-                            right: 6,
-                            child: IgnorePointer(
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: Colors.green,
-                                  shape: BoxShape.circle,
-                                  border: Border.fromBorderSide(BorderSide(color: foregroundColor, width: 1)),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  // Server Tasks — Plex-only (`/activities` API has no
-                  // Jellyfin equivalent), hide the button entirely on
-                  // Jellyfin-only profiles so the chrome doesn't show
-                  // a permanently empty popover.
-                  if (PlatformDetector.isDesktop(context) &&
-                      context.select<MultiServerProvider, bool>((p) => p.hasOnlinePlexServers))
+              return DecoratedBox(
+                decoration: ShapeDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.84),
+                  shape: StadiumBorder(side: BorderSide(color: colorScheme.outline)),
+                ),
+                child: FocusableActionBar(
+                  key: _actionBarKey,
+                  onNavigateLeft: _navigateToSidebar,
+                  onNavigateDown: _focusContentFromAppBar,
+                  actions: [
                     FocusableAction(
-                      onPressed: () => _serverActivitiesButtonKey.currentState?.togglePanel(),
-                      child: ServerActivitiesButton(key: _serverActivitiesButtonKey),
+                      icon: Symbols.refresh_rounded,
+                      iconColor: foregroundColor,
+                      onPressed: manualRefresh,
                     ),
-                  // User menu — profiles + sign out
-                  _buildUserMenuAction(context),
-                ],
+                    // Watch Together
+                    FocusableAction(
+                      onPressed: openWatchTogether,
+                      child: Stack(
+                        children: [
+                          IconButton(
+                            icon: AppIcon(
+                              Symbols.group_rounded,
+                              fill: watchTogether.isInSession ? 1 : 0,
+                              color: watchTogether.isInSession ? colorScheme.primary : foregroundColor,
+                            ),
+                            onPressed: openWatchTogether,
+                            tooltip: t.watchTogether.title,
+                          ),
+                          // Badges sit over the button they label, so they must
+                          // not swallow its hover and clicks (#2846).
+                          if (watchTogether.isInSession && watchTogether.participantCount > 1)
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: IgnorePointer(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary,
+                                    borderRadius: const BorderRadius.all(Radius.circular(8)),
+                                  ),
+                                  child: Text(
+                                    '${watchTogether.participantCount}',
+                                    style: TextStyle(color: colorScheme.onPrimary, fontSize: 10, fontWeight: .bold),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    // Companion Remote
+                    FocusableAction(
+                      onPressed: openCompanionRemote,
+                      child: Stack(
+                        children: [
+                          IconButton(
+                            icon: AppIcon(
+                              Symbols.phone_android_rounded,
+                              fill: companionRemote.isConnected ? 1 : 0,
+                              color: companionRemote.isConnected ? colorScheme.primary : foregroundColor,
+                            ),
+                            onPressed: openCompanionRemote,
+                            tooltip: t.companionRemote.title,
+                          ),
+                          if (companionRemote.isConnected)
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: IgnorePointer(
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    shape: BoxShape.circle,
+                                    border: Border.fromBorderSide(BorderSide(color: foregroundColor, width: 1)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    // Server Tasks — Plex-only (`/activities` API has no
+                    // Jellyfin equivalent), hide the button entirely on
+                    // Jellyfin-only profiles so the chrome doesn't show
+                    // a permanently empty popover.
+                    if (PlatformDetector.isDesktop(context) &&
+                        context.select<MultiServerProvider, bool>((p) => p.hasOnlinePlexServers))
+                      FocusableAction(
+                        onPressed: () => _serverActivitiesButtonKey.currentState?.togglePanel(),
+                        child: ServerActivitiesButton(key: _serverActivitiesButtonKey),
+                      ),
+                    // User menu — profiles + sign out
+                    _buildUserMenuAction(context),
+                  ],
+                ),
               );
             },
           ),
@@ -1231,7 +1250,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final heroHeight = isTv
         ? viewportHeight * 0.82
         : useSideNav
-        ? viewportHeight * 0.75
+        ? math.min(viewportHeight, (viewportHeight * 0.59).clamp(380.0, 720.0))
         : isLandscape
         ? math.min(500 + statusBarHeight, viewportHeight)
         : math.min(500 + statusBarHeight, viewportHeight * 0.65);
@@ -1265,14 +1284,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               if (!isTv)
                 Positioned(
                   bottom: 16,
-                  left: -26,
-                  right: 0,
-                  // Centered on the same safe width as the hero item above it.
+                  left: useSideNav ? 24 : 0,
+                  right: useSideNav ? 32 : 0,
                   child: SafeArea(
                     top: false,
                     bottom: false,
                     child: Row(
-                      mainAxisAlignment: .center,
+                      mainAxisAlignment: useSideNav ? .end : .center,
                       children: [
                         // Pause/Play button
                         ClickableCursor(
@@ -1300,54 +1318,79 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           valueListenable: _heroIndex,
                           builder: (context, heroIndex, _) {
                             final range = _getVisibleDotRange();
-                            return Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: List.generate(range.end - range.start + 1, (i) {
-                                final index = range.start + i;
-                                final isActive = heroIndex == index;
-                                final dotSize = _getDotSize(index, range.start, range.end);
+                            final indicators = List.generate(range.end - range.start + 1, (i) {
+                              final index = range.start + i;
+                              final isActive = heroIndex == index;
+                              final dotSize = _getDotSize(index, range.start, range.end);
 
-                                return isActive
-                                    ? ValueListenableBuilder<double>(
-                                        valueListenable: _indicatorProgress,
-                                        builder: (context, progress, child) {
-                                          final maxWidth = dotSize * 3;
-                                          final fillWidth = dotSize + ((maxWidth - dotSize) * progress);
-                                          final onSurface = Theme.of(context).colorScheme.onSurface;
-                                          return Container(
-                                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                                            width: maxWidth,
-                                            height: dotSize,
-                                            decoration: BoxDecoration(
-                                              color: onSurface.withValues(alpha: 0.4),
-                                              borderRadius: BorderRadius.circular(dotSize / 2),
-                                            ),
-                                            child: Align(
-                                              alignment: .centerLeft,
-                                              child: Container(
-                                                width: fillWidth,
-                                                height: dotSize,
-                                                decoration: BoxDecoration(
-                                                  color: onSurface,
-                                                  borderRadius: BorderRadius.circular(dotSize / 2),
-                                                ),
+                              return isActive
+                                  ? ValueListenableBuilder<double>(
+                                      valueListenable: _indicatorProgress,
+                                      builder: (context, progress, child) {
+                                        final maxWidth = dotSize * 4;
+                                        final fillWidth = dotSize + ((maxWidth - dotSize) * progress);
+                                        final onSurface = Theme.of(context).colorScheme.onSurface;
+                                        return Container(
+                                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                                          width: maxWidth,
+                                          height: 3,
+                                          decoration: BoxDecoration(
+                                            color: onSurface.withValues(alpha: 0.4),
+                                            borderRadius: BorderRadius.circular(dotSize / 2),
+                                          ),
+                                          child: Align(
+                                            alignment: .centerLeft,
+                                            child: Container(
+                                              width: fillWidth,
+                                              height: 3,
+                                              decoration: BoxDecoration(
+                                                color: Theme.of(context).colorScheme.primary,
+                                                borderRadius: BorderRadius.circular(dotSize / 2),
                                               ),
                                             ),
-                                          );
-                                        },
-                                      )
-                                    : AnimatedContainer(
-                                        duration: tokens(context).slow,
-                                        curve: Curves.easeInOut,
-                                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                                        width: dotSize,
-                                        height: dotSize,
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-                                          borderRadius: BorderRadius.circular(dotSize / 2),
-                                        ),
-                                      );
-                              }),
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  : AnimatedContainer(
+                                      duration: tokens(context).slow,
+                                      curve: Curves.easeInOut,
+                                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                                      width: dotSize * 2,
+                                      height: 3,
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                                        borderRadius: BorderRadius.circular(dotSize / 2),
+                                      ),
+                                    );
+                            });
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (useSideNav && _onDeck.length > 1)
+                                  IconButton(
+                                    tooltip: MaterialLocalizations.of(context).previousPageTooltip,
+                                    onPressed: heroIndex > 0
+                                        ? () => _heroController.previousPage(
+                                            duration: tokens(context).slow,
+                                            curve: Curves.easeOut,
+                                          )
+                                        : null,
+                                    icon: const AppIcon(Symbols.chevron_left_rounded, size: 20),
+                                  ),
+                                ...indicators,
+                                if (useSideNav && _onDeck.length > 1)
+                                  IconButton(
+                                    tooltip: MaterialLocalizations.of(context).nextPageTooltip,
+                                    onPressed: heroIndex + 1 < _onDeck.length
+                                        ? () => _heroController.nextPage(
+                                            duration: tokens(context).slow,
+                                            curve: Curves.easeOut,
+                                          )
+                                        : null,
+                                    icon: const AppIcon(Symbols.chevron_right_rounded, size: 20),
+                                  ),
+                              ],
                             );
                           },
                         ),
@@ -1403,6 +1446,17 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               ),
             ),
           ),
+          if (ScreenBreakpoints.isWideTabletOrLarger(MediaQuery.sizeOf(context).width))
+            RasterizedGradient(
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.94),
+                  Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.68),
+                  Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0),
+                ],
+                stops: const [0, 0.28, 0.78],
+              ),
+            ),
           // Gradient Overlay - blends into scaffold background. Rasterised:
           // Impeller's GLES gradient shader over the artwork pushed raster
           // frames past 30ms while scrolling a full-size Linux window; the
@@ -1480,7 +1534,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final heroTitleStyle = theme.textTheme.displaySmall?.copyWith(
       color: colorScheme.onSurface,
       fontWeight: .bold,
-      fontSize: isTv ? 52 : null,
+      fontSize: isTv || isLargeScreen ? 52 : 38,
+      height: 1.04,
+      letterSpacing: -1.4,
       shadows: [Shadow(color: colorScheme.surface.withValues(alpha: 0.8), blurRadius: 8)],
     );
 
@@ -1517,7 +1573,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     : compact
                     ? 44
                     : isLargeScreen
-                    ? 80
+                    ? 32
                     : 50,
                 left: 0,
                 right: isTv
@@ -1542,9 +1598,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     child: Align(
                       alignment: alignLeft ? Alignment.centerLeft : Alignment.center,
                       child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: isTv ? TvLayoutConstants.heroContentMaxWidth : double.infinity,
-                        ),
+                        constraints: BoxConstraints(maxWidth: isTv ? TvLayoutConstants.heroContentMaxWidth : 540),
                         child: Column(
                           crossAxisAlignment: alignLeft ? CrossAxisAlignment.start : CrossAxisAlignment.center,
                           mainAxisSize: .min,
@@ -1642,7 +1696,27 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                               ),
                             ],
 
-                            if (alignLeft) ...[SizedBox(height: isTv ? 28 : 20), _buildSmartPlayButton(heroItem)],
+                            if (alignLeft) ...[
+                              SizedBox(height: compact ? 12 : 20),
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  _buildSmartPlayButton(heroItem),
+                                  OutlinedButton(
+                                    onPressed: () =>
+                                        navigateToMediaItemDetails(context, heroItem, onRefresh: _discover.updateItem),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: colorScheme.onSurface,
+                                      backgroundColor: colorScheme.surface.withValues(alpha: 0.9),
+                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                    ),
+                                    child: Text(t.mediaMenu.viewDetails),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -1675,21 +1749,21 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           builder: (context, _) {
             final showFocus = isTv && _heroFocusNode.hasFocus && InputModeTracker.isKeyboardMode(context);
             final colorScheme = Theme.of(context).colorScheme;
-            final backgroundColor = showFocus ? colorScheme.primary : Colors.white;
-            final foregroundColor = showFocus ? colorScheme.onPrimary : Colors.black;
+            final backgroundColor = colorScheme.primary;
+            final foregroundColor = colorScheme.onPrimary;
             return InkWell(
               onTap: () {
                 appLogger.d('Playing: ${heroItem.title}');
                 navigateToVideoPlayer(context, metadata: heroItem);
               },
-              borderRadius: BorderRadius.all(Radius.circular(isTv ? 32 : 24)),
+              borderRadius: BorderRadius.all(Radius.circular(12)),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 curve: Curves.easeOutCubic,
                 padding: .symmetric(horizontal: isTv ? 34 : 24, vertical: isTv ? 16 : 12),
                 decoration: BoxDecoration(
                   color: backgroundColor,
-                  borderRadius: BorderRadius.all(Radius.circular(isTv ? 32 : 24)),
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                   boxShadow: showFocus
                       ? [BoxShadow(color: colorScheme.primary.withValues(alpha: 0.35), blurRadius: 28, spreadRadius: 4)]
                       : null,

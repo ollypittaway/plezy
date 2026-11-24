@@ -63,6 +63,8 @@ import '../services/deep_links/deep_link_launcher.dart';
 import '../services/deep_links/deep_link_service.dart';
 import '../widgets/music/mini_player.dart';
 import '../widgets/navigation_label_fit.dart';
+import '../widgets/desktop_navigation_bar.dart';
+import '../utils/layout_constants.dart';
 import '../widgets/mobile_navigation_rail.dart';
 import '../widgets/vertical_bar_shell.dart';
 import '../widgets/side_navigation_rail.dart';
@@ -2087,8 +2089,15 @@ class _MainScreenState extends State<MainScreen>
       return SettingValueBuilder<bool>(
         pref: SettingsService.alwaysKeepSidebarOpen,
         builder: (context, alwaysExpanded, _) {
-          final targetContentOffset = _sideNavigationWidth(context, alwaysExpanded: alwaysExpanded);
-          final reservedContentOffset = alwaysExpanded
+          final useTopBar =
+              !alwaysExpanded &&
+              PlatformDetector.isDesktopOS() &&
+              !PlatformDetector.isTV() &&
+              ScreenBreakpoints.isWideTabletOrLarger(MediaQuery.sizeOf(context).width);
+          final targetContentOffset = useTopBar ? 0.0 : _sideNavigationWidth(context, alwaysExpanded: alwaysExpanded);
+          final reservedContentOffset = useTopBar
+              ? 0.0
+              : alwaysExpanded
               ? SideNavigationRailState.expandedWidth
               : SideNavigationRailState.collapsedWidthForContext(context);
 
@@ -2136,84 +2145,113 @@ class _MainScreenState extends State<MainScreen>
                     viewportWidth: viewportWidth,
                     selectLibrary: _selectLibrary,
                     openSettings: _openSettings,
-                    child: SideNavigationScope(
-                      child: Stack(
-                        clipBehavior: Clip.hardEdge,
-                        children: [
-                          Positioned.fill(child: ColoredBox(color: Theme.of(context).scaffoldBackgroundColor)),
-                          Positioned(
-                            top: 0,
-                            bottom: 0,
-                            left: contentLayout.left,
-                            width: contentLayout.width,
-                            child: TweenAnimationBuilder<double>(
-                              duration: SideNavigationRailState.expandDuration,
-                              curve: SideNavigationRailState.expandCurve,
-                              tween: Tween<double>(end: targetContentOffset),
-                              child: FocusScope(
-                                node: _contentFocusScope,
-                                // No autofocus - we control focus programmatically to prevent
-                                // autofocus from stealing focus back after setState() rebuilds
-                                child: _buildTickerAwareStack(),
-                              ),
-                              // Duration/curve must stay in sync with
-                              // SideNavigationBleedBuilder and the rail's width
-                              // animation so all three track tick for tick.
-                              builder: (context, contentLeftPadding, contentChild) {
-                                return Transform.translate(
-                                  offset: Offset(contentLeftPadding - targetContentOffset, 0),
-                                  child: contentChild!,
-                                );
-                              },
+                    child: Column(
+                      children: [
+                        if (useTopBar)
+                          DesktopNavigationBar(
+                            tabs: _getVisibleTabs(_isOffline),
+                            selected: _currentTab,
+                            onSelect: (tab) {
+                              _selectTab(tab);
+                              if (_isSidebarFocused) _focusContent(restorePreviousFocus: false);
+                            },
+                            onMenu: _isSidebarFocused ? _focusContent : _focusSidebar,
+                          ),
+                        Expanded(
+                          child: SideNavigationScope(
+                            child: Stack(
+                              clipBehavior: Clip.hardEdge,
+                              children: [
+                                Positioned.fill(child: ColoredBox(color: Theme.of(context).scaffoldBackgroundColor)),
+                                Positioned(
+                                  top: 0,
+                                  bottom: 0,
+                                  left: contentLayout.left,
+                                  width: contentLayout.width,
+                                  child: TweenAnimationBuilder<double>(
+                                    duration: SideNavigationRailState.expandDuration,
+                                    curve: SideNavigationRailState.expandCurve,
+                                    tween: Tween<double>(end: targetContentOffset),
+                                    child: FocusScope(
+                                      node: _contentFocusScope,
+                                      // No autofocus - we control focus programmatically to prevent
+                                      // autofocus from stealing focus back after setState() rebuilds
+                                      child: _buildTickerAwareStack(),
+                                    ),
+                                    // Duration/curve must stay in sync with
+                                    // SideNavigationBleedBuilder and the rail's width
+                                    // animation so all three track tick for tick.
+                                    builder: (context, contentLeftPadding, contentChild) {
+                                      return Transform.translate(
+                                        offset: Offset(contentLeftPadding - targetContentOffset, 0),
+                                        child: contentChild!,
+                                      );
+                                    },
+                                  ),
+                                ),
+                                // Scrim behind the modal (hover/touch) rail
+                                // overlay; purely visual so content stays
+                                // interactive and hover-out still collapses.
+                                Positioned.fill(
+                                  child: IgnorePointer(
+                                    child: AnimatedOpacity(
+                                      opacity: _isSidebarFloatingPanel ? 1.0 : 0.0,
+                                      duration: SideNavigationRailState.expandDuration,
+                                      curve: SideNavigationRailState.expandCurve,
+                                      child: const ColoredBox(color: Color(0x66000000)),
+                                    ),
+                                  ),
+                                ),
+                                if (useTopBar && _isSidebarFocused)
+                                  Positioned.fill(
+                                    child: ModalBarrier(
+                                      color: Colors.black45,
+                                      dismissible: true,
+                                      onDismiss: _focusContent,
+                                      semanticsLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+                                    ),
+                                  ),
+                                Positioned(
+                                  top: 0,
+                                  bottom: 0,
+                                  left: 0,
+                                  child: Visibility(
+                                    visible: !useTopBar || _isSidebarFocused,
+                                    maintainState: true,
+                                    child: FocusScope(
+                                      node: _sidebarFocusScope,
+                                      child: SideNavigationRail(
+                                        key: _sideNavKey,
+                                        selectedTab: _currentTab,
+                                        selectedLibraryKey: _selectedLibraryGlobalKey,
+                                        isOfflineMode: _isOffline,
+                                        isSidebarFocused: _isSidebarFocused,
+                                        alwaysExpanded: alwaysExpanded,
+                                        isReconnecting: _isReconnecting,
+                                        onDestinationSelected: (tab) {
+                                          final restorePreviousFocus = tab == _currentTab;
+                                          _selectTab(tab);
+                                          _focusContent(restorePreviousFocus: restorePreviousFocus);
+                                        },
+                                        onLibrarySelected: (key) {
+                                          _selectLibrary(key);
+                                          _focusContent(restorePreviousFocus: false);
+                                        },
+                                        onNavigateToContent: _focusContent,
+                                        onFloatingPanelChanged: (floating) {
+                                          if (_isSidebarFloatingPanel == floating) return;
+                                          setState(() => _isSidebarFloatingPanel = floating);
+                                        },
+                                        onReconnect: _triggerReconnect,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          // Scrim behind the modal (hover/touch) rail
-                          // overlay; purely visual so content stays
-                          // interactive and hover-out still collapses.
-                          Positioned.fill(
-                            child: IgnorePointer(
-                              child: AnimatedOpacity(
-                                opacity: _isSidebarFloatingPanel ? 1.0 : 0.0,
-                                duration: SideNavigationRailState.expandDuration,
-                                curve: SideNavigationRailState.expandCurve,
-                                child: const ColoredBox(color: Color(0x66000000)),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 0,
-                            bottom: 0,
-                            left: 0,
-                            child: FocusScope(
-                              node: _sidebarFocusScope,
-                              child: SideNavigationRail(
-                                key: _sideNavKey,
-                                selectedTab: _currentTab,
-                                selectedLibraryKey: _selectedLibraryGlobalKey,
-                                isOfflineMode: _isOffline,
-                                isSidebarFocused: _isSidebarFocused,
-                                alwaysExpanded: alwaysExpanded,
-                                isReconnecting: _isReconnecting,
-                                onDestinationSelected: (tab) {
-                                  final restorePreviousFocus = tab == _currentTab;
-                                  _selectTab(tab);
-                                  _focusContent(restorePreviousFocus: restorePreviousFocus);
-                                },
-                                onLibrarySelected: (key) {
-                                  _selectLibrary(key);
-                                  _focusContent(restorePreviousFocus: false);
-                                },
-                                onNavigateToContent: _focusContent,
-                                onFloatingPanelChanged: (floating) {
-                                  if (_isSidebarFloatingPanel == floating) return;
-                                  setState(() => _isSidebarFloatingPanel = floating);
-                                },
-                                onReconnect: _triggerReconnect,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   );
                 },

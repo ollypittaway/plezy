@@ -261,68 +261,83 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Use two-column layout on desktop, single column on mobile
-    final isDesktop = MediaQuery.sizeOf(context).width > 700;
-
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final wide = MediaQuery.sizeOf(context).width >= 760;
+    final brand = Text(
+      t.app.title,
+      style: theme.textTheme.displayLarge?.copyWith(
+        fontSize: wide ? 80 : 56,
+        height: 1,
+        letterSpacing: -3,
+        fontWeight: FontWeight.w800,
+        color: Colors.white,
+        shadows: const [Shadow(color: Colors.black54, blurRadius: 20)],
+      ),
+    );
+    final form = Container(
+      padding: EdgeInsets.all(wide ? 32 : 24),
+      decoration: BoxDecoration(
+        color: colors.surface.withValues(alpha: 0.96),
+        border: Border.all(color: colors.outline),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(t.common.connect, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 20),
+          _buildAuthBody(),
+        ],
+      ),
+    );
     return Focus(
       canRequestFocus: false,
       onKeyEvent: (_, event) => handleBackKeyNavigation(context, event),
       child: Scaffold(
-        body: Center(
-          child: Container(
-            constraints: BoxConstraints(maxWidth: isDesktop ? 800 : 400),
-            padding: .fromLTRB(24, 24, 24, 24 + MediaQuery.paddingOf(context).bottom),
-            child: isDesktop
-                ? Row(
-                    crossAxisAlignment: .center,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: .center,
-                          crossAxisAlignment: .center,
-                          children: [
-                            Image.asset('assets/plezy.png', width: 120, height: 120),
-                            const SizedBox(height: 24),
-                            Text(
-                              t.app.title,
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: .bold),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 48),
-                      Expanded(
-                        child: Center(
-                          child: SingleChildScrollView(
-                            child: Column(
-                              mainAxisSize: .min,
-                              crossAxisAlignment: .stretch,
-                              children: [_buildAuthBody()],
-                            ),
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(
+              'assets/harbor.jpg',
+              fit: BoxFit.cover,
+              alignment: const Alignment(-0.4, 0),
+              excludeFromSemantics: true,
+            ),
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x08030B10), Color(0xC8030B10)],
+                ),
+              ),
+            ),
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(wide ? 40 : 20),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: wide ? 1040 : 420),
+                    child: wide
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Expanded(child: brand),
+                              const SizedBox(width: 24),
+                              SizedBox(width: 368, child: form),
+                            ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [brand, const SizedBox(height: 24), form],
                           ),
-                        ),
-                      ),
-                    ],
-                  )
-                : SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: .min,
-                      crossAxisAlignment: .stretch,
-                      children: [
-                        Image.asset('assets/plezy.png', width: 120, height: 120),
-                        const SizedBox(height: 24),
-                        Text(
-                          t.app.title,
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: .bold),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 48),
-                        _buildAuthBody(),
-                      ],
-                    ),
                   ),
-          ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

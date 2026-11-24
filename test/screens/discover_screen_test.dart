@@ -677,7 +677,7 @@ void main() {
           ],
           child: InputModeTracker(
             child: MaterialApp(
-              theme: monoTheme(MonoPalette.dark),
+              theme: monoTheme(MonoPalette.dark).copyWith(platform: TargetPlatform.macOS),
               home: MainScreenFocusScope(
                 focusSidebar: () {},
                 sideNavigationWidth: SideNavigationRailState.expandedWidth,
@@ -701,6 +701,16 @@ void main() {
 
     expect(find.byType(PageView), findsOneWidget);
     expect(find.byIcon(Symbols.pause_rounded), findsOneWidget, reason: 'hero indicators render in pointer mode');
+
+    final carousel = tester.widget<PageView>(find.byType(PageView)).controller!;
+    await tester.tap(find.byTooltip('Next page'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(carousel.page, 1);
+    await tester.tap(find.byTooltip('Previous page'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(carousel.page, 0);
 
     // Entering keyboard mode must not hide the indicators on non-TV devices
     // (regression: back-key/BT-keyboard events left them permanently hidden).

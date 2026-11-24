@@ -256,7 +256,7 @@ void main() {
       const Size(NavigationRailItem.collapsedIndicatorWidth, NavigationRailItem.collapsedIndicatorHeight),
     );
     // Home is the selected tab: the pill carries the active indicator tint.
-    expect(_railItemDecoration(tester, homeItem)?.color, testMonoTokens.text.withValues(alpha: 0.1));
+    expect(_railItemDecoration(tester, homeItem)?.color, testMonoTokens.accent.withValues(alpha: 0.14));
 
     // Pill (and its icon) are centered in the rail.
     final rail = find.descendant(of: find.byType(SideNavigationRail), matching: find.byType(AnimatedContainer)).first;
@@ -326,7 +326,7 @@ void main() {
     await _pumpBasicRail(tester, alwaysExpanded: true);
 
     final selectedItem = find.byType(NavigationRailItem).first;
-    expect(_railItemDecoration(tester, selectedItem)?.color, testMonoTokens.text.withValues(alpha: 0.1));
+    expect(_railItemDecoration(tester, selectedItem)?.color, testMonoTokens.accent.withValues(alpha: 0.14));
   });
 
   testWidgets('D-pad sidebar focus hides selected item background after focus moves', (tester) async {
