@@ -146,10 +146,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+          cache: gradle
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
+          cache: true
+          pub-cache: true
       - name: Check release signing is configured
         env:
           HAS_KEY: ${{ secrets.GUCCIPLEXA_ANDROID_KEYSTORE != '' && secrets.GUCCIPLEXA_ANDROID_PASSWORD != '' }}
@@ -163,6 +166,8 @@ jobs:
           if (( $(df --output=avail -B1 / | tail -1) < 24000000000 )); then
             sudo rm -rf /usr/share/dotnet /usr/local/.ghcup /opt/ghc
           fi
+      - name: Enable Gradle build cache
+        run: echo 'GRADLE_OPTS=-Dorg.gradle.caching=true' >> "$GITHUB_ENV"
       - name: Install Android build tools
         run: >-
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-36' 'build-tools;36.1.0' 'cmake;4.1.2' 'cmake;3.22.1' 'ndk;29.0.14206865' 'ndk;28.2.13676358'
@@ -207,10 +212,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+          cache: gradle
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
+          cache: true
+          pub-cache: true
       - name: Check release signing is configured
         env:
           HAS_KEY: ${{ secrets.GUCCIPLEXA_ANDROID_KEYSTORE != '' && secrets.GUCCIPLEXA_ANDROID_PASSWORD != '' }}
@@ -224,6 +232,8 @@ jobs:
           if (( $(df --output=avail -B1 / | tail -1) < 24000000000 )); then
             sudo rm -rf /usr/share/dotnet /usr/local/.ghcup /opt/ghc
           fi
+      - name: Enable Gradle build cache
+        run: echo 'GRADLE_OPTS=-Dorg.gradle.caching=true' >> "$GITHUB_ENV"
       - name: Install Android build tools
         run: >-
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-36' 'build-tools;36.1.0' 'cmake;4.1.2' 'cmake;3.22.1' 'ndk;29.0.14206865' 'ndk;28.2.13676358'
@@ -269,6 +279,8 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
+          cache: true
+          pub-cache: true
       - run: flutter pub get --enforce-lockfile --no-example
       - name: Build iPhone app for external signing
         if: matrix.platform == 'ios'
@@ -301,6 +313,8 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
+          cache: true
+          pub-cache: true
       - run: flutter pub get --enforce-lockfile --no-example
       - name: Build iPhone app for external signing
         if: matrix.platform == 'ios'
@@ -338,6 +352,8 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
+          cache: true
+          pub-cache: true
       - if: matrix.arch == 'arm64'
         uses: ./.github/actions/setup-flutter-git
       - run: flutter pub get --enforce-lockfile --no-example
