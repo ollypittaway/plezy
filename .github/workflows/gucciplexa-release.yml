@@ -35,18 +35,14 @@ jobs:
           if [[ "$GITHUB_REF" == refs/heads/release-build/* ]]; then
             tag=${GITHUB_REF_NAME#release-build/}
             [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
-            # Existing tags always win; only the explicit new-release branch
-            # may bootstrap a missing tag, after checking the source version.
-            ref="refs/tags/$tag"
-            if [[ "$GITHUB_REF_NAME" == release-build/v0.0.3 ]]; then
-              if lookup=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" 2>&1); then
-                :
-              elif [[ "$lookup" == *"HTTP 404"* ]]; then
-                ref=$GITHUB_SHA
-              else
-                echo "::error::Unable to resolve existing release tag"
-                exit 1
-              fi
+            # Existing tags always win; a new release branch may bootstrap a missing tag.
+            if lookup=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" 2>&1); then
+              ref="refs/tags/$tag"
+            elif [[ "$lookup" == *"HTTP 404"* ]]; then
+              ref=$GITHUB_SHA
+            else
+              echo "::error::Unable to resolve release tag: $lookup"
+              exit 1
             fi
           fi
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
@@ -65,15 +61,26 @@ jobs:
           fi
           echo "number=$version" >> "$GITHUB_OUTPUT"
           echo "source=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Create v0.0.3 tag if missing
-        if: github.event_name == 'push' && github.ref == 'refs/heads/release-build/v0.0.3'
+      - name: Ensure validated release tag exists
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-build/')
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE: ${{ steps.read.outputs.source }}
+          VERSION: ${{ steps.read.outputs.number }}
         run: |
-          if ! gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v0.0.2" >/dev/null 2>&1; then
-            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref=refs/tags/v0.0.3 -f sha="$SOURCE"
+          set -euo pipefail
+          tag="v$VERSION"
+          if lookup=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" 2>&1); then
+            :
+          elif [[ "$lookup" == *"HTTP 404"* ]]; then
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f "ref=refs/tags/$tag" -f "sha=$SOURCE"
+          else
+            echo "::error::Unable to inspect release tag: $lookup"
+            exit 1
           fi
+          # Resolve annotated and lightweight tags to their source commit.
+          actual=$(gh api "repos/$GITHUB_REPOSITORY/commits/$tag" --jq .sha)
+          [[ "$actual" == "$SOURCE" ]] || { echo "::error::Release tag source mismatch"; exit 1; }
 
   android:
     needs: version
