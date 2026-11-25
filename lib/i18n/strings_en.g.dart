@@ -40,6 +40,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	Translations $copyWith({TranslationMetadata<AppLocale, Translations>? meta}) => Translations(meta: meta ?? this.$meta);
 
 	// Translations
+	late final Translations$announcements$en announcements = Translations$announcements$en.internal(_root);
 	late final Translations$app$en app = Translations$app$en.internal(_root);
 	late final Translations$appIcon$en appIcon = Translations$appIcon$en.internal(_root);
 	late final Translations$auth$en auth = Translations$auth$en.internal(_root);
@@ -72,6 +73,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$serverSelection$en serverSelection = Translations$serverSelection$en.internal(_root);
 	late final Translations$hubDetail$en hubDetail = Translations$hubDetail$en.internal(_root);
 	late final Translations$logs$en logs = Translations$logs$en.internal(_root);
+	late final Translations$playbackCheck$en playbackCheck = Translations$playbackCheck$en.internal(_root);
 	late final Translations$startup$en startup = Translations$startup$en.internal(_root);
 	late final Translations$licenses$en licenses = Translations$licenses$en.internal(_root);
 	late final Translations$navigation$en navigation = Translations$navigation$en.internal(_root);
@@ -97,6 +99,81 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$deepLinks$en deepLinks = Translations$deepLinks$en.internal(_root);
 }
 
+// Path: announcements
+class Translations$announcements$en {
+	Translations$announcements$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Notifications'
+	String get title => 'Notifications';
+
+	/// en: 'In your web panel, choose Pair a device and paste the link here.'
+	String get pairHint => 'In your web panel, choose Pair a device and paste the link here.';
+
+	/// en: 'Private pairing link'
+	String get link => 'Private pairing link';
+
+	/// en: 'Pair device'
+	String get pair => 'Pair device';
+
+	/// en: 'Announcements enabled'
+	String get connected => 'Announcements enabled';
+
+	/// en: 'Disconnect'
+	String get disconnect => 'Disconnect';
+
+	/// en: 'Mobile push notifications'
+	String get mobilePush => 'Mobile push notifications';
+
+	/// en: 'Receive alerts when GucciPlexa is in the background.'
+	String get background => 'Receive alerts when GucciPlexa is in the background.';
+
+	/// en: 'Add Firebase credentials to your notification panel to enable mobile push.'
+	String get configurePush => 'Add Firebase credentials to your notification panel to enable mobile push.';
+
+	/// en: 'Recent announcements'
+	String get recent => 'Recent announcements';
+
+	/// en: 'No announcements yet.'
+	String get empty => 'No announcements yet.';
+
+	/// en: 'Could not complete the request. Check your connection and mobile push configuration.'
+	String get connectionError => 'Could not complete the request. Check your connection and mobile push configuration.';
+
+	/// en: 'Paste the private pairing link from your notification panel.'
+	String get invalidLink => 'Paste the private pairing link from your notification panel.';
+
+	/// en: 'The panel rejected this pairing link.'
+	String get unauthorized => 'The panel rejected this pairing link.';
+
+	/// en: 'The notification panel is unavailable.'
+	String get unavailable => 'The notification panel is unavailable.';
+
+	/// en: 'Disconnect the current panel first.'
+	String get alreadyPaired => 'Disconnect the current panel first.';
+
+	/// en: 'Allow notifications in your device settings to enable push.'
+	String get permission => 'Allow notifications in your device settings to enable push.';
+
+	/// en: 'Apple has not registered this device yet. Try again shortly.'
+	String get applePending => 'Apple has not registered this device yet. Try again shortly.';
+
+	/// en: 'This device has not received a push token yet.'
+	String get tokenPending => 'This device has not received a push token yet.';
+
+	/// en: 'Mobile push registration needs attention. Check this device’s permission and the panel configuration.'
+	String get registrationError => 'Mobile push registration needs attention. Check this device’s permission and the panel configuration.';
+
+	/// en: 'Could not refresh announcements. Check the connection to your panel.'
+	String get refreshError => 'Could not refresh announcements. Check the connection to your panel.';
+
+	/// en: 'This build needs a Firebase mobile configuration to enable push.'
+	String get setupNeeded => 'This build needs a Firebase mobile configuration to enable push.';
+}
+
 // Path: app
 class Translations$app$en {
 	Translations$app$en.internal(this._root);
@@ -105,8 +182,8 @@ class Translations$app$en {
 
 	// Translations
 
-	/// en: 'Plezy'
-	String get title => 'Plezy';
+	/// en: 'GucciPlexa'
+	String get title => 'GucciPlexa';
 }
 
 // Path: appIcon
@@ -135,11 +212,11 @@ class Translations$appIcon$en {
 	/// en: 'Couldn't change the app icon'
 	String get changeFailed => 'Couldn\'t change the app icon';
 
-	/// en: 'The new icon appears on your home screen once you leave Plezy.'
-	String get launcherHint => 'The new icon appears on your home screen once you leave Plezy.';
+	/// en: 'The new icon appears on your home screen once you leave GucciPlexa.'
+	String get launcherHint => 'The new icon appears on your home screen once you leave GucciPlexa.';
 
-	/// en: 'The new banner appears once you leave Plezy. Android TV can keep showing the old one until the TV restarts.'
-	String get tvLauncherHint => 'The new banner appears once you leave Plezy. Android TV can keep showing the old one until the TV restarts.';
+	/// en: 'The new banner appears once you leave GucciPlexa. Android TV can keep showing the old one until the TV restarts.'
+	String get tvLauncherHint => 'The new banner appears once you leave GucciPlexa. Android TV can keep showing the old one until the TV restarts.';
 
 	late final Translations$appIcon$names$en names = Translations$appIcon$names$en.internal(_root);
 }
@@ -197,8 +274,8 @@ class Translations$auth$en {
 	/// en: 'Quick Connect expired. Try again.'
 	String get quickConnectExpired => 'Quick Connect expired. Try again.';
 
-	/// en: 'Plezy could not safely recover local sign-in and pending playback data. Please sign in again.'
-	String get localDataRecoveryRequired => 'Plezy could not safely recover local sign-in and pending playback data. Please sign in again.';
+	/// en: 'GucciPlexa could not safely recover local sign-in and pending playback data. Please sign in again.'
+	String get localDataRecoveryRequired => 'GucciPlexa could not safely recover local sign-in and pending playback data. Please sign in again.';
 
 	/// en: 'The Plex PIN check was rejected'
 	String get pinCheckRejected => 'The Plex PIN check was rejected';
@@ -447,8 +524,8 @@ class Translations$supporter$en {
 	/// en: 'App icons'
 	String get appIcons => 'App icons';
 
-	/// en: 'Choose an alternate Plezy icon'
-	String get appIconsDescription => 'Choose an alternate Plezy icon';
+	/// en: 'Choose an alternate GucciPlexa icon'
+	String get appIconsDescription => 'Choose an alternate GucciPlexa icon';
 
 	/// en: 'Buy for ${price}'
 	String buy({required Object price}) => 'Buy for ${price}';
@@ -932,8 +1009,8 @@ class Translations$settings$en {
 	/// en: 'Settings imported'
 	String get importSettingsSuccess => 'Settings imported';
 
-	/// en: 'This file isn't a valid Plezy settings export'
-	String get importSettingsInvalidFile => 'This file isn\'t a valid Plezy settings export';
+	/// en: 'This file isn't a valid GucciPlexa settings export'
+	String get importSettingsInvalidFile => 'This file isn\'t a valid GucciPlexa settings export';
 
 	/// en: 'Sign in before importing settings'
 	String get importSettingsNoUser => 'Sign in before importing settings';
@@ -1343,8 +1420,8 @@ class Translations$settings$en {
 	/// en: 'Start in fullscreen'
 	String get startInFullscreen => 'Start in fullscreen';
 
-	/// en: 'Open Plezy in fullscreen mode at launch'
-	String get startInFullscreenDescription => 'Open Plezy in fullscreen mode at launch';
+	/// en: 'Open GucciPlexa in fullscreen mode at launch'
+	String get startInFullscreenDescription => 'Open GucciPlexa in fullscreen mode at launch';
 
 	/// en: 'Exit fullscreen on player close'
 	String get exitFullscreenOnPlayerClose => 'Exit fullscreen on player close';
@@ -1493,8 +1570,8 @@ class Translations$settings$en {
 	/// en: 'Per show or movie'
 	String get playerScopeTitle => 'Per show or movie';
 
-	/// en: 'Export Plezy settings'
-	String get exportDialogTitle => 'Export Plezy settings';
+	/// en: 'Export GucciPlexa settings'
+	String get exportDialogTitle => 'Export GucciPlexa settings';
 }
 
 // Path: themeEditor
@@ -2087,11 +2164,11 @@ class Translations$mediaMenu$en {
 		other: '${n} other episodes are stored in the same file and will be deleted too:',
 	);
 
-	/// en: 'Plezy could not check which files this will remove, so it may delete more than the item named above. Cancel and try again, or delete anyway.'
-	String get deleteScopeUnverifiedProbeFailed => 'Plezy could not check which files this will remove, so it may delete more than the item named above. Cancel and try again, or delete anyway.';
+	/// en: 'GucciPlexa could not check which files this will remove, so it may delete more than the item named above. Cancel and try again, or delete anyway.'
+	String get deleteScopeUnverifiedProbeFailed => 'GucciPlexa could not check which files this will remove, so it may delete more than the item named above. Cancel and try again, or delete anyway.';
 
-	/// en: 'Your server did not provide file details for this item, so Plezy cannot check which files this will remove. It may delete more than the item named above.'
-	String get deleteScopeUnverifiedNoFileInfo => 'Your server did not provide file details for this item, so Plezy cannot check which files this will remove. It may delete more than the item named above.';
+	/// en: 'Your server did not provide file details for this item, so GucciPlexa cannot check which files this will remove. It may delete more than the item named above.'
+	String get deleteScopeUnverifiedNoFileInfo => 'Your server did not provide file details for this item, so GucciPlexa cannot check which files this will remove. It may delete more than the item named above.';
 
 	/// en: 'Media item deleted successfully'
 	String get mediaDeletedSuccessfully => 'Media item deleted successfully';
@@ -2110,6 +2187,21 @@ class Translations$mediaMenu$en {
 
 	/// en: 'Play Version...'
 	String get playVersion => 'Play Version...';
+
+	/// en: 'Play in 4K'
+	String get playIn4k => 'Play in 4K';
+
+	/// en: 'Play from ${library}'
+	String playFromLibrary({required Object library}) => 'Play from ${library}';
+
+	/// en: '4K playback may buffer'
+	String get bufferingTitle => '4K playback may buffer';
+
+	/// en: 'Your connection to this server measured ${speed} Mbps. This file averages ${bitrate} Mbps, and some scenes may need more. Continue with this file or go back to choose another library.'
+	String bufferingMessage({required Object speed, required Object bitrate}) => 'Your connection to this server measured ${speed} Mbps. This file averages ${bitrate} Mbps, and some scenes may need more. Continue with this file or go back to choose another library.';
+
+	/// en: 'Play anyway'
+	String get playAnyway => 'Play anyway';
 }
 
 // Path: rateSheet
@@ -2917,8 +3009,8 @@ class Translations$profiles$en {
 
 	// Translations
 
-	/// en: 'Add Plezy profile'
-	String get addPlezyProfile => 'Add Plezy profile';
+	/// en: 'Add GucciPlexa profile'
+	String get addPlezyProfile => 'Add GucciPlexa profile';
 
 	/// en: 'Switching profile…'
 	String get switchingProfile => 'Switching profile…';
@@ -3151,8 +3243,8 @@ class Translations$connections$en {
 	/// en: 'Edit ${product} connection'
 	String editMediaBrowserTitle({required Object product}) => 'Edit ${product} connection';
 
-	/// en: 'Add or remove URLs for ${serverName}. Plezy will use the reachable URL with the lowest latency.'
-	String editMediaBrowserIntro({required Object serverName}) => 'Add or remove URLs for ${serverName}. Plezy will use the reachable URL with the lowest latency.';
+	/// en: 'Add or remove URLs for ${serverName}. GucciPlexa will use the reachable URL with the lowest latency.'
+	String editMediaBrowserIntro({required Object serverName}) => 'Add or remove URLs for ${serverName}. GucciPlexa will use the reachable URL with the lowest latency.';
 }
 
 // Path: accountPreferences
@@ -3175,8 +3267,8 @@ class Translations$accountPreferences$en {
 	/// en: 'Every account stores its own preferences. Pick the one to edit.'
 	String get pickAccount => 'Every account stores its own preferences. Pick the one to edit.';
 
-	/// en: 'These options are saved on the account itself, so every app signed in to it uses them — including Plezy on your other devices.'
-	String get storedOnAccount => 'These options are saved on the account itself, so every app signed in to it uses them — including Plezy on your other devices.';
+	/// en: 'These options are saved on the account itself, so every app signed in to it uses them — including GucciPlexa on your other devices.'
+	String get storedOnAccount => 'These options are saved on the account itself, so every app signed in to it uses them — including GucciPlexa on your other devices.';
 
 	/// en: 'No accounts to configure'
 	String get noAccounts => 'No accounts to configure';
@@ -3646,6 +3738,48 @@ class Translations$logs$en {
 	String get uploadLogs => 'Upload Logs';
 }
 
+// Path: playbackCheck
+class Translations$playbackCheck$en {
+	Translations$playbackCheck$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Playback settings check'
+	String get title => 'Playback settings check';
+
+	/// en: 'Your current settings can make the server convert video. This can lower the resolution or remove HDR from a film or show.'
+	String get description => 'Your current settings can make the server convert video. This can lower the resolution or remove HDR from a film or show.';
+
+	/// en: 'Switch from ${current} to Original.'
+	String originalQuality({required Object current}) => 'Switch from ${current} to Original.';
+
+	/// en: 'Remove the ${current} mobile data limit and follow Default Quality.'
+	String cellularQuality({required Object current}) => 'Remove the ${current} mobile data limit and follow Default Quality.';
+
+	/// en: 'Direct play on Plex'
+	String get directPlay => 'Direct play on Plex';
+
+	/// en: 'Allow Plex to play the original file when it fits the selected quality limit.'
+	String get enableDirectPlay => 'Allow Plex to play the original file when it fits the selected quality limit.';
+
+	/// en: 'Streaming at Original quality can use more mobile data.'
+	String get mobileData => 'Streaming at Original quality can use more mobile data.';
+
+	/// en: 'Fix settings'
+	String get fix => 'Fix settings';
+
+	/// en: 'Ignore and continue'
+	String get ignore => 'Ignore and continue';
+
+	/// en: 'Some settings could not be saved. Try again or continue with your current settings.'
+	String get saveFailed => 'Some settings could not be saved. Try again or continue with your current settings.';
+
+	/// en: 'Playback settings updated.'
+	String get saved => 'Playback settings updated.';
+}
+
 // Path: startup
 class Translations$startup$en {
 	Translations$startup$en.internal(this._root);
@@ -3654,14 +3788,14 @@ class Translations$startup$en {
 
 	// Translations
 
-	/// en: 'Plezy could not start'
-	String get failedTitle => 'Plezy could not start';
+	/// en: 'GucciPlexa could not start'
+	String get failedTitle => 'GucciPlexa could not start';
 
 	/// en: 'Something went wrong during startup. The details below identify what failed.'
 	String get failedBody => 'Something went wrong during startup. The details below identify what failed.';
 
-	/// en: 'Plezy's saved settings file is damaged and has to be rebuilt before Plezy can start. Retrying will not help — choose Repair storage.'
-	String get failedBodyRepairable => 'Plezy\'s saved settings file is damaged and has to be rebuilt before Plezy can start. Retrying will not help — choose Repair storage.';
+	/// en: 'GucciPlexa's saved settings file is damaged and has to be rebuilt before GucciPlexa can start. Retrying will not help — choose Repair storage.'
+	String get failedBodyRepairable => 'GucciPlexa\'s saved settings file is damaged and has to be rebuilt before GucciPlexa can start. Retrying will not help — choose Repair storage.';
 
 	/// en: 'Step'
 	String get phaseLabel => 'Step';
@@ -3687,8 +3821,8 @@ class Translations$startup$en {
 	/// en: 'Repair stored data?'
 	String get repairTitle => 'Repair stored data?';
 
-	/// en: 'Plezy's settings file is damaged and cannot be read. Repairing resets every setting to its default.'
-	String get repairBodyCommon => 'Plezy\'s settings file is damaged and cannot be read. Repairing resets every setting to its default.';
+	/// en: 'GucciPlexa's settings file is damaged and cannot be read. Repairing resets every setting to its default.'
+	String get repairBodyCommon => 'GucciPlexa\'s settings file is damaged and cannot be read. Repairing resets every setting to its default.';
 
 	/// en: 'One saved sign-in is damaged and cannot be read. Repairing removes just that one; your other settings are left alone.'
 	String get repairBodyOneCredential => 'One saved sign-in is damaged and cannot be read. Repairing removes just that one; your other settings are left alone.';
@@ -3699,8 +3833,8 @@ class Translations$startup$en {
 	/// en: 'The key protecting your saved sign-ins cannot be recovered from this file, so you will have to sign in to every server and profile again. Nothing on your media server is affected.'
 	String get repairBodySignInsLost => 'The key protecting your saved sign-ins cannot be recovered from this file, so you will have to sign in to every server and profile again. Nothing on your media server is affected.';
 
-	/// en: 'Trackers (MAL, AniList, Simkl, Trakt) and Seerr are stored separately and may or may not survive. Plezy will tell you exactly what it kept.'
-	String get repairBodySessionsUncertain => 'Trackers (MAL, AniList, Simkl, Trakt) and Seerr are stored separately and may or may not survive. Plezy will tell you exactly what it kept.';
+	/// en: 'Trackers (MAL, AniList, Simkl, Trakt) and Seerr are stored separately and may or may not survive. GucciPlexa will tell you exactly what it kept.'
+	String get repairBodySessionsUncertain => 'Trackers (MAL, AniList, Simkl, Trakt) and Seerr are stored separately and may or may not survive. GucciPlexa will tell you exactly what it kept.';
 
 	/// en: 'Repair'
 	String get repairConfirm => 'Repair';
@@ -3711,11 +3845,11 @@ class Translations$startup$en {
 	/// en: 'Storage repaired — restart required'
 	String get repairNeedsRestart => 'Storage repaired — restart required';
 
-	/// en: 'Your data was repaired, but Plezy has to start fresh before it can use it. Close Plezy and open it again.'
-	String get restartRequiredBody => 'Your data was repaired, but Plezy has to start fresh before it can use it. Close Plezy and open it again.';
+	/// en: 'Your data was repaired, but GucciPlexa has to start fresh before it can use it. Close GucciPlexa and open it again.'
+	String get restartRequiredBody => 'Your data was repaired, but GucciPlexa has to start fresh before it can use it. Close GucciPlexa and open it again.';
 
-	/// en: 'Quit Plezy'
-	String get quitPlezy => 'Quit Plezy';
+	/// en: 'Quit GucciPlexa'
+	String get quitPlezy => 'Quit GucciPlexa';
 
 	/// en: 'Repair failed'
 	String get repairFailed => 'Repair failed';
@@ -3741,8 +3875,8 @@ class Translations$startup$en {
 	/// en: 'Copy deleted.'
 	String get backupDeleted => 'Copy deleted.';
 
-	/// en: 'Plezy failed to start last time'
-	String get previousFailureTitle => 'Plezy failed to start last time';
+	/// en: 'GucciPlexa failed to start last time'
+	String get previousFailureTitle => 'GucciPlexa failed to start last time';
 }
 
 // Path: licenses
@@ -4475,8 +4609,8 @@ class Translations$watchTogether$en {
 	/// en: 'Invite copied. Paste it into a message.'
 	String get inviteCopied => 'Invite copied. Paste it into a message.';
 
-	/// en: 'Join my Watch Together room in Plezy: open Watch Together, choose Join Room and enter ${code}.'
-	String inviteMessage({required Object code}) => 'Join my Watch Together room in Plezy: open Watch Together, choose Join Room and enter ${code}.';
+	/// en: 'Join my Watch Together room in GucciPlexa: open Watch Together, choose Join Room and enter ${code}.'
+	String inviteMessage({required Object code}) => 'Join my Watch Together room in GucciPlexa: open Watch Together, choose Join Room and enter ${code}.';
 
 	/// en: 'Open Watch Together session controls'
 	String get openSessionControls => 'Open Watch Together session controls';
@@ -4553,8 +4687,8 @@ class Translations$watchTogether$en {
 	/// en: 'You don't have this video'
 	String get unavailableTitle => 'You don\'t have this video';
 
-	/// en: 'Plezy couldn't find it in your libraries. Pick a copy yourself or search again.'
-	String get unavailableDescription => 'Plezy couldn\'t find it in your libraries. Pick a copy yourself or search again.';
+	/// en: 'GucciPlexa couldn't find it in your libraries. Pick a copy yourself or search again.'
+	String get unavailableDescription => 'GucciPlexa couldn\'t find it in your libraries. Pick a copy yourself or search again.';
 
 	/// en: 'Choose a Copy'
 	String get chooseCopy => 'Choose a Copy';
@@ -5745,8 +5879,8 @@ class Translations$trakt$en {
 	/// en: 'Disconnect Trakt account?'
 	String get disconnectConfirm => 'Disconnect Trakt account?';
 
-	/// en: 'Plezy will stop sending events to Trakt. You can reconnect any time.'
-	String get disconnectConfirmBody => 'Plezy will stop sending events to Trakt. You can reconnect any time.';
+	/// en: 'GucciPlexa will stop sending events to Trakt. You can reconnect any time.'
+	String get disconnectConfirmBody => 'GucciPlexa will stop sending events to Trakt. You can reconnect any time.';
 
 	/// en: 'Real-time scrobbling'
 	String get scrobble => 'Real-time scrobbling';
@@ -5757,8 +5891,8 @@ class Translations$trakt$en {
 	/// en: 'Sync watched status'
 	String get watchedSync => 'Sync watched status';
 
-	/// en: 'When you mark items as watched in Plezy, they are also marked as watched on Trakt.'
-	String get watchedSyncDescription => 'When you mark items as watched in Plezy, they are also marked as watched on Trakt.';
+	/// en: 'When you mark items as watched in GucciPlexa, they are also marked as watched on Trakt.'
+	String get watchedSyncDescription => 'When you mark items as watched in GucciPlexa, they are also marked as watched on Trakt.';
 }
 
 // Path: seerr
@@ -5796,8 +5930,8 @@ class Translations$seerr$en {
 	/// en: 'Email'
 	String get email => 'Email';
 
-	/// en: 'This Seerr instance offers no sign-in method Plezy supports.'
-	String get noSignInMethods => 'This Seerr instance offers no sign-in method Plezy supports.';
+	/// en: 'This Seerr instance offers no sign-in method GucciPlexa supports.'
+	String get noSignInMethods => 'This Seerr instance offers no sign-in method GucciPlexa supports.';
 
 	/// en: 'Instance'
 	String get instance => 'Instance';
@@ -5805,8 +5939,8 @@ class Translations$seerr$en {
 	/// en: 'Disconnect Seerr?'
 	String get disconnectConfirm => 'Disconnect Seerr?';
 
-	/// en: 'Plezy will forget this Seerr instance. Reconnect any time.'
-	String get disconnectConfirmBody => 'Plezy will forget this Seerr instance. Reconnect any time.';
+	/// en: 'GucciPlexa will forget this Seerr instance. Reconnect any time.'
+	String get disconnectConfirmBody => 'GucciPlexa will forget this Seerr instance. Reconnect any time.';
 
 	/// en: 'Request'
 	String get request => 'Request';
@@ -5880,8 +6014,8 @@ class Translations$seerr$en {
 	/// en: 'No Seerr instance at ${url} (HTTP ${status})'
 	String noInstanceAtUrl({required Object url, required Object status}) => 'No Seerr instance at ${url} (HTTP ${status})';
 
-	/// en: 'An authenticating reverse proxy (SSO or HTTP auth) answered instead of Seerr. Plezy cannot sign in through it: let Seerr's /api/v1 path bypass the proxy for this app, or use an address that reaches Seerr directly.'
-	String get behindAuthProxy => 'An authenticating reverse proxy (SSO or HTTP auth) answered instead of Seerr. Plezy cannot sign in through it: let Seerr\'s /api/v1 path bypass the proxy for this app, or use an address that reaches Seerr directly.';
+	/// en: 'An authenticating reverse proxy (SSO or HTTP auth) answered instead of Seerr. GucciPlexa cannot sign in through it: let Seerr's /api/v1 path bypass the proxy for this app, or use an address that reaches Seerr directly.'
+	String get behindAuthProxy => 'An authenticating reverse proxy (SSO or HTTP auth) answered instead of Seerr. GucciPlexa cannot sign in through it: let Seerr\'s /api/v1 path bypass the proxy for this app, or use an address that reaches Seerr directly.';
 
 	/// en: 'Enter a server address like https://seerr.example.com'
 	String get invalidUrl => 'Enter a server address like https://seerr.example.com';
@@ -5952,8 +6086,8 @@ class Translations$services$en {
 	/// en: 'Disconnect ${service}?'
 	String disconnectConfirm({required Object service}) => 'Disconnect ${service}?';
 
-	/// en: 'Plezy will stop updating ${service}. Reconnect any time.'
-	String disconnectConfirmBody({required Object service}) => 'Plezy will stop updating ${service}. Reconnect any time.';
+	/// en: 'GucciPlexa will stop updating ${service}. Reconnect any time.'
+	String disconnectConfirmBody({required Object service}) => 'GucciPlexa will stop updating ${service}. Reconnect any time.';
 
 	/// en: 'Couldn't connect to ${service}. Try again.'
 	String connectFailed({required Object service}) => 'Couldn\'t connect to ${service}. Try again.';
@@ -6124,8 +6258,8 @@ class Translations$deepLinks$en {
 
 	// Translations
 
-	/// en: 'This Plezy link isn't valid.'
-	String get invalid => 'This Plezy link isn\'t valid.';
+	/// en: 'This GucciPlexa link isn't valid.'
+	String get invalid => 'This GucciPlexa link isn\'t valid.';
 
 	/// en: 'No profile matches "${profile}".'
 	String profileNotFound({required Object profile}) => 'No profile matches "${profile}".';
@@ -7624,8 +7758,8 @@ class Translations$watchTogether$errors$en {
 	/// en: 'Too many attempts. Wait a moment and try again.'
 	String get rateLimited => 'Too many attempts. Wait a moment and try again.';
 
-	/// en: 'This version of Plezy can't use the relay. Update the app.'
-	String get clientBlocked => 'This version of Plezy can\'t use the relay. Update the app.';
+	/// en: 'This version of GucciPlexa can't use the relay. Update the app.'
+	String get clientBlocked => 'This version of GucciPlexa can\'t use the relay. Update the app.';
 
 	/// en: 'Only the host can do that.'
 	String get forbidden => 'Only the host can do that.';
@@ -7669,17 +7803,17 @@ class Translations$downloads$backgroundWarning$en {
 	/// en: 'Background downloads may be limited'
 	String get sheetTitleDegraded => 'Background downloads may be limited';
 
-	/// en: 'Android is preventing Plezy from downloading reliably in the background.'
-	String get sheetIntro => 'Android is preventing Plezy from downloading reliably in the background.';
+	/// en: 'Android is preventing GucciPlexa from downloading reliably in the background.'
+	String get sheetIntro => 'Android is preventing GucciPlexa from downloading reliably in the background.';
 
-	/// en: 'Your device is limiting when Plezy can download in the background.'
-	String get sheetIntroDegraded => 'Your device is limiting when Plezy can download in the background.';
+	/// en: 'Your device is limiting when GucciPlexa can download in the background.'
+	String get sheetIntroDegraded => 'Your device is limiting when GucciPlexa can download in the background.';
 
-	/// en: 'Plezy's background usage is restricted. Set its battery or background usage to "Unrestricted".'
-	String get reasonBackgroundRestricted => 'Plezy\'s background usage is restricted. Set its battery or background usage to "Unrestricted".';
+	/// en: 'GucciPlexa's background usage is restricted. Set its battery or background usage to "Unrestricted".'
+	String get reasonBackgroundRestricted => 'GucciPlexa\'s background usage is restricted. Set its battery or background usage to "Unrestricted".';
 
-	/// en: 'Android has put Plezy in a restricted standby state. Set its battery usage to "Unrestricted".'
-	String get reasonStandbyRestricted => 'Android has put Plezy in a restricted standby state. Set its battery usage to "Unrestricted".';
+	/// en: 'Android has put GucciPlexa in a restricted standby state. Set its battery usage to "Unrestricted".'
+	String get reasonStandbyRestricted => 'Android has put GucciPlexa in a restricted standby state. Set its battery usage to "Unrestricted".';
 
 	/// en: 'Download notifications are turned off, so progress and controls may be unavailable.'
 	String get reasonDownloadChannelBlocked => 'Download notifications are turned off, so progress and controls may be unavailable.';
@@ -7690,8 +7824,8 @@ class Translations$downloads$backgroundWarning$en {
 	/// en: 'Data Saver is on, which blocks background downloads on mobile data. Downloads should still run on Wi-Fi.'
 	String get reasonDataSaver => 'Data Saver is on, which blocks background downloads on mobile data. Downloads should still run on Wi-Fi.';
 
-	/// en: 'Downloads repeatedly stopped while Plezy was in the background. Check Plezy's battery or background usage settings.'
-	String get reasonOemUnknown => 'Downloads repeatedly stopped while Plezy was in the background. Check Plezy\'s battery or background usage settings.';
+	/// en: 'Downloads repeatedly stopped while GucciPlexa was in the background. Check GucciPlexa's battery or background usage settings.'
+	String get reasonOemUnknown => 'Downloads repeatedly stopped while GucciPlexa was in the background. Check GucciPlexa\'s battery or background usage settings.';
 
 	/// en: 'Open settings'
 	String get openSettings => 'Open settings';
@@ -7801,8 +7935,8 @@ class Translations$companionRemote$pairing$en {
 
 	// Translations
 
-	/// en: 'Plezy devices with the same Plex account appear here'
-	String get discoveryDescription => 'Plezy devices with the same Plex account appear here';
+	/// en: 'GucciPlexa devices with the same Plex account appear here'
+	String get discoveryDescription => 'GucciPlexa devices with the same Plex account appear here';
 
 	/// en: '192.168.1.100:48632'
 	String get hostAddressHint => '192.168.1.100:48632';
@@ -7816,8 +7950,8 @@ class Translations$companionRemote$pairing$en {
 	/// en: 'No devices found on your network'
 	String get noDevicesFound => 'No devices found on your network';
 
-	/// en: 'Open Plezy on desktop and use the same Wi-Fi'
-	String get noDevicesHint => 'Open Plezy on desktop and use the same Wi-Fi';
+	/// en: 'Open GucciPlexa on desktop and use the same Wi-Fi'
+	String get noDevicesHint => 'Open GucciPlexa on desktop and use the same Wi-Fi';
 
 	/// en: 'Available Devices'
 	String get availableDevices => 'Available Devices';
@@ -7837,8 +7971,8 @@ class Translations$companionRemote$pairing$en {
 	/// en: 'Connection timed out. Use the same network on both devices.'
 	String get connectionTimedOut => 'Connection timed out. Use the same network on both devices.';
 
-	/// en: 'Device not found. Make sure Plezy is running on the host.'
-	String get sessionNotFound => 'Device not found. Make sure Plezy is running on the host.';
+	/// en: 'Device not found. Make sure GucciPlexa is running on the host.'
+	String get sessionNotFound => 'Device not found. Make sure GucciPlexa is running on the host.';
 
 	/// en: 'Authentication failed. Both devices need the same Plex account.'
 	String get authFailed => 'Authentication failed. Both devices need the same Plex account.';
@@ -8017,8 +8151,8 @@ class Translations$services$deviceCode$en {
 
 	// Translations
 
-	/// en: 'Activate Plezy on ${service}'
-	String title({required Object service}) => 'Activate Plezy on ${service}';
+	/// en: 'Activate GucciPlexa on ${service}'
+	String title({required Object service}) => 'Activate GucciPlexa on ${service}';
 
 	/// en: 'Scan the QR code, or visit the address below and enter this code:'
 	String get instructions => 'Scan the QR code, or visit the address below and enter this code:';
@@ -8122,15 +8256,37 @@ class Translations$services$libraryFilter$en {
 extension on Translations {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
-			'app.title' => 'Plezy',
+			'announcements.title' => 'Notifications',
+			'announcements.pairHint' => 'In your web panel, choose Pair a device and paste the link here.',
+			'announcements.link' => 'Private pairing link',
+			'announcements.pair' => 'Pair device',
+			'announcements.connected' => 'Announcements enabled',
+			'announcements.disconnect' => 'Disconnect',
+			'announcements.mobilePush' => 'Mobile push notifications',
+			'announcements.background' => 'Receive alerts when GucciPlexa is in the background.',
+			'announcements.configurePush' => 'Add Firebase credentials to your notification panel to enable mobile push.',
+			'announcements.recent' => 'Recent announcements',
+			'announcements.empty' => 'No announcements yet.',
+			'announcements.connectionError' => 'Could not complete the request. Check your connection and mobile push configuration.',
+			'announcements.invalidLink' => 'Paste the private pairing link from your notification panel.',
+			'announcements.unauthorized' => 'The panel rejected this pairing link.',
+			'announcements.unavailable' => 'The notification panel is unavailable.',
+			'announcements.alreadyPaired' => 'Disconnect the current panel first.',
+			'announcements.permission' => 'Allow notifications in your device settings to enable push.',
+			'announcements.applePending' => 'Apple has not registered this device yet. Try again shortly.',
+			'announcements.tokenPending' => 'This device has not received a push token yet.',
+			'announcements.registrationError' => 'Mobile push registration needs attention. Check this device’s permission and the panel configuration.',
+			'announcements.refreshError' => 'Could not refresh announcements. Check the connection to your panel.',
+			'announcements.setupNeeded' => 'This build needs a Firebase mobile configuration to enable push.',
+			'app.title' => 'GucciPlexa',
 			'appIcon.title' => 'App icon',
 			'appIcon.defaultIcon' => 'Default',
 			'appIcon.current' => 'Current icon',
 			'appIcon.locked' => 'Part of the Theme & Icon Pack',
 			'appIcon.lockedHint' => 'Alternate icons are part of the Theme & Icon Pack.',
 			'appIcon.changeFailed' => 'Couldn\'t change the app icon',
-			'appIcon.launcherHint' => 'The new icon appears on your home screen once you leave Plezy.',
-			'appIcon.tvLauncherHint' => 'The new banner appears once you leave Plezy. Android TV can keep showing the old one until the TV restarts.',
+			'appIcon.launcherHint' => 'The new icon appears on your home screen once you leave GucciPlexa.',
+			'appIcon.tvLauncherHint' => 'The new banner appears once you leave GucciPlexa. Android TV can keep showing the old one until the TV restarts.',
 			'appIcon.names.midnight' => 'Midnight',
 			'appIcon.names.ember' => 'Ember',
 			'appIcon.names.paper' => 'Paper',
@@ -8169,7 +8325,7 @@ extension on Translations {
 			'auth.quickConnectWaiting' => 'Waiting for approval…',
 			'auth.quickConnectCancel' => 'Cancel',
 			'auth.quickConnectExpired' => 'Quick Connect expired. Try again.',
-			'auth.localDataRecoveryRequired' => 'Plezy could not safely recover local sign-in and pending playback data. Please sign in again.',
+			'auth.localDataRecoveryRequired' => 'GucciPlexa could not safely recover local sign-in and pending playback data. Please sign in again.',
 			'auth.pinCheckRejected' => 'The Plex PIN check was rejected',
 			'common.cancel' => 'Cancel',
 			'common.save' => 'Save',
@@ -8264,7 +8420,7 @@ extension on Translations {
 			'supporter.customTheme' => 'Custom theme',
 			'supporter.customThemeDescription' => 'Pick every color yourself',
 			'supporter.appIcons' => 'App icons',
-			'supporter.appIconsDescription' => 'Choose an alternate Plezy icon',
+			'supporter.appIconsDescription' => 'Choose an alternate GucciPlexa icon',
 			'supporter.buy' => ({required Object price}) => 'Buy for ${price}',
 			'supporter.loadingPrice' => 'Loading price...',
 			'supporter.restore' => 'Restore Purchases',
@@ -8428,7 +8584,7 @@ extension on Translations {
 			'settings.importSettingsDescription' => 'Restore preferences from a file',
 			'settings.importSettingsConfirm' => 'This will replace your current settings. Continue?',
 			'settings.importSettingsSuccess' => 'Settings imported',
-			'settings.importSettingsInvalidFile' => 'This file isn\'t a valid Plezy settings export',
+			'settings.importSettingsInvalidFile' => 'This file isn\'t a valid GucciPlexa settings export',
 			'settings.importSettingsNoUser' => 'Sign in before importing settings',
 			'settings.shortcutsReset' => 'Shortcuts reset to defaults',
 			'settings.resetShortcutsConfirm' => 'This will replace your custom shortcuts with the defaults. Continue?',
@@ -8565,7 +8721,7 @@ extension on Translations {
 			'settings.forceTvMode' => 'Force TV mode',
 			'settings.forceTvModeDescription' => 'Force TV layout. For devices that don\'t auto-detect. Requires restart.',
 			'settings.startInFullscreen' => 'Start in fullscreen',
-			'settings.startInFullscreenDescription' => 'Open Plezy in fullscreen mode at launch',
+			'settings.startInFullscreenDescription' => 'Open GucciPlexa in fullscreen mode at launch',
 			'settings.exitFullscreenOnPlayerClose' => 'Exit fullscreen on player close',
 			'settings.exitFullscreenOnPlayerCloseDescription' => 'Automatically exit fullscreen when closing the video player',
 			'settings.autoHidePerformanceOverlay' => 'Auto-Hide Performance Overlay',
@@ -8612,10 +8768,12 @@ extension on Translations {
 			'settings.scopeZoom' => 'Zoom',
 			'settings.scopeSyncOffsets' => 'Audio & Subtitle Sync',
 			'settings.playerScopeOff' => 'Don\'t save',
+			_ => null,
+		} ?? switch (path) {
 			'settings.playerScopeGlobal' => 'Everywhere',
 			'settings.playerScopeLibrary' => 'Per library',
 			'settings.playerScopeTitle' => 'Per show or movie',
-			'settings.exportDialogTitle' => 'Export Plezy settings',
+			'settings.exportDialogTitle' => 'Export GucciPlexa settings',
 			'themeEditor.builtIn' => 'Built-in',
 			'themeEditor.presets' => 'Presets',
 			'themeEditor.custom' => 'Custom',
@@ -8634,8 +8792,6 @@ extension on Translations {
 			'themeEditor.slots.outline' => 'Outline',
 			'themeEditor.slots.text' => 'Text',
 			'themeEditor.slots.textMuted' => 'Secondary text',
-			_ => null,
-		} ?? switch (path) {
 			'themeEditor.slots.accent' => 'Accent',
 			'themeEditor.opacity' => 'Opacity',
 			'themeEditor.hexHint' => '#RRGGBB or #AARRGGBB',
@@ -8833,14 +8989,19 @@ extension on Translations {
 			'mediaMenu.deleteEpisodeCountWarning' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: 'This deletes all ${n} episode in it, and its file.', other: 'This deletes all ${n} episodes in it, and their files.', ), 
 			'mediaMenu.deleteMultiPartWarning' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: 'This item is stored as ${n} file, which will be deleted.', other: 'This item is stored across ${n} files, and all of them will be deleted.', ), 
 			'mediaMenu.deleteSharedFileHeading' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} other episode is stored in the same file and will be deleted too:', other: '${n} other episodes are stored in the same file and will be deleted too:', ), 
-			'mediaMenu.deleteScopeUnverifiedProbeFailed' => 'Plezy could not check which files this will remove, so it may delete more than the item named above. Cancel and try again, or delete anyway.',
-			'mediaMenu.deleteScopeUnverifiedNoFileInfo' => 'Your server did not provide file details for this item, so Plezy cannot check which files this will remove. It may delete more than the item named above.',
+			'mediaMenu.deleteScopeUnverifiedProbeFailed' => 'GucciPlexa could not check which files this will remove, so it may delete more than the item named above. Cancel and try again, or delete anyway.',
+			'mediaMenu.deleteScopeUnverifiedNoFileInfo' => 'Your server did not provide file details for this item, so GucciPlexa cannot check which files this will remove. It may delete more than the item named above.',
 			'mediaMenu.mediaDeletedSuccessfully' => 'Media item deleted successfully',
 			'mediaMenu.mediaFailedToDelete' => 'Failed to delete media item',
 			'mediaMenu.mediaDeletionDisabledOnServer' => 'Media deletion is turned off on this server. Turn on "Allow media deletion" in the server\'s Library settings.',
 			'mediaMenu.rate' => 'Rate',
 			'mediaMenu.playFromBeginning' => 'Play from Beginning',
 			'mediaMenu.playVersion' => 'Play Version...',
+			'mediaMenu.playIn4k' => 'Play in 4K',
+			'mediaMenu.playFromLibrary' => ({required Object library}) => 'Play from ${library}',
+			'mediaMenu.bufferingTitle' => '4K playback may buffer',
+			'mediaMenu.bufferingMessage' => ({required Object speed, required Object bitrate}) => 'Your connection to this server measured ${speed} Mbps. This file averages ${bitrate} Mbps, and some scenes may need more. Continue with this file or go back to choose another library.',
+			'mediaMenu.playAnyway' => 'Play anyway',
 			'rateSheet.title' => 'Rate',
 			'rateSheet.server' => 'Server',
 			'rateSheet.favorite' => 'Favorite',
@@ -9086,7 +9247,7 @@ extension on Translations {
 			'mpvConfig.removeLine' => 'Remove line',
 			'mpvConfig.embeddedVoHint' => 'vo, gpu-context and gpu-api are ignored on Linux: embedded video always renders through vo=libmpv on the video plane, and gpu-next (which compute shaders like ArtCNN need) cannot run embedded.',
 			'dialog.confirmAction' => 'Confirm Action',
-			'profiles.addPlezyProfile' => 'Add Plezy profile',
+			'profiles.addPlezyProfile' => 'Add GucciPlexa profile',
 			'profiles.switchingProfile' => 'Switching profile…',
 			'profiles.deleteThisProfileTitle' => 'Delete this profile?',
 			'profiles.deleteThisProfileMessage' => ({required Object displayName}) => 'Remove ${displayName}. Connections aren\'t affected.',
@@ -9121,6 +9282,8 @@ extension on Translations {
 			'profiles.connectionsLabel' => 'Connections',
 			'profiles.add' => 'Add',
 			'profiles.deleteProfileButton' => 'Delete profile',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.noConnectionsHint' => 'No connections — add one to use this profile.',
 			'profiles.noConnections' => 'No connections',
 			'profiles.plexHomeAccount' => 'Plex Home account',
@@ -9148,8 +9311,6 @@ extension on Translations {
 			'profiles.profileNameHint' => 'e.g. Guests, Kids, Family Room',
 			'profiles.pinProtectionOptional' => 'PIN protection (optional)',
 			'profiles.pinExplain' => '4-digit PIN required to switch profiles.',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.continueButton' => 'Continue',
 			'profiles.pinsDontMatch' => 'PINs don\'t match',
 			'profiles.tokenIdentityMismatch' => 'The Plex profile token resolved to an unexpected server',
@@ -9163,12 +9324,12 @@ extension on Translations {
 			'connections.accessDeniedMany' => ({required Object count}) => '${count} servers refused access for this account',
 			'connections.signInAgain' => 'Sign in again',
 			'connections.editMediaBrowserTitle' => ({required Object product}) => 'Edit ${product} connection',
-			'connections.editMediaBrowserIntro' => ({required Object serverName}) => 'Add or remove URLs for ${serverName}. Plezy will use the reachable URL with the lowest latency.',
+			'connections.editMediaBrowserIntro' => ({required Object serverName}) => 'Add or remove URLs for ${serverName}. GucciPlexa will use the reachable URL with the lowest latency.',
 			'accountPreferences.sectionTitle' => 'Account preferences',
 			'accountPreferences.hubSubtitleSingle' => ({required Object account}) => 'Audio, subtitle and library options saved on ${account}',
 			'accountPreferences.hubSubtitleMultiple' => ({required Object count}) => 'Audio, subtitle and library options saved on ${count} accounts',
 			'accountPreferences.pickAccount' => 'Every account stores its own preferences. Pick the one to edit.',
-			'accountPreferences.storedOnAccount' => 'These options are saved on the account itself, so every app signed in to it uses them — including Plezy on your other devices.',
+			'accountPreferences.storedOnAccount' => 'These options are saved on the account itself, so every app signed in to it uses them — including GucciPlexa on your other devices.',
 			'accountPreferences.noAccounts' => 'No accounts to configure',
 			'accountPreferences.noAccountsHint' => 'Sign in to Plex, or connect a Jellyfin or Emby server, and the preferences stored on that account show up here.',
 			'accountPreferences.unavailable' => 'Can\'t reach this account',
@@ -9402,9 +9563,20 @@ extension on Translations {
 			'logs.clearLogs' => 'Clear Logs',
 			'logs.copyLogs' => 'Copy Logs',
 			'logs.uploadLogs' => 'Upload Logs',
-			'startup.failedTitle' => 'Plezy could not start',
+			'playbackCheck.title' => 'Playback settings check',
+			'playbackCheck.description' => 'Your current settings can make the server convert video. This can lower the resolution or remove HDR from a film or show.',
+			'playbackCheck.originalQuality' => ({required Object current}) => 'Switch from ${current} to Original.',
+			'playbackCheck.cellularQuality' => ({required Object current}) => 'Remove the ${current} mobile data limit and follow Default Quality.',
+			'playbackCheck.directPlay' => 'Direct play on Plex',
+			'playbackCheck.enableDirectPlay' => 'Allow Plex to play the original file when it fits the selected quality limit.',
+			'playbackCheck.mobileData' => 'Streaming at Original quality can use more mobile data.',
+			'playbackCheck.fix' => 'Fix settings',
+			'playbackCheck.ignore' => 'Ignore and continue',
+			'playbackCheck.saveFailed' => 'Some settings could not be saved. Try again or continue with your current settings.',
+			'playbackCheck.saved' => 'Playback settings updated.',
+			'startup.failedTitle' => 'GucciPlexa could not start',
 			'startup.failedBody' => 'Something went wrong during startup. The details below identify what failed.',
-			'startup.failedBodyRepairable' => 'Plezy\'s saved settings file is damaged and has to be rebuilt before Plezy can start. Retrying will not help — choose Repair storage.',
+			'startup.failedBodyRepairable' => 'GucciPlexa\'s saved settings file is damaged and has to be rebuilt before GucciPlexa can start. Retrying will not help — choose Repair storage.',
 			'startup.phaseLabel' => 'Step',
 			'startup.showDetails' => 'Show details',
 			'startup.hideDetails' => 'Hide details',
@@ -9413,16 +9585,16 @@ extension on Translations {
 			'startup.uploadDetails' => 'Upload details',
 			'startup.repairStorage' => 'Repair storage',
 			'startup.repairTitle' => 'Repair stored data?',
-			'startup.repairBodyCommon' => 'Plezy\'s settings file is damaged and cannot be read. Repairing resets every setting to its default.',
+			'startup.repairBodyCommon' => 'GucciPlexa\'s settings file is damaged and cannot be read. Repairing resets every setting to its default.',
 			'startup.repairBodyOneCredential' => 'One saved sign-in is damaged and cannot be read. Repairing removes just that one; your other settings are left alone.',
 			'startup.repairBodySignInsKept' => 'Your servers and profiles should stay signed in.',
 			'startup.repairBodySignInsLost' => 'The key protecting your saved sign-ins cannot be recovered from this file, so you will have to sign in to every server and profile again. Nothing on your media server is affected.',
-			'startup.repairBodySessionsUncertain' => 'Trackers (MAL, AniList, Simkl, Trakt) and Seerr are stored separately and may or may not survive. Plezy will tell you exactly what it kept.',
+			'startup.repairBodySessionsUncertain' => 'Trackers (MAL, AniList, Simkl, Trakt) and Seerr are stored separately and may or may not survive. GucciPlexa will tell you exactly what it kept.',
 			'startup.repairConfirm' => 'Repair',
 			'startup.repairSucceeded' => 'Storage repaired',
 			'startup.repairNeedsRestart' => 'Storage repaired — restart required',
-			'startup.restartRequiredBody' => 'Your data was repaired, but Plezy has to start fresh before it can use it. Close Plezy and open it again.',
-			'startup.quitPlezy' => 'Quit Plezy',
+			'startup.restartRequiredBody' => 'Your data was repaired, but GucciPlexa has to start fresh before it can use it. Close GucciPlexa and open it again.',
+			'startup.quitPlezy' => 'Quit GucciPlexa',
 			'startup.repairFailed' => 'Repair failed',
 			'startup.repairKeptSignIns' => 'Your servers and profiles are still signed in.',
 			'startup.repairLostSignIns' => 'The key protecting your saved sign-ins could not be recovered. You will have to sign in to every server and profile again.',
@@ -9431,7 +9603,7 @@ extension on Translations {
 			'startup.backupWarning' => 'It contains your sign-in credentials. Do not upload or share it.',
 			'startup.deleteBackup' => 'Delete copy',
 			'startup.backupDeleted' => 'Copy deleted.',
-			'startup.previousFailureTitle' => 'Plezy failed to start last time',
+			'startup.previousFailureTitle' => 'GucciPlexa failed to start last time',
 			'licenses.relatedPackages' => 'Related Packages',
 			'licenses.license' => 'License',
 			'licenses.licenseNumber' => ({required Object number}) => 'License ${number}',
@@ -9624,6 +9796,8 @@ extension on Translations {
 			'liveTv.noFavoriteChannelsHint' => 'Show all channels, then long-press a channel to add it to your favorites.',
 			'liveTv.showAllChannels' => 'Show All Channels',
 			'liveTv.favoritesLoadFailed' => 'Could not load favorites. Check your connection and try again.',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.favoritesUpdateFailed' => 'Could not update favorites. Check your connection and try again.',
 			'liveTv.joinSession' => 'Join Session in Progress',
 			'liveTv.watchFromStart' => ({required Object minutes}) => 'Watch from start (${minutes} min ago)',
@@ -9662,8 +9836,6 @@ extension on Translations {
 			'liveTv.guideReloadRequested' => 'Guide refresh requested',
 			'liveTv.guideReloadFailed' => 'Couldn\'t refresh the guide',
 			'liveTv.rulesProcessRequested' => 'Rule re-evaluation requested',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.rulesProcessFailed' => 'Couldn\'t re-evaluate recording rules',
 			'liveTv.recordShow' => 'Record show',
 			'liveTv.recordSettings.startEarly' => 'Start early (seconds)',
@@ -9777,7 +9949,7 @@ extension on Translations {
 			'watchTogether.codeCopied' => 'Room code copied',
 			'watchTogether.shareInvite' => 'Share Invite',
 			'watchTogether.inviteCopied' => 'Invite copied. Paste it into a message.',
-			'watchTogether.inviteMessage' => ({required Object code}) => 'Join my Watch Together room in Plezy: open Watch Together, choose Join Room and enter ${code}.',
+			'watchTogether.inviteMessage' => ({required Object code}) => 'Join my Watch Together room in GucciPlexa: open Watch Together, choose Join Room and enter ${code}.',
 			'watchTogether.openSessionControls' => 'Open Watch Together session controls',
 			'watchTogether.reconnecting' => 'Reconnecting...',
 			'watchTogether.reconnectingDescription' => 'The connection dropped. You rejoin the room automatically.',
@@ -9803,7 +9975,7 @@ extension on Translations {
 			'watchTogether.chooseAnotherCopy' => 'Choose Another Copy',
 			'watchTogether.dontPlay' => 'Don\'t Play',
 			'watchTogether.unavailableTitle' => 'You don\'t have this video',
-			'watchTogether.unavailableDescription' => 'Plezy couldn\'t find it in your libraries. Pick a copy yourself or search again.',
+			'watchTogether.unavailableDescription' => 'GucciPlexa couldn\'t find it in your libraries. Pick a copy yourself or search again.',
 			'watchTogether.chooseCopy' => 'Choose a Copy',
 			'watchTogether.searchAgain' => 'Search Again',
 			'watchTogether.noCandidates' => 'No copies found in your libraries.',
@@ -9895,7 +10067,7 @@ extension on Translations {
 			'watchTogether.errors.relayFull' => 'Watch Together is busy right now. Try again later.',
 			'watchTogether.errors.unreachable' => 'Couldn\'t reach the Watch Together relay. Check your connection.',
 			'watchTogether.errors.rateLimited' => 'Too many attempts. Wait a moment and try again.',
-			'watchTogether.errors.clientBlocked' => 'This version of Plezy can\'t use the relay. Update the app.',
+			'watchTogether.errors.clientBlocked' => 'This version of GucciPlexa can\'t use the relay. Update the app.',
 			'watchTogether.errors.forbidden' => 'Only the host can do that.',
 			'watchTogether.errors.notInRoom' => 'You\'re not in a room.',
 			'watchTogether.errors.alreadyInRoom' => 'You\'re already in a room.',
@@ -9989,14 +10161,14 @@ extension on Translations {
 			'downloads.backgroundWarning.bannerAction' => 'Details',
 			'downloads.backgroundWarning.sheetTitle' => 'Background downloads are blocked',
 			'downloads.backgroundWarning.sheetTitleDegraded' => 'Background downloads may be limited',
-			'downloads.backgroundWarning.sheetIntro' => 'Android is preventing Plezy from downloading reliably in the background.',
-			'downloads.backgroundWarning.sheetIntroDegraded' => 'Your device is limiting when Plezy can download in the background.',
-			'downloads.backgroundWarning.reasonBackgroundRestricted' => 'Plezy\'s background usage is restricted. Set its battery or background usage to "Unrestricted".',
-			'downloads.backgroundWarning.reasonStandbyRestricted' => 'Android has put Plezy in a restricted standby state. Set its battery usage to "Unrestricted".',
+			'downloads.backgroundWarning.sheetIntro' => 'Android is preventing GucciPlexa from downloading reliably in the background.',
+			'downloads.backgroundWarning.sheetIntroDegraded' => 'Your device is limiting when GucciPlexa can download in the background.',
+			'downloads.backgroundWarning.reasonBackgroundRestricted' => 'GucciPlexa\'s background usage is restricted. Set its battery or background usage to "Unrestricted".',
+			'downloads.backgroundWarning.reasonStandbyRestricted' => 'Android has put GucciPlexa in a restricted standby state. Set its battery usage to "Unrestricted".',
 			'downloads.backgroundWarning.reasonDownloadChannelBlocked' => 'Download notifications are turned off, so progress and controls may be unavailable.',
 			'downloads.backgroundWarning.reasonNotificationsDisabled' => 'Notifications are turned off. On Android 13 or newer, they are required for long background downloads.',
 			'downloads.backgroundWarning.reasonDataSaver' => 'Data Saver is on, which blocks background downloads on mobile data. Downloads should still run on Wi-Fi.',
-			'downloads.backgroundWarning.reasonOemUnknown' => 'Downloads repeatedly stopped while Plezy was in the background. Check Plezy\'s battery or background usage settings.',
+			'downloads.backgroundWarning.reasonOemUnknown' => 'Downloads repeatedly stopped while GucciPlexa was in the background. Check GucciPlexa\'s battery or background usage settings.',
 			'downloads.backgroundWarning.openSettings' => 'Open settings',
 			'downloads.backgroundWarning.stillNotWorking' => 'Device-specific help',
 			'downloads.backgroundWarning.stillNotWorkingDescription' => 'See steps for your device, or send a log from Settings › View Logs if the issue continues.',
@@ -10060,19 +10232,19 @@ extension on Translations {
 			'companionRemote.session.stopServer' => 'Stop Server',
 			'companionRemote.session.minimize' => 'Minimize',
 			'companionRemote.session.manualAddressHint' => 'Manual connection address:',
-			'companionRemote.pairing.discoveryDescription' => 'Plezy devices with the same Plex account appear here',
+			'companionRemote.pairing.discoveryDescription' => 'GucciPlexa devices with the same Plex account appear here',
 			'companionRemote.pairing.hostAddressHint' => '192.168.1.100:48632',
 			'companionRemote.pairing.connecting' => 'Connecting...',
 			'companionRemote.pairing.searchingForDevices' => 'Looking for devices...',
 			'companionRemote.pairing.noDevicesFound' => 'No devices found on your network',
-			'companionRemote.pairing.noDevicesHint' => 'Open Plezy on desktop and use the same Wi-Fi',
+			'companionRemote.pairing.noDevicesHint' => 'Open GucciPlexa on desktop and use the same Wi-Fi',
 			'companionRemote.pairing.availableDevices' => 'Available Devices',
 			'companionRemote.pairing.manualConnection' => 'Manual Connection',
 			'companionRemote.pairing.cryptoInitFailed' => 'Couldn\'t start secure connection. Sign in to Plex first.',
 			'companionRemote.pairing.validationHostRequired' => 'Please enter host address',
 			'companionRemote.pairing.validationHostFormat' => 'Format must be IP:port (e.g., 192.168.1.100:48632)',
 			'companionRemote.pairing.connectionTimedOut' => 'Connection timed out. Use the same network on both devices.',
-			'companionRemote.pairing.sessionNotFound' => 'Device not found. Make sure Plezy is running on the host.',
+			'companionRemote.pairing.sessionNotFound' => 'Device not found. Make sure GucciPlexa is running on the host.',
 			'companionRemote.pairing.authFailed' => 'Authentication failed. Both devices need the same Plex account.',
 			'companionRemote.pairing.failedToConnect' => ({required Object error}) => 'Failed to connect: ${error}',
 			'companionRemote.remote.disconnectConfirm' => 'Do you want to disconnect from the remote session?',
@@ -10138,6 +10310,8 @@ extension on Translations {
 			'performanceOverlay.color' => 'Color',
 			'performanceOverlay.performance' => 'Performance',
 			'performanceOverlay.buffer' => 'Buffer',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.app' => 'App',
 			'performanceOverlay.decoder' => 'Decoder',
 			'performanceOverlay.rawDecoder' => 'Raw Decoder',
@@ -10176,8 +10350,6 @@ extension on Translations {
 			'performanceOverlay.cacheLimit' => 'Cache Limit',
 			'performanceOverlay.speed' => 'Speed',
 			'performanceOverlay.player' => 'Player',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.playMethod' => 'Play Method',
 			'performanceOverlay.memory' => 'Memory',
 			'performanceOverlay.uiFps' => 'UI FPS',
@@ -10301,11 +10473,11 @@ extension on Translations {
 			'trakt.connected' => 'Connected',
 			'trakt.connectedAs' => ({required Object username}) => 'Connected as @${username}',
 			'trakt.disconnectConfirm' => 'Disconnect Trakt account?',
-			'trakt.disconnectConfirmBody' => 'Plezy will stop sending events to Trakt. You can reconnect any time.',
+			'trakt.disconnectConfirmBody' => 'GucciPlexa will stop sending events to Trakt. You can reconnect any time.',
 			'trakt.scrobble' => 'Real-time scrobbling',
 			'trakt.scrobbleDescription' => 'Send play, pause, and stop events to Trakt during playback.',
 			'trakt.watchedSync' => 'Sync watched status',
-			'trakt.watchedSyncDescription' => 'When you mark items as watched in Plezy, they are also marked as watched on Trakt.',
+			'trakt.watchedSyncDescription' => 'When you mark items as watched in GucciPlexa, they are also marked as watched on Trakt.',
 			'seerr.title' => 'Seerr',
 			'seerr.connectTitle' => 'Connect Seerr',
 			'seerr.serverUrl' => 'Server URL',
@@ -10315,10 +10487,10 @@ extension on Translations {
 			'seerr.signInWithEmby' => 'Sign in with Emby',
 			'seerr.signInWithLocal' => 'Use a local account',
 			'seerr.email' => 'Email',
-			'seerr.noSignInMethods' => 'This Seerr instance offers no sign-in method Plezy supports.',
+			'seerr.noSignInMethods' => 'This Seerr instance offers no sign-in method GucciPlexa supports.',
 			'seerr.instance' => 'Instance',
 			'seerr.disconnectConfirm' => 'Disconnect Seerr?',
-			'seerr.disconnectConfirmBody' => 'Plezy will forget this Seerr instance. Reconnect any time.',
+			'seerr.disconnectConfirmBody' => 'GucciPlexa will forget this Seerr instance. Reconnect any time.',
 			'seerr.request' => 'Request',
 			'seerr.request4k' => 'Request in 4K',
 			'seerr.seasons' => 'Seasons',
@@ -10343,7 +10515,7 @@ extension on Translations {
 			'seerr.statusBlocklisted' => 'Blocklisted',
 			'seerr.couldNotReach' => ({required Object url, required Object error}) => 'Could not reach ${url}: ${error}',
 			'seerr.noInstanceAtUrl' => ({required Object url, required Object status}) => 'No Seerr instance at ${url} (HTTP ${status})',
-			'seerr.behindAuthProxy' => 'An authenticating reverse proxy (SSO or HTTP auth) answered instead of Seerr. Plezy cannot sign in through it: let Seerr\'s /api/v1 path bypass the proxy for this app, or use an address that reaches Seerr directly.',
+			'seerr.behindAuthProxy' => 'An authenticating reverse proxy (SSO or HTTP auth) answered instead of Seerr. GucciPlexa cannot sign in through it: let Seerr\'s /api/v1 path bypass the proxy for this app, or use an address that reaches Seerr directly.',
 			'seerr.invalidUrl' => 'Enter a server address like https://seerr.example.com',
 			'seerr.quickConnectUnsupported' => 'This Seerr instance does not support Quick Connect. It needs Seerr 3.4 or newer.',
 			'seerr.notInitialized' => 'This Seerr instance has not completed first-run setup',
@@ -10364,7 +10536,7 @@ extension on Translations {
 			'services.scrobble' => 'Track progress automatically',
 			'services.scrobbleDescription' => 'Update your list when you finish an episode or movie.',
 			'services.disconnectConfirm' => ({required Object service}) => 'Disconnect ${service}?',
-			'services.disconnectConfirmBody' => ({required Object service}) => 'Plezy will stop updating ${service}. Reconnect any time.',
+			'services.disconnectConfirmBody' => ({required Object service}) => 'GucciPlexa will stop updating ${service}. Reconnect any time.',
 			'services.connectFailed' => ({required Object service}) => 'Couldn\'t connect to ${service}. Try again.',
 			'services.names.mal' => 'MyAnimeList',
 			'services.names.anilist' => 'AniList',
@@ -10373,7 +10545,7 @@ extension on Translations {
 			'services.names.mdblist' => 'MDBList',
 			'services.simklReconnect.title' => 'Reconnect Simkl',
 			'services.simklReconnect.subtitle' => 'Simkl is retiring the sign-in method this connection uses. Reconnecting opens simkl.com to approve Plezy — Plezy never sees your password. Your watch history stays on Simkl.',
-			'services.deviceCode.title' => ({required Object service}) => 'Activate Plezy on ${service}',
+			'services.deviceCode.title' => ({required Object service}) => 'Activate GucciPlexa on ${service}',
 			'services.deviceCode.instructions' => 'Scan the QR code, or visit the address below and enter this code:',
 			'services.deviceCode.openToActivate' => ({required Object service}) => 'Open ${service} to activate',
 			'services.deviceCode.copyCode' => 'Copy activation code',
@@ -10443,7 +10615,7 @@ extension on Translations {
 			'addServer.redirectDifferentHost' => ({required Object product}) => 'The server redirected to a different host. Enter the final ${product} URL directly.',
 			'addServer.redirectInsecure' => 'The server redirected from HTTPS to an insecure URL',
 			'addServer.redirectUnsupportedEnterFinal' => ({required Object product}) => 'The server redirected to an unsupported URL. Enter the final ${product} URL directly.',
-			'deepLinks.invalid' => 'This Plezy link isn\'t valid.',
+			'deepLinks.invalid' => 'This GucciPlexa link isn\'t valid.',
 			'deepLinks.profileNotFound' => ({required Object profile}) => 'No profile matches "${profile}".',
 			'deepLinks.serverUnavailable' => 'Couldn\'t reach the server for this link.',
 			'deepLinks.notFound' => 'Couldn\'t find this title in your libraries.',

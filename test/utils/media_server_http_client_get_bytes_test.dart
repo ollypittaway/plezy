@@ -52,6 +52,40 @@ void main() {
     expect(await fetch(contentLength: 0, parts: const []), isEmpty);
   });
 
+  group('playback speed sample', () {
+    test('requests a limited range and measures a partial response', () async {
+      late http.BaseRequest sent;
+      final client = MediaServerHttpClient(
+        baseUrl: 'https://example.test/',
+        client: MockClient.streaming((request, _) async {
+          sent = request;
+          final chunk = Future.delayed(const Duration(milliseconds: 10), () => List.filled(32768, 0));
+          return http.StreamedResponse(
+            Stream.fromFuture(chunk),
+            206,
+            headers: {'content-range': 'bytes 0-32767/32768'},
+          );
+        }),
+      );
+      addTearDown(client.close);
+      final speed = await client.sampleDownloadMbps('/video', AbortController());
+      expect(sent.headers['Range'], 'bytes=0-4194303');
+      expect(sent.headers['Accept-Encoding'], 'identity');
+      expect(sent.followRedirects, isFalse);
+      expect(speed, greaterThan(0));
+    });
+
+    test('cancels a server response that would send the whole file', () async {
+      var cancelled = false;
+      final body = StreamController<List<int>>(onCancel: () => cancelled = true);
+      addTearDown(body.close);
+      final client = clientFor(() => http.StreamedResponse(body.stream, 200, contentLength: 1 << 30));
+      addTearDown(client.close);
+      expect(await client.sampleDownloadMbps('/video', AbortController()), isNull);
+      expect(cancelled, isTrue);
+    });
+  });
+
   // A BIF scrub preview is tens of MB; checking its size only after the whole
   // body was buffered ran 32-bit Android TV boxes out of memory.
   group('maxBytes', () {

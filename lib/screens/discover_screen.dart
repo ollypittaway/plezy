@@ -9,6 +9,7 @@ import '../widgets/server_activities_button.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:provider/provider.dart';
 import '../focus/covered_route_focus_boundary.dart';
+import '../focus/dpad_navigator.dart';
 import '../focus/focusable_action_bar.dart';
 import '../focus/hub_vertical_navigation.dart';
 import '../focus/locked_hub_controller.dart';
@@ -16,11 +17,13 @@ import '../focus/input_mode_tracker.dart';
 import '../focus/key_event_utils.dart';
 
 import '../media/media_item.dart';
+import '../media/media_item_merge.dart';
+import '../media/media_library.dart';
+import '../widgets/playback_copy_builder.dart';
 import '../media/media_item_types.dart';
 import '../media/media_server_client.dart';
 import '../media/media_hub.dart';
 import '../utils/media_image_helper.dart';
-import '../utils/content_utils.dart';
 import '../widgets/cycling_media_backdrop.dart';
 import '../widgets/hero_carousel_backdrop.dart';
 import '../widgets/optimized_media_image.dart' show ClearLogoImage, blurArtwork;
@@ -51,8 +54,8 @@ import '../mixins/tab_visibility_aware.dart';
 import '../i18n/strings.g.dart';
 import '../utils/app_logger.dart';
 import '../utils/dialogs.dart';
-import '../utils/formatters.dart';
-import '../utils/hub_icons.dart';
+import '../widgets/featured_metadata.dart';
+import '../widgets/desktop_navigation_bar.dart';
 import '../utils/media_navigation_helper.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/snackbar_helper.dart';
@@ -70,6 +73,23 @@ import '../providers/companion_remote_provider.dart';
 import '../widgets/companion_remote/remote_session_dialog.dart';
 import 'companion_remote/mobile_remote_screen.dart';
 
+/// Keep the hero flush with the top edge and leave flings and the bottom edge
+/// to the platform's normal scroll physics.
+class _HomeScrollPhysics extends ScrollPhysics {
+  const _HomeScrollPhysics({super.parent});
+
+  @override
+  _HomeScrollPhysics applyTo(ScrollPhysics? ancestor) => _HomeScrollPhysics(parent: buildParent(ancestor));
+
+  @override
+  double applyBoundaryConditions(ScrollMetrics position, double value) {
+    if (value < position.minScrollExtent && value < position.pixels) {
+      return value - math.min(position.pixels, position.minScrollExtent);
+    }
+    return super.applyBoundaryConditions(position, value);
+  }
+}
+
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({super.key});
 
@@ -79,7 +99,7 @@ class DiscoverScreen extends StatefulWidget {
 
 class _DiscoverScreenState extends State<DiscoverScreen>
     with Refreshable, ManualRefreshable, FullRefreshable, TabVisibilityAware, FocusableTab, WidgetsBindingObserver {
-  static const Duration _heroAutoScrollDuration = Duration(seconds: 8);
+  static const Duration _heroAutoScrollDuration = Duration(seconds: 10);
   static const Duration _indicatorUpdateInterval = Duration(milliseconds: 200);
 
   /// Data + refresh policy live in [DiscoverProvider]; this state keeps only
@@ -96,6 +116,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   String? get _errorMessage => _discover.errorMessage == null ? null : t.errors.unableToLoad(context: t.discover.title);
 
   bool _switchingProfile = false;
+  var _heroPlaybackCopies = PlaybackCopyCache();
+  final _heroDetails = <(MediaServerClient, String), Future<MediaItem?>>{};
   final PageController _heroController = PageController();
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<int> _heroIndex = ValueNotifier<int>(0);
@@ -429,6 +451,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
     if (renderChanged) {
       setState(() {
+        if (isNewLoad) {
+          _heroDetails.clear();
+          _heroPlaybackCopies = PlaybackCopyCache();
+        }
         if (isNewLoad || heroOutOfBounds) _heroIndex.value = 0;
         _updateHubKeys();
       });
@@ -482,6 +508,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   /// Handle key events for the hero section.
   KeyEventResult _handleHeroKeyEvent(FocusNode node, KeyEvent event) {
+    // Let the focused Play or View details button activate itself.
+    if (!node.hasPrimaryFocus && event.logicalKey.isSelectKey) return KeyEventResult.ignored;
     final backResult = handleBackKeyAction(event, _navigateToSidebar);
     if (backResult != KeyEventResult.ignored) return backResult;
 
@@ -565,12 +593,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
       final nextPage = (_heroIndex.value + 1) % _onDeck.length;
       _heroController.animateToPage(nextPage, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
-      // Wait for page transition to complete before resetting progress
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted && !_isAutoScrollPaused) {
-          _startIndicatorProgress();
-        }
-      });
+      // onPageChanged restarts both the slide timer and its progress indicator.
     });
   }
 
@@ -619,7 +642,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   @override
   void onTabHidden() {
-    _isTabVisible = false;
+    if (_isTabVisible && mounted) setState(() => _isTabVisible = false);
     _pendingTvBrowseRailFocus = false;
     _autoScrollTimer?.cancel();
     _stopIndicatorProgress();
@@ -627,7 +650,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   @override
   void onTabShown() {
-    _isTabVisible = true;
+    if (!_isTabVisible && mounted) setState(() => _isTabVisible = true);
     _discover.refreshIfStale();
     if (!_isAutoScrollPaused) {
       _startAutoScroll();
@@ -721,12 +744,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     // profile was still binding) a real refresh is still owed.
     if (_discover.isLoadInFlight) return;
     fullRefresh();
-  }
-
-  /// Whether the loaded hubs span more than one connected server.
-  bool _hubsSpanMultipleServers() {
-    final serverIds = _hubs.where((hub) => hub.serverId != null).map((hub) => hub.serverId).toSet();
-    return serverIds.length > 1;
   }
 
   Future<void> _handleLogout() async {
@@ -851,130 +868,140 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   Widget _buildOverlaidAppBar() {
     final colorScheme = Theme.of(context).colorScheme;
     final foregroundColor = colorScheme.onSurface;
-    return ToolbarScrim(
-      child: Row(
-        children: [
-          if (!PlatformDetector.isTV())
-            Text(
-              t.discover.title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(color: foregroundColor, fontWeight: .bold),
-            ),
-          const Spacer(),
-          // TV only: a fullscreen leanback app hides the system clock, while a
-          // phone status bar and a desktop menu bar already show one.
-          if (PlatformDetector.isTV()) ...[
-            SystemClock(
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: foregroundColor, fontWeight: .w500),
-            ),
-            const SizedBox(width: 12),
-          ],
-          Consumer2<WatchTogetherProvider, CompanionRemoteProvider>(
-            builder: (context, watchTogether, companionRemote, _) {
-              final isDesktop = PlatformDetector.shouldActAsRemoteHost(context);
-              void openWatchTogether() =>
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const WatchTogetherScreen()));
-              void openCompanionRemote() {
-                if (isDesktop) {
-                  RemoteSessionDialog.show(context);
-                } else {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const MobileRemoteScreen()));
-                }
-              }
+    final actions = ExcludeFocusTraversal(
+      child: Consumer2<WatchTogetherProvider, CompanionRemoteProvider>(
+        builder: (context, watchTogether, companionRemote, _) {
+          final isDesktop = PlatformDetector.shouldActAsRemoteHost(context);
+          void openWatchTogether() =>
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const WatchTogetherScreen()));
+          void openCompanionRemote() {
+            if (isDesktop) {
+              RemoteSessionDialog.show(context);
+            } else {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const MobileRemoteScreen()));
+            }
+          }
 
-              return FocusableActionBar(
-                key: _actionBarKey,
-                onNavigateLeft: _navigateToSidebar,
-                onNavigateDown: _focusContentFromAppBar,
-                actions: [
-                  FocusableAction(icon: Symbols.refresh_rounded, iconColor: foregroundColor, onPressed: manualRefresh),
-                  // Watch Together
-                  FocusableAction(
-                    onPressed: openWatchTogether,
-                    child: Stack(
-                      children: [
-                        IconButton(
-                          icon: AppIcon(
-                            Symbols.group_rounded,
-                            fill: watchTogether.isInSession ? 1 : 0,
-                            color: watchTogether.isInSession ? colorScheme.primary : foregroundColor,
-                          ),
-                          onPressed: openWatchTogether,
-                          tooltip: t.watchTogether.title,
+          return DecoratedBox(
+            decoration: ShapeDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.84),
+              shape: StadiumBorder(side: BorderSide(color: colorScheme.outline)),
+            ),
+            child: FocusableActionBar(
+              key: _actionBarKey,
+              onNavigateLeft: _navigateToSidebar,
+              onNavigateDown: _focusContentFromAppBar,
+              actions: [
+                FocusableAction(icon: Symbols.refresh_rounded, iconColor: foregroundColor, onPressed: manualRefresh),
+                // Watch Together
+                FocusableAction(
+                  onPressed: openWatchTogether,
+                  child: Stack(
+                    children: [
+                      IconButton(
+                        icon: AppIcon(
+                          Symbols.group_rounded,
+                          weight: 400,
+                          fill: watchTogether.isInSession ? 1 : 0,
+                          color: watchTogether.isInSession ? colorScheme.primary : foregroundColor,
                         ),
-                        // Badges sit over the button they label, so they must
-                        // not swallow its hover and clicks (#2846).
-                        if (watchTogether.isInSession && watchTogether.participantCount > 1)
-                          Positioned(
-                            top: 6,
-                            right: 6,
-                            child: IgnorePointer(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary,
-                                  borderRadius: const BorderRadius.all(Radius.circular(8)),
-                                ),
-                                child: Text(
-                                  '${watchTogether.participantCount}',
-                                  style: TextStyle(color: colorScheme.onPrimary, fontSize: 10, fontWeight: .bold),
-                                ),
+                        onPressed: openWatchTogether,
+                        tooltip: t.watchTogether.title,
+                      ),
+                      // Badges sit over the button they label, so they must
+                      // not swallow its hover and clicks (#2846).
+                      if (watchTogether.isInSession && watchTogether.participantCount > 1)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: IgnorePointer(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary,
+                                borderRadius: const BorderRadius.all(Radius.circular(8)),
+                              ),
+                              child: Text(
+                                '${watchTogether.participantCount}',
+                                style: TextStyle(color: colorScheme.onPrimary, fontSize: 10, fontWeight: .bold),
                               ),
                             ),
                           ),
-                      ],
-                    ),
-                  ),
-                  // Companion Remote
-                  FocusableAction(
-                    onPressed: openCompanionRemote,
-                    child: Stack(
-                      children: [
-                        IconButton(
-                          icon: AppIcon(
-                            Symbols.phone_android_rounded,
-                            fill: companionRemote.isConnected ? 1 : 0,
-                            color: companionRemote.isConnected ? colorScheme.primary : foregroundColor,
-                          ),
-                          onPressed: openCompanionRemote,
-                          tooltip: t.companionRemote.title,
                         ),
-                        if (companionRemote.isConnected)
-                          Positioned(
-                            top: 6,
-                            right: 6,
-                            child: IgnorePointer(
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: Colors.green,
-                                  shape: BoxShape.circle,
-                                  border: Border.fromBorderSide(BorderSide(color: foregroundColor, width: 1)),
-                                ),
+                    ],
+                  ),
+                ),
+                // Companion Remote
+                FocusableAction(
+                  onPressed: openCompanionRemote,
+                  child: Stack(
+                    children: [
+                      IconButton(
+                        icon: AppIcon(
+                          Symbols.phone_android_rounded,
+                          weight: 400,
+                          fill: companionRemote.isConnected ? 1 : 0,
+                          color: companionRemote.isConnected ? colorScheme.primary : foregroundColor,
+                        ),
+                        onPressed: openCompanionRemote,
+                        tooltip: t.companionRemote.title,
+                      ),
+                      if (companionRemote.isConnected)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: IgnorePointer(
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                shape: BoxShape.circle,
+                                border: Border.fromBorderSide(BorderSide(color: foregroundColor, width: 1)),
                               ),
                             ),
                           ),
-                      ],
-                    ),
+                        ),
+                    ],
                   ),
-                  // Server Tasks — Plex-only (`/activities` API has no
-                  // Jellyfin equivalent), hide the button entirely on
-                  // Jellyfin-only profiles so the chrome doesn't show
-                  // a permanently empty popover.
-                  if (PlatformDetector.isDesktop(context) &&
-                      context.select<MultiServerProvider, bool>((p) => p.hasOnlinePlexServers))
-                    FocusableAction(
-                      onPressed: () => _serverActivitiesButtonKey.currentState?.togglePanel(),
-                      child: ServerActivitiesButton(key: _serverActivitiesButtonKey),
-                    ),
-                  // User menu — profiles + sign out
-                  _buildUserMenuAction(context),
-                ],
-              );
-            },
-          ),
-        ],
+                ),
+                // Server Tasks — Plex-only (`/activities` API has no
+                // Jellyfin equivalent), hide the button entirely on
+                // Jellyfin-only profiles so the chrome doesn't show
+                // a permanently empty popover.
+                if (PlatformDetector.isDesktop(context) &&
+                    context.select<MultiServerProvider, bool>((p) => p.hasOnlinePlexServers))
+                  FocusableAction(
+                    onPressed: () => _serverActivitiesButtonKey.currentState?.togglePanel(),
+                    child: ServerActivitiesButton(key: _serverActivitiesButtonKey),
+                  ),
+                // User menu — profiles + sign out
+                _buildUserMenuAction(context),
+              ],
+            ),
+          );
+        },
       ),
+    );
+    return Builder(
+      builder: (context) {
+        final desktopHeader = context.watch<DesktopHomeHeaderBuilder?>();
+        if (desktopHeader != null) return desktopHeader(actions);
+        return ToolbarScrim(
+          child: Row(
+            children: [
+              const Spacer(),
+              if (PlatformDetector.isTV()) ...[
+                SystemClock(
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(color: foregroundColor, fontWeight: .w500),
+                ),
+                const SizedBox(width: 12),
+              ],
+              actions,
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -988,7 +1015,16 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         SettingsService.libraryDensity,
         SettingsService.episodePosterMode,
       ],
-      builder: (context) => _buildContent(context),
+      builder: (context) {
+        if (PlatformDetector.isTV()) return _buildTvContent(context);
+        return NotificationListener<OverscrollIndicatorNotification>(
+          onNotification: (event) {
+            if (event.depth == 0 && event.leading) event.disallowIndicator();
+            return false;
+          },
+          child: _buildContent(context),
+        );
+      },
     );
   }
 
@@ -996,12 +1032,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final svc = SettingsService.instance;
     final showHeroSection = svc.read(SettingsService.showHeroSection);
 
-    if (PlatformDetector.isTV()) {
-      return _buildTvContent(context);
-    }
-
     final showServerNameOnHubs = svc.read(SettingsService.showServerNameOnHubs);
-    final hubsSpanMultipleServers = _hubsSpanMultipleServers();
+    final hubsSpanMultipleServers = _discover.hubsSpanMultipleServers;
 
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
     final theme = Theme.of(context);
@@ -1012,6 +1044,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         children: [
           CustomScrollView(
             controller: _scrollController,
+            physics: const _HomeScrollPhysics(),
             slivers: [
               // Hero Section (Continue Watching) - at top of screen
               Builder(
@@ -1033,8 +1066,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     child: HubSection(
                       key: _continueWatchingHubKey,
                       hub: continueWatchingHub,
+                      showLibraryInHeading: false,
                       focusMemory: _hubFocusMemory,
-                      icon: hubIconFor(continueWatchingHub),
                       onRefresh: _discover.updateItem,
                       onRemoveFromContinueWatching: _discover.refreshContinueWatching,
                       isInContinueWatching: true,
@@ -1051,8 +1084,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     child: HubSection(
                       key: i < _orderedHubKeys.length ? _orderedHubKeys[i] : null,
                       hub: _hubs[i],
+                      showLibraryInHeading: false,
                       focusMemory: _hubFocusMemory,
-                      icon: hubIconFor(_hubs[i]),
                       showServerName: showServerNameOnHubs || hubsSpanMultipleServers,
                       onRefresh: _discover.updateItem,
                       // Hub index is i + 1 if continue watching exists, otherwise i
@@ -1113,10 +1146,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               ],
             ],
           ),
-          // Overlaid app bar — excluded from default focus traversal so that
-          // initial/tab-switch focus lands on content (hero/hubs), not the toolbar.
-          // Toolbar buttons are still reachable via explicit UP from hero section.
-          Positioned(top: 0, left: 0, right: 0, child: ExcludeFocusTraversal(child: _buildOverlaidAppBar())),
+          // Home actions remain reachable with UP from the hero. The desktop
+          // header also exposes its library links to ordinary keyboard traversal.
+          Positioned(top: 0, left: 0, right: 0, child: _buildOverlaidAppBar()),
           if (_switchingProfile) const ProfileSwitchingOverlay(),
         ],
       ),
@@ -1136,10 +1168,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     return _tvBrowseRailWidget = TvBrowseRail(
       key: _tvBrowseRailKey,
       hubs: browseHubs,
+      showLibraryInHeading: false,
       initialHubId: 'continue_watching',
       focusMemory: _hubFocusMemory,
       showServerName: showServerName,
-      iconForHub: (hub, _) => hubIconFor(hub),
       onFocusedItemChanged: _setSpotlightItem,
       onRefresh: _discover.updateItem,
       onRemoveFromContinueWatching: _discover.refreshContinueWatching,
@@ -1174,7 +1206,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final svc = SettingsService.instance;
     final hideSpoilers = svc.read(SettingsService.hideSpoilers);
     final showServerNameOnHubs = svc.read(SettingsService.showServerNameOnHubs);
-    final hubsSpanMultipleServers = _hubsSpanMultipleServers();
+    final hubsSpanMultipleServers = _discover.hubsSpanMultipleServers;
     final browseHubs = _tvBrowseHubs;
 
     return TvSpotlightScaffold(
@@ -1231,7 +1263,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final heroHeight = isTv
         ? viewportHeight * 0.82
         : useSideNav
-        ? viewportHeight * 0.75
+        ? math.min(viewportHeight, (viewportHeight * 0.59).clamp(380.0, 720.0))
         : isLandscape
         ? math.min(500 + statusBarHeight, viewportHeight)
         : math.min(500 + statusBarHeight, viewportHeight * 0.65);
@@ -1265,14 +1297,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               if (!isTv)
                 Positioned(
                   bottom: 16,
-                  left: -26,
-                  right: 0,
-                  // Centered on the same safe width as the hero item above it.
+                  left: useSideNav ? 24 : 0,
+                  right: useSideNav ? 32 : 0,
                   child: SafeArea(
                     top: false,
                     bottom: false,
                     child: Row(
-                      mainAxisAlignment: .center,
+                      mainAxisAlignment: useSideNav ? .end : .center,
                       children: [
                         // Pause/Play button
                         ClickableCursor(
@@ -1300,54 +1331,79 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                           valueListenable: _heroIndex,
                           builder: (context, heroIndex, _) {
                             final range = _getVisibleDotRange();
-                            return Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: List.generate(range.end - range.start + 1, (i) {
-                                final index = range.start + i;
-                                final isActive = heroIndex == index;
-                                final dotSize = _getDotSize(index, range.start, range.end);
+                            final indicators = List.generate(range.end - range.start + 1, (i) {
+                              final index = range.start + i;
+                              final isActive = heroIndex == index;
+                              final dotSize = _getDotSize(index, range.start, range.end);
 
-                                return isActive
-                                    ? ValueListenableBuilder<double>(
-                                        valueListenable: _indicatorProgress,
-                                        builder: (context, progress, child) {
-                                          final maxWidth = dotSize * 3;
-                                          final fillWidth = dotSize + ((maxWidth - dotSize) * progress);
-                                          final onSurface = Theme.of(context).colorScheme.onSurface;
-                                          return Container(
-                                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                                            width: maxWidth,
-                                            height: dotSize,
-                                            decoration: BoxDecoration(
-                                              color: onSurface.withValues(alpha: 0.4),
-                                              borderRadius: BorderRadius.circular(dotSize / 2),
-                                            ),
-                                            child: Align(
-                                              alignment: .centerLeft,
-                                              child: Container(
-                                                width: fillWidth,
-                                                height: dotSize,
-                                                decoration: BoxDecoration(
-                                                  color: onSurface,
-                                                  borderRadius: BorderRadius.circular(dotSize / 2),
-                                                ),
+                              return isActive
+                                  ? ValueListenableBuilder<double>(
+                                      valueListenable: _indicatorProgress,
+                                      builder: (context, progress, child) {
+                                        final maxWidth = dotSize * 4;
+                                        final fillWidth = dotSize + ((maxWidth - dotSize) * progress);
+                                        final onSurface = Theme.of(context).colorScheme.onSurface;
+                                        return Container(
+                                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                                          width: maxWidth,
+                                          height: 3,
+                                          decoration: BoxDecoration(
+                                            color: onSurface.withValues(alpha: 0.4),
+                                            borderRadius: BorderRadius.circular(dotSize / 2),
+                                          ),
+                                          child: Align(
+                                            alignment: .centerLeft,
+                                            child: Container(
+                                              width: fillWidth,
+                                              height: 3,
+                                              decoration: BoxDecoration(
+                                                color: Theme.of(context).colorScheme.primary,
+                                                borderRadius: BorderRadius.circular(dotSize / 2),
                                               ),
                                             ),
-                                          );
-                                        },
-                                      )
-                                    : AnimatedContainer(
-                                        duration: tokens(context).slow,
-                                        curve: Curves.easeInOut,
-                                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                                        width: dotSize,
-                                        height: dotSize,
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
-                                          borderRadius: BorderRadius.circular(dotSize / 2),
-                                        ),
-                                      );
-                              }),
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  : AnimatedContainer(
+                                      duration: tokens(context).slow,
+                                      curve: Curves.easeInOut,
+                                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                                      width: dotSize * 2,
+                                      height: 3,
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                                        borderRadius: BorderRadius.circular(dotSize / 2),
+                                      ),
+                                    );
+                            });
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (useSideNav && _onDeck.length > 1)
+                                  IconButton(
+                                    tooltip: MaterialLocalizations.of(context).previousPageTooltip,
+                                    onPressed: heroIndex > 0
+                                        ? () => _heroController.previousPage(
+                                            duration: tokens(context).slow,
+                                            curve: Curves.easeOut,
+                                          )
+                                        : null,
+                                    icon: const AppIcon(Symbols.chevron_left_rounded, size: 20),
+                                  ),
+                                ...indicators,
+                                if (useSideNav && _onDeck.length > 1)
+                                  IconButton(
+                                    tooltip: MaterialLocalizations.of(context).nextPageTooltip,
+                                    onPressed: heroIndex + 1 < _onDeck.length
+                                        ? () => _heroController.nextPage(
+                                            duration: tokens(context).slow,
+                                            curve: Curves.easeOut,
+                                          )
+                                        : null,
+                                    icon: const AppIcon(Symbols.chevron_right_rounded, size: 20),
+                                  ),
+                              ],
                             );
                           },
                         ),
@@ -1403,6 +1459,17 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               ),
             ),
           ),
+          if (ScreenBreakpoints.isWideTabletOrLarger(MediaQuery.sizeOf(context).width))
+            RasterizedGradient(
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.94),
+                  Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.68),
+                  Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0),
+                ],
+                stops: const [0, 0.28, 0.78],
+              ),
+            ),
           // Gradient Overlay - blends into scaffold background. Rasterised:
           // Impeller's GLES gradient shader over the artwork pushed raster
           // frames past 30ms while scrolling a full-size Linux window; the
@@ -1479,15 +1546,46 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         : 120.0;
     final heroTitleStyle = theme.textTheme.displaySmall?.copyWith(
       color: colorScheme.onSurface,
-      fontWeight: .bold,
-      fontSize: isTv ? 52 : null,
+      fontWeight: .w500,
+      fontSize: isTv || isLargeScreen ? 52 : 38,
+      height: 1.04,
+      letterSpacing: -1.4,
       shadows: [Shadow(color: colorScheme.surface.withValues(alpha: 0.8), blurRadius: 8)],
     );
 
-    final contentTypeLabel = heroItem.isMovie ? t.discover.movie : t.discover.tvShow;
+    final detailId = isEpisode ? heroItem.grandparentId ?? heroItem.id : heroItem.id;
+    final detailKey = (heroClient, detailId);
+    // PageView builds the visible slides lazily. Reuse a title's lookup on
+    // rotation and across episodes, until Discover reloads the library.
+    final details = heroClient == null || detailId.isEmpty
+        ? null
+        : _heroDetails.putIfAbsent((heroClient, detailId), () => heroClient.fetchItem(detailId));
 
     final hideSpoilers = SettingsService.instance.read(SettingsService.hideSpoilers);
     final shouldHideSpoiler = hideSpoilers && heroItem.shouldHideSpoiler;
+
+    final actions = FutureBuilder<MediaItem?>(
+      key: ValueKey(heroItem.globalKey),
+      future: heroItem.isMovie ? details : null,
+      builder: (context, snapshot) {
+        final detail = snapshot.data;
+        final target = detail == null
+            ? heroItem
+            : heroItem.copyWith(
+                year: heroItem.year ?? detail.year,
+                guid: heroItem.guid ?? detail.guid,
+                mediaVersions: detail.mediaVersions?.isNotEmpty == true ? detail.mediaVersions : heroItem.mediaVersions,
+              );
+        // Movie details can supply the year or ID needed to match another library.
+        final waitingForIdentity =
+            target.isMovie &&
+            target.mediaVersions?.isNotEmpty != true &&
+            target.year == null &&
+            target.guid == null &&
+            snapshot.connectionState == ConnectionState.waiting;
+        return _buildHeroActions(target, showDetails: alignLeft, lookupReady: !waitingForIdentity);
+      },
+    );
 
     final heroLabel = isEpisode ? "${heroItem.grandparentTitle}, ${heroItem.title}" : heroItem.title;
 
@@ -1517,7 +1615,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     : compact
                     ? 44
                     : isLargeScreen
-                    ? 80
+                    ? 32
                     : 50,
                 left: 0,
                 right: isTv
@@ -1542,9 +1640,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     child: Align(
                       alignment: alignLeft ? Alignment.centerLeft : Alignment.center,
                       child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: isTv ? TvLayoutConstants.heroContentMaxWidth : double.infinity,
-                        ),
+                        constraints: BoxConstraints(maxWidth: isTv ? TvLayoutConstants.heroContentMaxWidth : 540),
                         child: Column(
                           crossAxisAlignment: alignLeft ? CrossAxisAlignment.start : CrossAxisAlignment.center,
                           mainAxisSize: .min,
@@ -1577,26 +1673,14 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                               ),
                             ),
 
-                            // Metadata as dot-separated text with content type
-                            if (heroItem.year != null || heroItem.contentRating != null || heroItem.rating != null) ...[
-                              const SizedBox(height: 16),
-                              Text(
-                                [
-                                  contentTypeLabel,
-                                  if (heroItem.rating != null) '★ ${formatRating(heroItem.rating!)}',
-                                  if (heroItem.contentRating != null) formatContentRating(heroItem.contentRating!),
-                                  if (heroItem.year != null) heroItem.year.toString(),
-                                ].join(' • '),
-                                style: TextStyle(
-                                  color: colorScheme.onSurface,
-                                  fontSize: isTv ? 18 : 14,
-                                  fontWeight: .w600,
-                                ),
-                                textAlign: alignLeft ? TextAlign.left : TextAlign.center,
-                              ),
-                            ],
+                            FutureBuilder<MediaItem?>(
+                              key: ValueKey(detailKey),
+                              future: details,
+                              builder: (context, snapshot) =>
+                                  FeaturedMetadata(item: heroItem, details: snapshot.data, centered: !alignLeft),
+                            ),
 
-                            if (!alignLeft) ...[const SizedBox(height: 20), _buildSmartPlayButton(heroItem)],
+                            if (!alignLeft) ...[const SizedBox(height: 20), actions],
 
                             if (heroItem.summary != null && !shouldHideSpoiler) ...[
                               const SizedBox(height: 12),
@@ -1605,16 +1689,16 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                                 overflow: .ellipsis,
                                 textAlign: alignLeft ? TextAlign.left : TextAlign.center,
                                 text: TextSpan(
-                                  style: TextStyle(
-                                    color: colorScheme.onSurface.withValues(alpha: 0.7),
-                                    fontSize: isTv ? 18 : 14,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: colorScheme.onSurface.withValues(alpha: 0.9),
+                                    fontSize: isTv ? 18 : 15,
                                     height: isTv ? 1.45 : 1.4,
                                   ),
                                   children: [
                                     if (isEpisode && heroItem.parentIndex != null && heroItem.index != null)
                                       TextSpan(
                                         text: 'S${heroItem.parentIndex}, E${heroItem.index}: ',
-                                        style: TextStyle(fontWeight: .bold, color: colorScheme.onSurface),
+                                        style: TextStyle(fontWeight: .w500, color: colorScheme.onSurface),
                                       ),
                                     TextSpan(
                                       text: heroItem.summary?.isNotEmpty == true
@@ -1642,7 +1726,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                               ),
                             ],
 
-                            if (alignLeft) ...[SizedBox(height: isTv ? 28 : 20), _buildSmartPlayButton(heroItem)],
+                            if (alignLeft) ...[SizedBox(height: compact ? 12 : 20), actions],
                           ],
                         ),
                       ),
@@ -1657,7 +1741,99 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     );
   }
 
-  Widget _buildSmartPlayButton(MediaItem rawHeroItem) {
+  Widget _buildHeroActions(MediaItem item, {required bool showDetails, required bool lookupReady}) {
+    final isTv = PlatformDetector.isTV();
+    final colorScheme = Theme.of(context).colorScheme;
+    final style = OutlinedButton.styleFrom(
+      foregroundColor: colorScheme.onSurface,
+      backgroundColor: colorScheme.surface.withValues(alpha: 0.9),
+      padding: EdgeInsets.symmetric(horizontal: isTv ? 18 : 12),
+      minimumSize: Size.zero,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.standard,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      textStyle: TextStyle(fontSize: isTv ? 18 : 14),
+    );
+    return ValueListenableBuilder<int>(
+      valueListenable: _heroIndex,
+      builder: (context, index, _) {
+        final active =
+            _onDeck.elementAtOrNull(index)?.globalKey == item.globalKey &&
+            _isTabVisible &&
+            (ModalRoute.isCurrentOf(context) ?? true);
+        return PlaybackCopyBuilder(
+          key: ValueKey((item.globalKey, _heroPlaybackCopies)),
+          cache: _heroPlaybackCopies,
+          target: active && lookupReady && (item.isMovie || item.isEpisode) ? item : null,
+          initialCopies: _discover.continueWatchingCopiesOf(item),
+          builder: (selected, _, _, fourK) {
+            final versionItem = selected?.globalKey == item.globalKey ? selected! : item;
+            final versions = versionItem.mediaVersions ?? const [];
+            final preference = versions.length < 2
+                ? null
+                : readMediaVersionPreference(SettingsService.instance, versionItem)?.resolveIndex(versions);
+            final primary = primaryFourKPlayback(
+              versionItem,
+              preference ?? versions.indexWhere((v) => v.isPlayable),
+              fourK,
+              preferFourKLibrary: preference == null && isFourKLibraryTitle(versionItem.libraryTitle),
+            );
+            final extra = primary == null ? fourK : null;
+            final play = _buildSmartPlayButton(item, fourK: primary, compact: extra != null);
+            if (!showDetails && extra == null) return play;
+            return IntrinsicWidth(
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: play),
+                    if (extra != null) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: style,
+                          onPressed: () => _playHeroFourK(item, extra),
+                          child: Text(t.mediaMenu.playIn4k, textAlign: TextAlign.center),
+                        ),
+                      ),
+                    ],
+                    if (showDetails) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: style,
+                          onPressed: () => navigateToMediaItemDetails(context, item, onRefresh: _discover.updateItem),
+                          child: Text(t.mediaMenu.viewDetails, textAlign: TextAlign.center),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _playHeroFourK(MediaItem featured, FourKPlayback fourK) async {
+    final item = context.readFreshWatchState(featured);
+    final resumeFromFeatured = item.globalKey != fourK.item.globalKey && item.hasActiveProgress;
+    _autoScrollTimer?.cancel();
+    _stopIndicatorProgress();
+    try {
+      await navigateToFourKPlayback(
+        context,
+        fourK,
+        initialPosition: resumeFromFeatured ? Duration(milliseconds: item.viewOffsetMs!) : null,
+      );
+    } finally {
+      if (mounted && _isTabVisible && !_heroFocusPausedAutoScroll) _startAutoScroll();
+    }
+  }
+
+  Widget _buildSmartPlayButton(MediaItem rawHeroItem, {FourKPlayback? fourK, bool compact = false}) {
     return Builder(
       builder: (context) {
         // The on-deck snapshot refetches shortly after a watch event; the store
@@ -1675,27 +1851,34 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           builder: (context, _) {
             final showFocus = isTv && _heroFocusNode.hasFocus && InputModeTracker.isKeyboardMode(context);
             final colorScheme = Theme.of(context).colorScheme;
-            final backgroundColor = showFocus ? colorScheme.primary : Colors.white;
-            final foregroundColor = showFocus ? colorScheme.onPrimary : Colors.black;
+            final backgroundColor = colorScheme.primary;
+            final foregroundColor = colorScheme.onPrimary;
             return InkWell(
-              onTap: () {
-                appLogger.d('Playing: ${heroItem.title}');
-                navigateToVideoPlayer(context, metadata: heroItem);
-              },
-              borderRadius: BorderRadius.all(Radius.circular(isTv ? 32 : 24)),
+              onTap: fourK != null
+                  ? () => _playHeroFourK(heroItem, fourK)
+                  : () => navigateToVideoPlayer(context, metadata: heroItem),
+              borderRadius: BorderRadius.all(Radius.circular(12)),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 curve: Curves.easeOutCubic,
-                padding: .symmetric(horizontal: isTv ? 34 : 24, vertical: isTv ? 16 : 12),
+                padding: .symmetric(
+                  horizontal: compact
+                      ? 12
+                      : isTv
+                      ? 34
+                      : 24,
+                  vertical: isTv ? 16 : 12,
+                ),
                 decoration: BoxDecoration(
                   color: backgroundColor,
-                  borderRadius: BorderRadius.all(Radius.circular(isTv ? 32 : 24)),
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
                   boxShadow: showFocus
                       ? [BoxShadow(color: colorScheme.primary.withValues(alpha: 0.35), blurRadius: 28, spreadRadius: 4)]
                       : null,
                 ),
                 child: Row(
                   mainAxisSize: .min,
+                  mainAxisAlignment: .center,
                   children: [
                     AppIcon(Symbols.play_arrow_rounded, fill: 1, size: isTv ? 28 : 20, color: foregroundColor),
                     SizedBox(width: isTv ? 12 : 8),
@@ -1720,23 +1903,22 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         ),
                       ),
                       SizedBox(width: isTv ? 12 : 8),
-                      Text(
-                        t.discover.minutesLeft(minutes: minutesLeft),
+                    ],
+                    Flexible(
+                      child: Text(
+                        fourK != null
+                            ? t.mediaMenu.playIn4k
+                            : hasProgress
+                            ? t.discover.minutesLeft(minutes: minutesLeft)
+                            : t.common.play,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           color: foregroundColor,
                           fontSize: isTv ? 18 : 14,
-                          fontWeight: isTv ? FontWeight.w700 : FontWeight.w600,
+                          fontWeight: isTv ? FontWeight.w600 : FontWeight.w500,
                         ),
                       ),
-                    ] else
-                      Text(
-                        t.common.play,
-                        style: TextStyle(
-                          color: foregroundColor,
-                          fontSize: isTv ? 18 : 14,
-                          fontWeight: isTv ? FontWeight.w700 : FontWeight.w600,
-                        ),
-                      ),
+                    ),
                   ],
                 ),
               ),

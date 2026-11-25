@@ -10,6 +10,10 @@ plugins {
   id("dev.flutter.flutter-gradle-plugin")
 }
 
+if (file("google-services.json").isFile) {
+  apply(plugin = "com.google.gms.google-services")
+}
+
 apply(from = rootProject.file("gradle/native-artifacts.gradle.kts"))
 
 @Suppress("UNCHECKED_CAST")
@@ -297,13 +301,17 @@ android {
   // by FEATURE_AUTOMOTIVE and the manifest declares `uses-library android.car required=false`.
   useLibrary("android.car")
 
+  buildFeatures {
+    buildConfig = true
+  }
+
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
   }
 
   defaultConfig {
-    applicationId = "com.edde746.plezy"
+    applicationId = "com.gucciplexa.app"
     minSdk = 25 // Fire OS 6.x (API 25); the mpv-android AAR shares the same floor
     targetSdk = flutter.targetSdkVersion
     versionCode = flutter.versionCode
@@ -323,6 +331,7 @@ android {
     if (System.getenv("AMAZON") != null) {
       versionCode = (flutter.versionCode ?: 0) + 3000
       ndk {
+        abiFilters.clear()
         abiFilters += listOf("armeabi-v7a", "arm64-v8a")
       }
     }
@@ -402,6 +411,8 @@ android {
 
   packaging {
     jniLibs {
+      // APK installs extract the compressed playback libraries for the device's ABI.
+      useLegacyPackaging = true
       // pickFirst only suppresses the duplicate libc++ merge error; the
       // sourceSets rule below makes the runtime the mpv-android AAR carries
       // (the one libmpv was linked against) win for std::from_chars<float>,

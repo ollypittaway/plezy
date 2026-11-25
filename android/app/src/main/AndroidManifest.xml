@@ -7,6 +7,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:installLocation="auto">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
 
 
@@ -32,7 +33,7 @@
     <uses-feature android:name="android.hardware.type.automotive" android:required="false" />
 
     <application
-        android:label="Plezy"
+        android:label="GucciPlexa"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:banner="@drawable/tv_banner"
@@ -40,6 +41,8 @@
         android:largeHeap="true"
         android:networkSecurityConfig="@xml/network_security_config"
         android:usesCleartextTraffic="true">
+        <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_notification" />
         <!-- Driver-distraction state on Android Automotive OS. Optional: the platform library is
              absent on every other form factor, and CarRestrictionsMonitor falls back silently. -->
         <uses-library android:name="android.car" android:required="false" />
@@ -81,7 +84,7 @@
              recent task points at it. The meta-data repeats the activity's because FlutterActivity
              reads it from the component that launched it. -->
         <activity-alias
-            android:name=".MainActivity"
+            android:name="${applicationId}.MainActivity"
             android:exported="true"
             android:targetActivity=".PlezyActivity">
             <meta-data
@@ -99,7 +102,7 @@
         <!-- Alternate icons (AppIconChannel): disabled until chosen. Ids are permanent. -->
         <!-- BEGIN generated app icon aliases (scripts/codegen/generate_app_icons.py); do not edit -->
         <activity-alias
-            android:name=".appicon.midnight"
+            android:name="${applicationId}.appicon.midnight"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_midnight"
@@ -118,7 +121,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.ember"
+            android:name="${applicationId}.appicon.ember"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_ember"
@@ -137,7 +140,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.paper"
+            android:name="${applicationId}.appicon.paper"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_paper"
@@ -156,7 +159,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.oled"
+            android:name="${applicationId}.appicon.oled"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_oled"
@@ -175,7 +178,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.line"
+            android:name="${applicationId}.appicon.line"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_line"
@@ -194,7 +197,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.ocean"
+            android:name="${applicationId}.appicon.ocean"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_ocean"
@@ -213,7 +216,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.ultraviolet"
+            android:name="${applicationId}.appicon.ultraviolet"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_ultraviolet"
@@ -232,7 +235,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.matcha"
+            android:name="${applicationId}.appicon.matcha"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_matcha"
@@ -251,7 +254,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.sunset"
+            android:name="${applicationId}.appicon.sunset"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_sunset"
@@ -270,7 +273,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.gold"
+            android:name="${applicationId}.appicon.gold"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_gold"
@@ -289,7 +292,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.titanium"
+            android:name="${applicationId}.appicon.titanium"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_titanium"
@@ -308,7 +311,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.glass"
+            android:name="${applicationId}.appicon.glass"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_glass"
@@ -327,7 +330,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.crt"
+            android:name="${applicationId}.appicon.crt"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_crt"
@@ -346,7 +349,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.vhs"
+            android:name="${applicationId}.appicon.vhs"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_vhs"
@@ -365,7 +368,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.synthwave"
+            android:name="${applicationId}.appicon.synthwave"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_synthwave"
@@ -384,7 +387,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.pixel"
+            android:name="${applicationId}.appicon.pixel"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_pixel"
@@ -403,7 +406,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.neon"
+            android:name="${applicationId}.appicon.neon"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_neon"
@@ -422,7 +425,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.sticker"
+            android:name="${applicationId}.appicon.sticker"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_sticker"
@@ -441,7 +444,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.ticket"
+            android:name="${applicationId}.appicon.ticket"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_ticket"
@@ -460,7 +463,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.pop"
+            android:name="${applicationId}.appicon.pop"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_pop"
@@ -479,7 +482,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.strata"
+            android:name="${applicationId}.appicon.strata"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_strata"
@@ -498,7 +501,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.facet"
+            android:name="${applicationId}.appicon.facet"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_facet"
@@ -517,7 +520,7 @@
             </intent-filter>
         </activity-alias>
         <activity-alias
-            android:name=".appicon.tilde"
+            android:name="${applicationId}.appicon.tilde"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_tilde"
@@ -538,7 +541,7 @@
         <!-- END generated app icon aliases -->
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.edde746.plezy.fileprovider"
+            android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
@@ -549,7 +552,7 @@
              per-URI read grants issued to CATEGORY_HOME packages by WatchNextProvider. -->
         <provider
             android:name=".watchnext.SystemShelfArtworkProvider"
-            android:authorities="com.edde746.plezy.systemshelf.artwork"
+            android:authorities="${applicationId}.systemshelf.artwork"
             android:exported="false"
             android:grantUriPermissions="true" />
         <receiver

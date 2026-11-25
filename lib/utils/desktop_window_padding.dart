@@ -131,7 +131,16 @@ class DesktopTitleBarPadding extends StatelessWidget {
   final double? leftPadding;
   final double? rightPadding;
 
-  const DesktopTitleBarPadding({super.key, required this.child, this.leftPadding, this.rightPadding});
+  /// A shell header can be placed inside the Home artwork, above the rail.
+  final bool reserveWindowControls;
+
+  const DesktopTitleBarPadding({
+    super.key,
+    required this.child,
+    this.leftPadding,
+    this.rightPadding,
+    this.reserveWindowControls = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +148,7 @@ class DesktopTitleBarPadding extends StatelessWidget {
       return child;
     }
 
-    if (!_trafficLightPaddingApplies(context)) {
+    if (!reserveWindowControls && !_trafficLightPaddingApplies(context)) {
       final right = rightPadding ?? 0.0;
       if (right == 0.0) {
         return child;

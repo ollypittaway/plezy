@@ -52,7 +52,9 @@ def main() -> int:
         default=Path("pubspec.yaml"),
         help="path to pubspec.yaml (default: ./pubspec.yaml)",
     )
-    parser.add_argument(
+    output = parser.add_mutually_exclusive_group()
+    output.add_argument("--version-name", action="store_true", help="print only major.minor.patch")
+    output.add_argument(
         "--build-number",
         action="store_true",
         help="print only the numeric build metadata",
@@ -66,6 +68,8 @@ def main() -> int:
         print(f"Error: {args.pubspec}: {error}", file=sys.stderr)
         return 1
 
+    if args.version_name:
+        version = version.split("+", 1)[0]
     print(build if args.build_number else version)
     return 0
 

@@ -58,33 +58,32 @@ class MonoPalette {
   final Color textMuted;
 
   /// Primary, filled buttons, switches, sliders, progress, selection and the
-  /// focus ring. The built-ins set it to [text], which keeps them monochrome.
+  /// focus ring.
   final Color accent;
 
-  // Neutral greys tuned for crisp contrast.
   static const light = MonoPalette(
-    bg: Color(0xFFF7F7F8),
+    bg: Color(0xFFF1F8F7),
     surface: Color(0xFFFFFFFF),
-    outline: Color(0x19000000),
-    text: Color(0xFF111111),
-    textMuted: Color(0x99111111),
-    accent: Color(0xFF111111),
+    outline: Color(0x29144349),
+    text: Color(0xFF10282B),
+    textMuted: Color(0xFF4C6467),
+    accent: Color(0xFF006C62),
   );
   static const dark = MonoPalette(
-    bg: Color(0xFF0E0F12),
-    surface: Color(0xFF15171C),
-    outline: Color(0x1FFFFFFF),
-    text: Color(0xFFEDEDED),
-    textMuted: Color(0x99EDEDED),
-    accent: Color(0xFFEDEDED),
+    bg: Color(0xFF030B10),
+    surface: Color(0xFF071A26),
+    outline: Color(0x29D6ECE8),
+    text: Color(0xFFF0FDFA),
+    textMuted: Color(0xFFA1B6B9),
+    accent: Color(0xFF2DD4BF),
   );
   static const oled = MonoPalette(
     bg: Color(0xFF000000), // Pure black for OLED
-    surface: Color(0xFF0A0A0A),
-    outline: Color(0x1FFFFFFF),
-    text: Color(0xFFEDEDED),
-    textMuted: Color(0x99EDEDED),
-    accent: Color(0xFFEDEDED),
+    surface: Color(0xFF091316),
+    outline: Color(0x29D6ECE8),
+    text: Color(0xFFF0FDFA),
+    textMuted: Color(0xFFA1B6B9),
+    accent: Color(0xFF2DD4BF),
   );
 
   // Presets keep bg/surface low-chroma so artwork stays the loudest thing on
@@ -240,6 +239,7 @@ ThemeData monoThemeUncached(MonoPalette palette) => _buildMonoTheme(palette, pla
 ThemeData _buildMonoTheme(MonoPalette c, {required TargetPlatform platform}) {
   final brightness = c.brightness;
   final onAccent = c.onAccent;
+  final fontFallback = platform == TargetPlatform.linux ? const ['Go Noto Current', 'Go Noto Current Hangul'] : null;
   final clickableCursor = WidgetStateProperty.resolveWith<MouseCursor>(
     (states) => states.contains(WidgetState.disabled) ? MouseCursor.defer : SystemMouseCursors.click,
   );
@@ -256,17 +256,18 @@ ThemeData _buildMonoTheme(MonoPalette c, {required TargetPlatform platform}) {
     foregroundColor: WidgetStateProperty.resolveWith(
       (states) => states.contains(WidgetState.disabled) ? c.text.withValues(alpha: 0.38) : onAccent,
     ),
-    shape: const WidgetStatePropertyAll(StadiumBorder()),
+    shape: const WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12)))),
   );
 
   final base = ThemeData(
     platform: platform,
     useMaterial3: true,
     brightness: brightness,
+    fontFamily: 'Inter Tight',
     // Linux resolves UI text through fontconfig, which on a minimal desktop
     // may have no CJK font at all; the bundled subtitle fonts (pubspec
     // `fonts:`) cover it. Other platforms keep their native CJK fonts.
-    fontFamilyFallback: platform == TargetPlatform.linux ? const ['Go Noto Current', 'Go Noto Current Hangul'] : null,
+    fontFamilyFallback: fontFallback,
     colorScheme: ColorScheme(
       brightness: brightness,
       // Accent: everything Material derives from primary (switches, sliders,
@@ -294,6 +295,8 @@ ThemeData _buildMonoTheme(MonoPalette c, {required TargetPlatform platform}) {
       surfaceDim: c.bg,
       surfaceBright: c.surface,
       outline: c.outline,
+      outlineVariant: c.outline,
+      onSurfaceVariant: c.textMuted,
       shadow: Colors.transparent,
       scrim: Colors.black,
       inverseSurface: c.text,
@@ -318,7 +321,7 @@ ThemeData _buildMonoTheme(MonoPalette c, {required TargetPlatform platform}) {
       titleTextStyle: TextStyle(color: c.text, fontSize: 18, fontWeight: .w700, letterSpacing: -0.2),
     ),
     textTheme: Typography.englishLike2021
-        .apply(bodyColor: c.text, displayColor: c.text)
+        .apply(fontFamily: 'Inter Tight', fontFamilyFallback: fontFallback, bodyColor: c.text, displayColor: c.text)
         .copyWith(
           displayLarge: const TextStyle(fontWeight: .w700, letterSpacing: -0.5),
           titleMedium: const TextStyle(fontWeight: .w600),
@@ -335,7 +338,9 @@ ThemeData _buildMonoTheme(MonoPalette c, {required TargetPlatform platform}) {
     elevatedButtonTheme: ElevatedButtonThemeData(style: buttonStyle),
     filledButtonTheme: FilledButtonThemeData(style: buttonStyle),
     textButtonTheme: TextButtonThemeData(style: ButtonStyle(mouseCursor: clickableCursor)),
-    outlinedButtonTheme: OutlinedButtonThemeData(style: ButtonStyle(mouseCursor: clickableCursor)),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: ButtonStyle(mouseCursor: clickableCursor, shape: buttonStyle.shape),
+    ),
     iconButtonTheme: IconButtonThemeData(style: ButtonStyle(mouseCursor: clickableCursor)),
     sliderTheme: SliderThemeData(
       // The mono scheme maps surfaceContainerHighest (the M3 default inactive
@@ -361,7 +366,7 @@ ThemeData _buildMonoTheme(MonoPalette c, {required TargetPlatform platform}) {
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: c.bg,
       elevation: 0,
-      indicatorColor: Colors.transparent,
+      indicatorColor: c.accent.withValues(alpha: 0.13),
       labelTextStyle: WidgetStatePropertyAll(TextStyle(color: c.textMuted, fontSize: 11)),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         final active = states.contains(WidgetState.selected);

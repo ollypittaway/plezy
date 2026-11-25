@@ -38,6 +38,7 @@ class DesktopVideoControls extends StatefulWidget {
   final Player player;
   final VideoVolumeController volumeController;
   final MediaItem metadata;
+  final Widget? formatInfo;
   final VoidCallback? onNext;
   final VoidCallback? onPrevious;
   final VoidCallback onPlayPause;
@@ -117,6 +118,7 @@ class DesktopVideoControls extends StatefulWidget {
     required this.player,
     required this.volumeController,
     required this.metadata,
+    this.formatInfo,
     this.onNext,
     this.onPrevious,
     required this.onPlayPause,
@@ -697,6 +699,7 @@ class DesktopVideoControlsState extends State<DesktopVideoControls> {
           Expanded(
             child: VideoControlsHeader(
               metadata: widget.metadata,
+              formatInfo: widget.formatInfo,
               style: Platform.isMacOS ? VideoHeaderStyle.singleLine : VideoHeaderStyle.multiLine,
               onBack: widget.onBack,
               onCancelAutoHide: widget.onCancelAutoHide,

@@ -1,0 +1,168 @@
+:root {
+  color-scheme: dark;
+  font:
+    16px/1.45 Inter,
+    system-ui,
+    sans-serif;
+  color: #edf6f2;
+  background: #0b1111;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+header,
+main {
+  max-width: 1050px;
+  margin: auto;
+  padding: 22px clamp(20px, 5vw, 58px);
+}
+header,
+.heading,
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+header {
+  border-bottom: 1px solid #283433;
+}
+header strong {
+  font-size: 21px;
+  letter-spacing: -1px;
+}
+header span,
+p,
+time,
+small {
+  color: #a8bab4;
+}
+header button,
+.heading button {
+  margin-left: auto;
+}
+h1,
+h2 {
+  letter-spacing: -0.045em;
+  font-weight: 550;
+}
+h1 {
+  font-size: clamp(30px, 5vw, 48px);
+  margin: 26px 0;
+}
+h2 {
+  font-size: 22px;
+  margin: 0 0 12px;
+}
+button,
+input,
+textarea {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  border: 1px solid #475a55;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  padding: 9px 14px;
+}
+button:hover {
+  border-color: #bef4d8;
+}
+button:disabled {
+  opacity: 0.55;
+}
+input,
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: #0c1313;
+  color: inherit;
+  border: 1px solid #42534d;
+  border-radius: 7px;
+}
+textarea {
+  resize: vertical;
+}
+form {
+  display: grid;
+  gap: 9px;
+}
+form button {
+  justify-self: start;
+  margin-top: 8px;
+  background: #cef5dc;
+  color: #10291e;
+  border: 0;
+}
+label {
+  font-size: 14px;
+}
+#login {
+  max-width: 420px;
+}
+.columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.card,
+dialog {
+  border: 1px solid #293b35;
+  border-radius: 15px;
+  background: #131d1b;
+  padding: 24px;
+}
+.card p {
+  margin-top: 0;
+}
+ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+li {
+  padding: 12px 0;
+  border-bottom: 1px solid #30413a;
+}
+li p {
+  white-space: pre-wrap;
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+li strong {
+  overflow-wrap: anywhere;
+}
+small {
+  display: block;
+}
+dialog {
+  width: min(460px, 90vw);
+  color: inherit;
+}
+dialog::backdrop {
+  background: #0009;
+}
+.actions {
+  margin-top: 14px;
+}
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #b7efd7;
+  outline-offset: 2px;
+}
+[hidden] {
+  display: none !important;
+}
+@media (max-width: 660px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+  .card {
+    padding: 18px;
+  }
+}

@@ -3,6 +3,17 @@ import 'ids.dart';
 import 'media_backend.dart';
 import 'media_kind.dart';
 
+const _defaultLibraryNames = ['movies', '4k movies', 'kids movies', 'tv shows', '4k tv shows', 'kids tv shows'];
+final _libraryWhitespace = RegExp(r'\s+');
+final _fourKLibrary = RegExp(r'\b(?:4[\s-]?k|uhd|ultra[\s-]?hd|2160p)\b', caseSensitive: false);
+
+int defaultLibraryRank(String? title) {
+  final rank = _defaultLibraryNames.indexOf((title ?? '').trim().toLowerCase().replaceAll(_libraryWhitespace, ' '));
+  return rank < 0 ? _defaultLibraryNames.length : rank;
+}
+
+bool isFourKLibraryTitle(String? title) => title != null && _fourKLibrary.hasMatch(title);
+
 /// A top-level browseable section on a server (Plex library section, Jellyfin
 /// view).
 class MediaLibrary {

@@ -17,17 +17,85 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
   Widget _buildActionButtons(MediaItem metadata) {
     // Tie asynchronous playback prompts to the actionable subtree, not the
     // route's State: a deleted first-route detail intentionally stays mounted.
-    return Builder(builder: (context) => _buildAvailableActionButtons(context, metadata));
+    return Builder(
+      builder: (context) {
+        var target = _playbackTargetItem(metadata);
+        if (target == null && metadata.isShow) {
+          final firstSeason = defaultPlaybackSeason(_seasons);
+          if (firstSeason != null) target = _seasonEpisodePager.stateFor(firstSeason.id).items.firstOrNull;
+        }
+        return PlaybackCopyBuilder(
+          target: !widget.isOffline && (target?.isMovie == true || target?.isEpisode == true) ? target : null,
+          initialCopies: widget.initialPlaybackCopies,
+          builder: (selected, copies, select, fourK) => ValueListenableBuilder<int>(
+            valueListenable: _playbackStatusRevision,
+            builder: (_, _, _) =>
+                _buildAvailableActionButtons(context, metadata, selected ?? target, copies, select, fourK),
+          ),
+        );
+      },
+    );
   }
 
-  Widget _buildAvailableActionButtons(BuildContext context, MediaItem metadata) {
+  Widget _buildAvailableActionButtons(
+    BuildContext context,
+    MediaItem metadata,
+    MediaItem? selected,
+    List<MediaItem> copies,
+    ValueChanged<MediaItem> select,
+    FourKPlayback? fourK,
+  ) {
     final isTv = PlatformDetector.isTV();
     final tvScale = TvLayoutConstants.scaleOf(context);
     final actionSize = isTv ? _tvDetailActionSize * tvScale : 48.0;
-    final playButtonLabel = _getPlayButtonLabel(metadata);
-    final playIcon = _getPlayButtonIcon(metadata);
+    final libraries = context.watch<LibrariesProvider?>()?.libraries;
+    String? libraryName(MediaItem item) =>
+        item.libraryTitle ??
+        libraries?.where((library) => library.globalKey == item.libraryGlobalKey).firstOrNull?.title;
+    final playItem = selected ?? metadata;
+    final sameLibrary =
+        playItem.serverId == metadata.serverId &&
+        (playItem.libraryId == null || playItem.libraryId == metadata.libraryId);
+    final library =
+        libraryName(playItem) ?? (sameLibrary ? libraryName(metadata) ?? widget.metadata.libraryTitle : null);
+    final label4k = t.mediaMenu.playIn4k;
+    final probe = _playbackSources[playItem.globalKey];
+    final versionItem = probe?.item.mediaVersions?.isNotEmpty == true ? probe!.item : playItem;
+    final versions = versionItem.mediaVersions ?? const [];
+    final settings = SettingsService.instanceOrNull;
+    final preference = settings == null || versions.length < 2 || widget.isOffline
+        ? null
+        : readMediaVersionPreference(settings, versionItem)?.resolveIndex(versions);
+    final index = probe?.mediaIndex ?? preference ?? versions.indexWhere((version) => version.isPlayable);
+    final version = index < 0 ? null : versions.elementAtOrNull(index);
+    final primarySource = primaryFourKPlayback(
+      versionItem,
+      index,
+      fourK,
+      preferFourKLibrary: preference == null && isFourKLibraryTitle(library),
+    );
+    // An offline multi-version title needs the identity of the file actually downloaded.
+    final offlineFourK =
+        widget.isOffline &&
+        (probe?.mediaIndex != null
+            ? version?.is4K == true
+            : versions.isNotEmpty && versions.every((version) => version.is4K));
+    if (widget.isOffline && probe == null && versions.length > 1) _scheduleTargetProbe(context, playItem);
+    final primaryFourK = primarySource != null || offlineFourK;
+    final playButtonLabel = primaryFourK
+        ? label4k
+        : metadata.isVideoContent && library != null && library.isNotEmpty
+        ? t.mediaMenu.playFromLibrary(library: library)
+        : _getPlayButtonLabel(metadata);
+    final naturalLabelWidth = math.min(isTv ? 260.0 * tvScale : 260.0, MediaQuery.sizeOf(context).width * .32);
+    var maxLabelWidth = naturalLabelWidth;
+    final playIcon = _getPlayButtonIcon(playItem);
     final playActionLabel = playIcon == Symbols.resume_rounded ? t.common.resume : t.common.play;
-    final playSemanticsLabel = playButtonLabel.isEmpty ? playActionLabel : '$playActionLabel $playButtonLabel';
+    final playSemanticsLabel = primaryFourK || (library != null && metadata.isVideoContent)
+        ? playButtonLabel
+        : playButtonLabel.isEmpty
+        ? playActionLabel
+        : '$playActionLabel $playButtonLabel';
     final playIconSize = isTv ? 22 * tvScale : 20.0;
     final playTextStyle = TextStyle(fontSize: isTv ? 17 * tvScale : 16, fontWeight: .w700);
     final playButtonIcon = AppIcon(playIcon, fill: 1, size: playIconSize);
@@ -40,11 +108,11 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     // would offer versions that can't play; see #1440). Transcode-only
     // quality picking deliberately stays in the ⋮ menu: a chevron on every
     // item would stop signaling "multiple versions exist".
-    final itemServerId = serverIdOrNull(metadata.serverId);
+    final itemServerId = serverIdOrNull(playItem.serverId);
     final showVersionSplit =
         !widget.isOffline &&
-        (metadata.isMovie || metadata.isEpisode) &&
-        (metadata.mediaVersions?.length ?? 0) > 1 &&
+        (playItem.isMovie || playItem.isEpisode) &&
+        (playItem.mediaVersions?.length ?? 0) > 1 &&
         itemServerId != null &&
         context.read<MultiServerProvider>().serverManager.isClientOnline(itemServerId);
     // M3E split-button geometry: stadium outer corners, small joined inner
@@ -54,59 +122,61 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     final versionSegmentWidth = actionSize * 0.75;
     final splitInnerRadius = Radius.circular(isTv ? 8.0 * tvScale : 8.0);
     final splitOuterRadius = Radius.circular(actionSize / 2);
-    final playShape = showVersionSplit
+    final hasLibraryMenu = copies.any((copy) => copy.globalKey != playItem.globalKey);
+    final playShape = hasLibraryMenu || showVersionSplit
         ? RoundedRectangleBorder(
             borderRadius: BorderRadiusDirectional.horizontal(start: splitOuterRadius, end: splitInnerRadius),
           )
         : null;
 
+    Future<void> playFourKFile(FourKPlayback fourK) async {
+      if (!_canUseDetail) return;
+      await navigateToFourKPlayback(context, fourK, isLaunchCurrent: () => _canUseDetail);
+      if (_canUseDetail) await _refreshWatchState();
+    }
+
+    final VoidCallback? playFourK = fourK == null ? null : () => playFourKFile(fourK);
+
     Future<void> onPlayPressed() async {
       if (!_canUseDetail) return;
-      // For TV shows, play the episode the hero describes (focused on TV,
-      // otherwise on-deck); with neither, the first episode of the first season.
-      if (metadata.isShow) {
-        final episode = _showPlayEpisode();
-        if (episode != null) {
-          appLogger.d('Playing episode: ${episode.title}');
-          await navigateToVideoPlayerWithRefresh(
-            context,
-            metadata: episode,
-            isOffline: widget.isOffline,
-            onRefresh: _refreshWatchState,
-            isLaunchCurrent: () => _canUseDetail,
-          );
-        } else {
-          await _playFirstEpisode();
-        }
-      } else if (metadata.isSeason) {
-        // For seasons, play the first episode
-        if (_episodes.isNotEmpty) {
-          await navigateToVideoPlayerWithRefresh(
-            context,
-            metadata: _episodes.first,
-            isOffline: widget.isOffline,
-            onRefresh: _refreshWatchState,
-            isLaunchCurrent: () => _canUseDetail,
-          );
-        } else {
-          await _playFirstEpisode();
-        }
-      } else {
-        appLogger.d('Playing: ${metadata.title}');
-        // For movies or episodes, play directly
-        await navigateToVideoPlayerWithRefresh(
-          context,
-          metadata: metadata,
-          isOffline: widget.isOffline,
-          onRefresh: _refreshWatchState,
-          isLaunchCurrent: () => _canUseDetail,
-        );
+      if (primarySource != null) {
+        await playFourKFile(primarySource);
+        return;
       }
+      if (selected == null && (metadata.isShow || metadata.isSeason)) {
+        await _playFirstEpisode();
+        return;
+      }
+      await navigateToVideoPlayerWithRefresh(
+        context,
+        metadata: playItem,
+        isOffline: widget.isOffline,
+        onRefresh: _refreshWatchState,
+        isLaunchCurrent: () => _canUseDetail,
+      );
+    }
+
+    Future<void> chooseLibrary() async {
+      final anchor = chipAnchorRect(_libraryMenuKey);
+      if (anchor == null) return;
+      final multipleServers = copies.map((item) => item.serverId).toSet().length > 1;
+      final picked = await showAnchoredSelectionMenu<MediaItem>(
+        context,
+        anchorRect: anchor,
+        options: copies,
+        selected: selected,
+        labelOf: (item) => [
+          libraryName(item) ?? item.serverName ?? t.libraries.selectLibrary,
+          ?libraryCopyQualityLabel(item),
+          if (multipleServers && libraryName(item) != null) ?item.serverName,
+        ].join(' • '),
+      );
+      if (picked != null && context.mounted && _canUseDetail) select(picked);
     }
 
     Future<void> onPlayVersionPressed() async {
       if (!_canUseDetail) return;
-      final didNavigate = await promptAndPlayVersion(context, metadata);
+      final didNavigate = await promptAndPlayVersion(context, playItem);
       // Same post-playback refresh plain Play gets from
       // navigateToVideoPlayerWithRefresh; the split segment is online-only.
       if (didNavigate && mounted) unawaited(_refreshWatchState());
@@ -191,7 +261,15 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                     children: [
                       playButtonIcon,
                       SizedBox(width: isTv ? 7 * tvScale : 8),
-                      Text(playButtonLabel, style: playTextStyle),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: maxLabelWidth),
+                        child: Text(
+                          playButtonLabel,
+                          style: playTextStyle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   )
                 : playButtonIcon,
@@ -202,19 +280,22 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
 
     // The trailing segment of the split Play button. A plain FilledButton
     // (not IconButton) so both segments share color roles and focus styling.
-    Widget versionButton(FocusableActionBuildState state) {
+    Widget splitButton(FocusableActionBuildState state, {required bool libraryMenu}) {
+      final action = libraryMenu ? chooseLibrary : onPlayVersionPressed;
+      final label = libraryMenu ? t.libraries.selectLibrary : t.mediaMenu.playVersion;
       return Semantics(
-        label: t.mediaMenu.playVersion,
+        key: libraryMenu ? _libraryMenuKey : null,
+        label: label,
         button: true,
-        onTap: onPlayVersionPressed,
+        onTap: action,
         excludeSemantics: true,
         child: Tooltip(
-          message: t.mediaMenu.playVersion,
+          message: label,
           child: SizedBox(
             width: versionSegmentWidth,
             height: actionSize,
             child: FilledButton(
-              onPressed: onPlayVersionPressed,
+              onPressed: action,
               style: actionButtonStyle(
                 showFocus: state.showFocus,
                 padding: .zero,
@@ -222,7 +303,11 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
                   borderRadius: BorderRadiusDirectional.horizontal(start: splitInnerRadius, end: splitOuterRadius),
                 ),
               ),
-              child: AppIcon(Symbols.keyboard_arrow_down_rounded, fill: 1, size: playIconSize),
+              child: AppIcon(
+                !libraryMenu && hasLibraryMenu ? Symbols.video_settings_rounded : Symbols.keyboard_arrow_down_rounded,
+                fill: 1,
+                size: playIconSize,
+              ),
             ),
           ),
         ),
@@ -253,14 +338,54 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       builder: (context, state) => playButton(state),
     );
 
+    final libraryAction = hasLibraryMenu
+        ? FocusableAction(
+            debugLabel: 'detail_play_library',
+            spacingBefore: splitGap,
+            onPressed: chooseLibrary,
+            builder: (_, state) => splitButton(state, libraryMenu: true),
+          )
+        : null;
     final versionAction = showVersionSplit
         ? FocusableAction(
             debugLabel: 'detail_play_version',
             spacingBefore: splitGap,
             onPressed: onPlayVersionPressed,
-            builder: (context, state) => versionButton(state),
+            builder: (context, state) => splitButton(state, libraryMenu: false),
           )
         : null;
+
+    final fourKAction = metadata.isVideoContent && !primaryFourK
+        ? FocusableAction(
+            debugLabel: 'detail_play_4k',
+            onPressed: playFourK,
+            builder: (context, state) => SizedBox(
+              height: actionSize,
+              child: FilledButton.tonal(
+                onPressed: playFourK,
+                style: playFourK == null
+                    ? null
+                    : actionButtonStyle(
+                        showFocus: state.showFocus,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                child: Text(label4k, style: playTextStyle),
+              ),
+            ),
+          )
+        : null;
+    final compactFourK = fourKAction == null
+        ? null
+        : FocusableAction(
+            debugLabel: 'detail_play_4k_compact',
+            onPressed: playFourK,
+            builder: (context, state) => IconButton.filledTonal(
+              tooltip: label4k,
+              icon: const AppIcon(Symbols.four_k_rounded),
+              onPressed: playFourK,
+              style: playFourK == null ? null : actionButtonStyle(showFocus: state.showFocus),
+            ),
+          );
 
     final trailerAction = primaryTrailer == null
         ? null
@@ -359,7 +484,9 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
 
     final allActions = <FocusableAction>[
       playAction,
+      ?libraryAction,
       ?versionAction,
+      ?fourKAction,
       ?trailerAction,
       ?shuffleAction,
       ?downloadAction,
@@ -368,26 +495,32 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       ?moreActionsAction,
     ];
 
-    double playButtonWidthEstimate() {
-      if (playButtonLabel.isEmpty) return 64.0;
+    double labelWidth(String label) {
       final textPainter = TextPainter(
-        text: TextSpan(text: playButtonLabel, style: playTextStyle),
+        text: TextSpan(text: label, style: playTextStyle),
         maxLines: 1,
         textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
       )..layout();
       final textWidth = textPainter.width;
       textPainter.dispose();
-      final horizontalPadding = isTv ? 34.0 * tvScale : 32.0;
-      final iconGap = isTv ? 7.0 * tvScale : 8.0;
-      return (horizontalPadding + playIconSize + iconGap + textWidth).clamp(64.0, double.infinity).toDouble();
+      return textWidth;
     }
 
-    final estimatedPlayWidth = playButtonWidthEstimate();
+    final playChromeWidth = playIconSize + (isTv ? 41 * tvScale : 40);
+    final estimatedPlayWidth = playButtonLabel.isEmpty
+        ? 64.0
+        : math.max(64.0, math.min(naturalLabelWidth, labelWidth(playButtonLabel)) + playChromeWidth);
+    final fourKWidth = math.max(64.0, labelWidth(label4k) + 32);
     double estimatedRowWidth(List<FocusableAction> actions) {
       if (actions.isEmpty) return 0;
       var width = estimatedPlayWidth;
       for (var i = 1; i < actions.length; i++) {
-        final actionWidth = identical(actions[i], versionAction) ? versionSegmentWidth : actionSize;
+        final actionWidth = (identical(actions[i], versionAction) || identical(actions[i], libraryAction))
+            ? versionSegmentWidth
+            : identical(actions[i], fourKAction)
+            ? fourKWidth
+            : actionSize;
         width += (actions[i].spacingBefore ?? gap) + actionWidth;
       }
       return width;
@@ -395,18 +528,33 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
 
     List<FocusableAction> compactActionsFor(double maxWidth) {
       if (widget.isOffline) {
-        final compact = <FocusableAction>[playAction, watchedAction];
+        final compact = <FocusableAction>[playAction, ?compactFourK, watchedAction];
         if (maxWidth.isFinite && estimatedRowWidth(compact) > maxWidth) return [playAction];
         return compact;
       }
 
-      final medium = <FocusableAction>[playAction, ?versionAction, ?downloadAction, watchedAction, ?moreActionsAction];
+      final medium = <FocusableAction>[
+        playAction,
+        ?libraryAction,
+        ?versionAction,
+        ?compactFourK,
+        ?downloadAction,
+        watchedAction,
+        ?moreActionsAction,
+      ];
       if (!maxWidth.isFinite || estimatedRowWidth(medium) <= maxWidth) return medium;
 
-      final compact = <FocusableAction>[playAction, ?versionAction, watchedAction, ?moreActionsAction];
+      final compact = <FocusableAction>[
+        playAction,
+        ?libraryAction,
+        ?versionAction,
+        ?compactFourK,
+        watchedAction,
+        ?moreActionsAction,
+      ];
       if (estimatedRowWidth(compact) <= maxWidth) return compact;
 
-      return [playAction, ?versionAction, ?moreActionsAction];
+      return [playAction, ?libraryAction, if (!hasLibraryMenu) ?versionAction, ?compactFourK, ?moreActionsAction];
     }
 
     Widget actionBar(List<FocusableAction> actions) {
@@ -428,17 +576,18 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       if (isTv || !maxWidth.isFinite) return null;
       final remaining = maxWidth - estimatedRowWidth(actions) - gap;
       if (remaining < 160) return null;
-      return _buildPlaybackTracksStatus(context, metadata, isTv: false, tvScale: tvScale, maxWidth: remaining);
+      return _buildPlaybackTracksStatus(context, playItem, isTv: false, tvScale: tvScale, maxWidth: remaining);
     }
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxWidth = constraints.maxWidth;
-        // TV screens are wide and D-pad focus should see every direct action.
-        // On smaller online screens, hidden actions remain available from ⋮.
-        final actions = isTv || !maxWidth.isFinite || estimatedRowWidth(allActions) <= maxWidth
+        // Keep the usual TV shortcuts unless the library controls need space.
+        final actions = (isTv && library == null && !hasLibraryMenu) || estimatedRowWidth(allActions) <= maxWidth
             ? allActions
             : compactActionsFor(maxWidth);
+        final otherActionsWidth = estimatedRowWidth(actions) - estimatedPlayWidth;
+        maxLabelWidth = (maxWidth - otherActionsWidth - playChromeWidth).clamp(0.0, naturalLabelWidth);
         final status = tracksStatusFor(actions, maxWidth);
         if (status == null) return actionBar(actions);
         return SizedBox(

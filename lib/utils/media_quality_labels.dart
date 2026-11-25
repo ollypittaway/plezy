@@ -10,10 +10,10 @@ List<String> buildMediaQualityLabels(MediaItem item, {int versionIndex = 0}) {
   if (version == null) return const [];
 
   final labels = <String>[];
-  final resolution = _formatResolution(version);
+  final resolution = formatVersionResolution(version);
   if (resolution != null) labels.add(resolution);
 
-  final video = _firstStreamOfKind(version, MediaStreamKind.video);
+  final video = videoStreamForPart(version);
   if (video?.dolbyVision == true) {
     labels.add(_formatDolbyVision(video!));
   } else if (video?.hdr == true) {
@@ -34,10 +34,10 @@ List<String> buildMediaVideoLabels(MediaItem item, {int versionIndex = 0, int? p
   if (version == null) return const [];
 
   final labels = <String>[];
-  final resolution = _formatResolution(version);
+  final resolution = formatVersionResolution(version);
   if (resolution != null) labels.add(resolution);
 
-  final video = _firstStreamOfKind(version, MediaStreamKind.video, partIndex: partIndex);
+  final video = videoStreamForPart(version, partIndex: partIndex);
   final codec = (video?.codec ?? version.videoCodec)?.trim();
   if (codec != null && codec.isNotEmpty) labels.add(CodecUtils.formatVideoCodec(codec));
 
@@ -77,7 +77,7 @@ MediaVersion? _selectedVersion(List<MediaVersion>? versions, int versionIndex) {
   return versions.first;
 }
 
-String? _formatResolution(MediaVersion version) {
+String? formatVersionResolution(MediaVersion version) {
   final raw = version.videoResolution?.trim();
   if (raw != null && raw.isNotEmpty) return resolutionDisplayLabel(raw);
 
@@ -85,16 +85,16 @@ String? _formatResolution(MediaVersion version) {
   return fallback == null ? null : resolutionDisplayLabel(fallback);
 }
 
-MediaStream? _firstStreamOfKind(MediaVersion version, MediaStreamKind kind, {int? partIndex}) {
+MediaStream? videoStreamForPart(MediaVersion version, {int? partIndex}) {
   if (partIndex != null && partIndex >= 0 && partIndex < version.parts.length) {
     for (final stream in version.parts[partIndex].streams) {
-      if (stream.kind == kind) return stream;
+      if (stream.kind == MediaStreamKind.video) return stream;
     }
     return null;
   }
   for (final part in version.parts) {
     for (final stream in part.streams) {
-      if (stream.kind == kind) return stream;
+      if (stream.kind == MediaStreamKind.video) return stream;
     }
   }
   return null;

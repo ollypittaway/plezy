@@ -12,7 +12,8 @@ project(plezy LANGUAGES CXX)
 set(MPV_LOCK_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../mpv-build.lock.json")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${MPV_LOCK_FILE}")
 file(READ "${MPV_LOCK_FILE}" MPV_LOCK)
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")
+if(CMAKE_VS_PLATFORM_NAME STREQUAL "ARM64" OR
+   (NOT CMAKE_VS_PLATFORM_NAME AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(ARM64|arm64|aarch64)$"))
   set(MPV_ARCH "aarch64")
 else()
   set(MPV_ARCH "x86_64")
@@ -46,7 +47,7 @@ set(MPV_LIB_DIR "${mpv_dev_SOURCE_DIR}")
 # ICD, gpu-api=auto falls back to D3D11 exactly as the old static loader
 # did.
 set(VULKAN_RT_VERSION "1.4.357.0")
-if(CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")
+if(MPV_ARCH STREQUAL "aarch64")
   set(VULKAN_RT_SLUG "warm")
   set(VULKAN_RT_COMPONENTS "VulkanRT-ARM64-${VULKAN_RT_VERSION}-Components")
   set(VULKAN_RT_DLL_SUBPATH "${VULKAN_RT_COMPONENTS}/vulkan-1.dll")
@@ -154,6 +155,14 @@ endfunction()
 set(FLUTTER_MANAGED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/flutter")
 add_subdirectory(${FLUTTER_MANAGED_DIR})
 
+set(plugin_registrant "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc")
+set(plugin_rules "${FLUTTER_MANAGED_DIR}/generated_plugins.cmake")
+if(MPV_ARCH STREQUAL "aarch64")
+  # Mobile push brings in firebase_core transitively. Its Windows SDK ships
+  # x86 and x64 libraries only. Desktop announcements use the HTTP feed.
+  include(cmake/arm64_plugins.cmake)
+endif()
+
 # Application build; see runner/CMakeLists.txt.
 add_subdirectory("runner")
 
@@ -185,7 +194,7 @@ set(ENV{SENTRY_NATIVE_BACKEND} "inproc")
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
-include(flutter/generated_plugins.cmake)
+include("${plugin_rules}")
 
 if(TARGET os_media_controls_plugin)
   # MSVC 14.51 makes C++/WinRT's experimental coroutine include a hard error.

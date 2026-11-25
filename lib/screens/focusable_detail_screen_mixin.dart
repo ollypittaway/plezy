@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import '../focus/focusable_action_bar.dart';
 import '../focus/input_mode_tracker.dart';
 import '../focus/key_event_utils.dart';
 import '../i18n/strings.g.dart';
 import '../media/media_item.dart';
 import '../mixins/grid_focus_node_mixin.dart';
+import '../navigation/desktop_escape.dart';
 import '../services/settings_service.dart';
 import '../utils/platform_detector.dart';
 import '../widgets/settings_builder.dart';
@@ -38,6 +40,25 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
   bool get hasItems;
 
   List<FocusableAction> getAppBarActions();
+
+  @override
+  void initState() {
+    super.initState();
+    if (PlatformDetector.isDesktopOS()) FocusManager.instance.addEarlyKeyEventHandler(_handleDesktopEscape);
+  }
+
+  KeyEventResult _handleDesktopEscape(KeyEvent event) {
+    if (event.logicalKey != LogicalKeyboardKey.escape || !mounted || !Navigator.canPop(context)) {
+      return KeyEventResult.ignored;
+    }
+    return dispatchDesktopEscape(context, event, goBack: popFromAppBar);
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeEarlyKeyEventHandler(_handleDesktopEscape);
+    super.dispose();
+  }
 
   /// Dispose focus-related resources. Call this from your dispose() method.
   void disposeFocusResources() {

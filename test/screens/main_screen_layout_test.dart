@@ -12,8 +12,10 @@ import 'package:plezy/profiles/profile.dart';
 import 'package:plezy/profiles/profile_connection_registry.dart';
 import 'package:plezy/profiles/profile_registry.dart';
 import 'package:plezy/screens/main_screen.dart';
+import 'package:plezy/navigation/desktop_escape.dart';
 import 'package:plezy/services/storage_service.dart';
 import 'package:plezy/widgets/side_navigation_rail.dart';
+import 'package:plezy/utils/platform_detector.dart';
 
 import '../test_helpers/prefs.dart';
 
@@ -86,27 +88,24 @@ void main() {
     expect(shouldPass(hasVisibleTabs: false), isFalse);
   });
 
-  test('desktop physical Escape is reserved for window fullscreen only at root Home outside TV mode', () {
+  test('desktop keyboard Escape handles the active shell outside TV mode', () {
     bool shouldHandle({
       bool isDesktop = true,
       bool isTV = false,
       bool isPhysicalKeyboardEvent = true,
       LogicalKeyboardKey logicalKey = LogicalKeyboardKey.escape,
       bool isCurrentRoute = true,
-      bool isHomeTab = true,
     }) {
-      return shouldHandleDesktopRootEscape(
+      return shouldHandleDesktopEscape(
         isDesktop: isDesktop,
         isTV: isTV,
         isPhysicalKeyboardEvent: isPhysicalKeyboardEvent,
         logicalKey: logicalKey,
         isCurrentRoute: isCurrentRoute,
-        isHomeTab: isHomeTab,
       );
     }
 
     expect(shouldHandle(), isTrue);
-    expect(shouldHandle(isHomeTab: false), isFalse);
     expect(shouldHandle(isCurrentRoute: false), isFalse);
     // Desktop embedders report remote (CEC/IR) Escape as a keyboard key; TV
     // mode keeps it the remote's Back with the press-back-again exit (#2490).
@@ -116,6 +115,56 @@ void main() {
     expect(shouldHandle(isPhysicalKeyboardEvent: false), isFalse);
     expect(shouldHandle(isDesktop: false), isFalse);
     expect(shouldHandle(logicalKey: LogicalKeyboardKey.gameButtonB), isFalse);
+  });
+
+  testWidgets('desktop Escape goes back once before card handlers and lets dialogs dismiss first', (tester) async {
+    PlatformDetector.debugSetIsDesktopOSOverride(true);
+    addTearDown(() => PlatformDetector.debugSetIsDesktopOSOverride(null));
+    var stepsBack = 0;
+    var sidebarRequests = 0;
+    late BuildContext shell;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            shell = context;
+            return Focus(
+              autofocus: true,
+              onKeyEvent: (_, event) {
+                if (event.logicalKey != LogicalKeyboardKey.escape) return KeyEventResult.ignored;
+                sidebarRequests++;
+                return KeyEventResult.handled;
+              },
+              child: const SizedBox.expand(),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    KeyEventResult handle(KeyEvent event) =>
+        dispatchDesktopEscape(shell, event, searchSelected: false, suppressKeyUp: false, goBack: () => stepsBack++);
+    FocusManager.instance.addEarlyKeyEventHandler(handle);
+    addTearDown(() => FocusManager.instance.removeEarlyKeyEventHandler(handle));
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    expect(stepsBack, 1);
+    expect(sidebarRequests, 0);
+
+    unawaited(
+      showDialog<void>(
+        context: shell,
+        builder: (_) => const SimpleDialog(title: Text('Menu')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text('Menu'), findsNothing);
+    expect(stepsBack, 1);
+    expect(sidebarRequests, 0);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    expect(stepsBack, 2);
   });
 
   test('profile switch invalidates nothing here — the keyed session remount owns it', () {

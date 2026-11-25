@@ -880,6 +880,45 @@ class PlezyActivity : FlutterActivity() {
 
     MethodChannel(flutterEngine.dartExecutor.binaryMessenger, DEVICE_CHANNEL).setMethodCallHandler { call, result ->
       when (call.method) {
+        "canInstallGucciPlexaUpdate" -> result.success(
+          Build.VERSION.SDK_INT < Build.VERSION_CODES.O || packageManager.canRequestPackageInstalls()
+        )
+        "openGucciPlexaInstallSettings" -> {
+          try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+              startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                android.net.Uri.parse("package:$packageName")))
+            }
+            result.success(null)
+          } catch (e: Exception) {
+            result.error("INSTALL_SETTINGS", e.message, null)
+          }
+        }
+        "installGucciPlexaUpdate" -> {
+          try {
+            val requested = call.argument<String>("path") ?: error("Missing APK path")
+            val apk = java.io.File(requested).canonicalFile
+            val expected = java.io.File(cacheDir, "gucciplexa-update/update.apk").canonicalFile
+            require(apk == expected && apk.isFile) { "Invalid update file" }
+            val candidate = packageManager.getPackageArchiveInfo(apk.path, 0)
+              ?: error("Invalid APK")
+            require(candidate.packageName == packageName) { "Unexpected package identity" }
+            val installed = packageManager.getPackageInfo(packageName, 0)
+            @Suppress("DEPRECATION")
+            val newer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+              candidate.longVersionCode > installed.longVersionCode
+            else candidate.versionCode > installed.versionCode
+            require(newer) { "Update is not newer than installed build" }
+            val uri = androidx.core.content.FileProvider.getUriForFile(this, "$packageName.fileprovider", apk)
+            startActivity(Intent(Intent.ACTION_VIEW).apply {
+              setDataAndType(uri, "application/vnd.android.package-archive")
+              addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            })
+            result.success(null)
+          } catch (e: Exception) {
+            result.error("INSTALL_UPDATE", e.message, null)
+          }
+        }
         "getTvDetection" -> result.success(getAndroidTvDetection())
         "getDeviceName" -> result.success(getDeviceName())
         "getPerformanceSignals" -> result.success(getPerformanceSignals())

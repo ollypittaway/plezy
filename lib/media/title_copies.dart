@@ -2,21 +2,29 @@ import '../utils/app_logger.dart';
 import '../utils/external_ids.dart';
 import '../utils/media_server_http_client.dart';
 import 'media_item.dart';
+import 'media_item_merge.dart';
 import 'media_kind.dart';
 import 'media_server_client.dart';
 
-/// A movie or an episode to find in the user's libraries by catalogue
-/// identity, as another app describes it. An episode is found through its
-/// show (by the show's IDs, else its title) and its season and episode numbers.
+/// A title to find across libraries. Seasons and episodes are matched
+/// through their series and their season and episode numbers.
 class TitleQuery {
-  const TitleQuery.movie({required this.title, this.year, this.ids = const ExternalIds(), this.plexGuid})
-    : kind = MediaKind.movie,
-      showTitle = null,
-      showYear = null,
-      showIds = const ExternalIds(),
-      showPlexGuid = null,
-      season = null,
-      episode = null;
+  const TitleQuery.movie({required String title, int? year, ExternalIds ids = const ExternalIds(), String? plexGuid})
+    : this._title(MediaKind.movie, title: title, year: year, ids: ids, plexGuid: plexGuid);
+
+  const TitleQuery._title(
+    this.kind, {
+    required this.title,
+    this.year,
+    this.ids = const ExternalIds(),
+    this.plexGuid,
+    this.season,
+    this.requireExactYear = false,
+  }) : showTitle = null,
+       showYear = null,
+       showIds = const ExternalIds(),
+       showPlexGuid = null,
+       episode = null;
 
   const TitleQuery.episode({
     required String this.showTitle,
@@ -27,6 +35,7 @@ class TitleQuery {
     required int this.episode,
     this.ids = const ExternalIds(),
     this.title = '',
+    this.requireExactYear = false,
   }) : kind = MediaKind.episode,
        year = null,
        plexGuid = null;
@@ -46,6 +55,69 @@ class TitleQuery {
   final String? showPlexGuid;
   final int? season;
   final int? episode;
+
+  /// A file-selection shortcut needs a known matching year when neither
+  /// server can verify a catalogue ID. A title alone can name a remake.
+  final bool requireExactYear;
+
+  /// Resolve a library card using its own server's identifiers. A series'
+  /// year and ids belong to the series, never to the episode's air date.
+  static Future<TitleQuery?> forLibraryItem(MediaItem item, MediaServerClient client, AbortController abort) async {
+    final child = item.kind == MediaKind.episode || item.kind == MediaKind.season;
+    final season = item.kind == MediaKind.episode ? item.parentIndex : item.index;
+    if (child && (season == null || (item.kind == MediaKind.episode && item.index == null))) return null;
+    MediaItem? series;
+    if (child) {
+      final id = item.kind == MediaKind.episode ? item.grandparentId : item.parentId;
+      if (id != null) {
+        try {
+          series = await client.fetchItem(id);
+        } catch (e) {
+          appLogger.d('Series lookup for library copies failed', error: e);
+        }
+      }
+    }
+    abort.throwIfAborted();
+    Future<ExternalIds> idsFor(MediaItem? target) async {
+      if (target == null) return const ExternalIds();
+      final providers = target.raw?['ProviderIds'];
+      if (providers is Map<String, dynamic>) return ExternalIds.fromJellyfinProviderIds(providers);
+      try {
+        return await client.fetchExternalIds(target.id);
+      } catch (e) {
+        return ExternalIds.fromLegacyPlexGuid(target.guid);
+      }
+    }
+
+    final parent = child ? series : item;
+    final ids = await idsFor(parent);
+    abort.throwIfAborted();
+    final guid = parent?.guid;
+    final plexGuid = guid != null && guid.startsWith('plex://') ? guid : null;
+    final title = parent?.title ?? (item.kind == MediaKind.episode ? item.grandparentTitle : item.parentTitle) ?? '';
+    if (item.kind == MediaKind.episode) {
+      return TitleQuery.episode(
+        showTitle: title,
+        showYear: series?.year,
+        showIds: ids,
+        showPlexGuid: plexGuid,
+        season: season!,
+        episode: item.index!,
+        ids: await idsFor(item),
+        title: item.title ?? '',
+        requireExactYear: true,
+      );
+    }
+    return TitleQuery._title(
+      item.kind,
+      title: title,
+      year: parent?.year,
+      ids: ids,
+      plexGuid: plexGuid,
+      season: child ? season : null,
+      requireExactYear: true,
+    );
+  }
 }
 
 /// The most title-search hits checked against the query's IDs when no item
@@ -63,15 +135,34 @@ extension TitleCopiesLookup on MediaServerClient {
   /// caller can tell "not on this server" from "couldn't ask".
   Future<List<MediaItem>> findTitleCopies(TitleQuery query, {AbortController? abort}) async {
     final List<MediaItem> found;
-    if (query.kind == MediaKind.movie) {
+    if (query.kind != MediaKind.episode) {
       found = await _titleItems(
-        kind: MediaKind.movie,
+        kind: query.kind == MediaKind.season ? MediaKind.show : query.kind,
         title: query.title,
         year: query.year,
         ids: query.ids,
         plexGuid: query.plexGuid,
+        requireExactYear: query.requireExactYear,
         abort: abort,
       );
+      if (query.kind == MediaKind.show) return found;
+      if (query.kind == MediaKind.season) {
+        final seasons = <MediaItem>[];
+        for (final show in found) {
+          abort?.throwIfAborted();
+          for (final child in await fetchChildren(show.id)) {
+            if (child.kind == MediaKind.season && child.index == query.season) {
+              seasons.add(
+                child.copyWith(
+                  libraryId: child.libraryId ?? show.libraryId,
+                  libraryTitle: child.libraryTitle ?? show.libraryTitle,
+                ),
+              );
+            }
+          }
+        }
+        return seasons;
+      }
     } else {
       final shows = await _titleItems(
         kind: MediaKind.show,
@@ -79,12 +170,20 @@ extension TitleCopiesLookup on MediaServerClient {
         year: query.showYear,
         ids: query.showIds,
         plexGuid: query.showPlexGuid,
+        requireExactYear: query.requireExactYear,
         abort: abort,
       );
       final episodes = <MediaItem>[];
       for (final show in shows) {
         abort?.throwIfAborted();
-        episodes.addAll(await _episodesOf(show, season: query.season!, episode: query.episode!, abort: abort));
+        for (final episode in await _episodesOf(show, season: query.season!, episode: query.episode!, abort: abort)) {
+          episodes.add(
+            episode.copyWith(
+              libraryId: episode.libraryId ?? show.libraryId,
+              libraryTitle: episode.libraryTitle ?? show.libraryTitle,
+            ),
+          );
+        }
       }
       found = query.ids.hasAny ? await _withoutContradictions(episodes, query.ids, abort: abort) : episodes;
     }
@@ -97,6 +196,7 @@ extension TitleCopiesLookup on MediaServerClient {
     required int? year,
     required ExternalIds ids,
     required String? plexGuid,
+    required bool requireExactYear,
     AbortController? abort,
   }) async {
     final titles = [if (title.trim().isNotEmpty) title.trim()];
@@ -105,13 +205,17 @@ extension TitleCopiesLookup on MediaServerClient {
       abort?.throwIfAborted();
       if (byId != null && byId.isNotEmpty) return byId;
     }
-    if (titles.isEmpty) return const [];
+    if (titles.isEmpty || (requireExactYear && year == null)) return const [];
     final hits = await searchItems(titles.single, limit: 50, abort: abort);
     abort?.throwIfAborted();
     final folded = foldTitle(titles.single);
     final sameTitle = [
       for (final hit in hits)
-        if (hit.kind == kind && foldTitle(hit.title ?? '') == folded && _yearsAgree(year, hit.year)) hit,
+        if (hit.kind == kind &&
+            foldTitle(hit.title ?? '') == folded &&
+            (requireExactYear ? year == hit.year : _yearsAgree(year, hit.year)) &&
+            !(plexGuid != null && hit.guid?.startsWith('plex://') == true && plexGuid != hit.guid))
+          hit,
     ];
     if (!ids.hasAny) return sameTitle;
     return _withoutContradictions(sameTitle.take(_titleFallbackLimit).toList(), ids, abort: abort);
@@ -187,7 +291,8 @@ extension TitleCopiesLookup on MediaServerClient {
       }
       abort?.throwIfAborted();
       try {
-        result.add(await fetchItem(item.id) ?? item);
+        final full = await fetchItem(item.id);
+        result.add(full == null ? item : mergeLibraryCopy(item, full));
       } catch (error, stackTrace) {
         // The row itself still names the copy; its length may be on the row.
         appLogger.w('Could not read versions of ${item.id}', error: error, stackTrace: stackTrace);

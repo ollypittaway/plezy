@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../media/media_item.dart';
+import '../media/media_item_merge.dart';
+import '../media/media_item_types.dart';
 import '../media/media_version.dart';
 import '../media/media_version_preference.dart';
 import '../mpv/mpv.dart';
@@ -23,6 +25,7 @@ import '../services/offline_watch_sync_service.dart';
 import '../services/settings_service.dart';
 import '../services/playback_launch_observer.dart';
 import '../services/playback_coordinator.dart';
+import '../services/playback_bandwidth.dart';
 import '../services/music/music_playback_service.dart';
 import 'app_logger.dart';
 import 'dialogs.dart';
@@ -35,6 +38,24 @@ import 'quality_preset_labels.dart';
 import '../i18n/strings.g.dart';
 
 const String kVideoPlayerRouteName = '/video_player';
+
+/// Open the exact UHD file, retaining the bandwidth check used by normal playback.
+Future<bool?> navigateToFourKPlayback(
+  BuildContext context,
+  FourKPlayback source, {
+  Duration? initialPosition,
+  bool Function()? isLaunchCurrent,
+}) => navigateToVideoPlayer(
+  context,
+  metadata: initialPosition == null ? source.item : source.item.copyWith(viewOffsetMs: initialPosition.inMilliseconds),
+  resolveWatchState: initialPosition == null,
+  selectedMediaIndex: source.index,
+  selectedMediaSourceId: source.version.id.isEmpty ? null : source.version.id,
+  selectedQualityPreset: TranscodeQualityPreset.original,
+  strictMediaSelection: true,
+  initialPosition: initialPosition,
+  isLaunchCurrent: isLaunchCurrent,
+);
 
 /// One video route per navigator, shared by VOD and Live TV.
 ///
@@ -194,14 +215,18 @@ String _legacyMediaVersionPreferenceKey(MediaItem metadata) => metadata.grandpar
 /// (by write time, legacy entries first) are evicted past it.
 const _maxMediaVersionPreferences = 500;
 
+MediaVersionPreference? readMediaVersionPreference(SettingsService settings, MediaItem item) {
+  final prefs = settings.read(SettingsService.mediaVersionPreferences);
+  return prefs[_mediaVersionPreferenceKey(item)] ?? prefs[_legacyMediaVersionPreferenceKey(item)];
+}
+
 /// Saved media-version preference for [metadata]'s series/movie, or null when
 /// none is stored. Shared by launch navigation and in-player version
 /// switching so reads and writes can't drift onto different keys.
 Future<MediaVersionPreference?> savedMediaVersionPreferenceFor(MediaItem metadata) async {
   try {
     final settingsService = await SettingsService.getInstance();
-    final prefs = settingsService.read(SettingsService.mediaVersionPreferences);
-    return prefs[_mediaVersionPreferenceKey(metadata)] ?? prefs[_legacyMediaVersionPreferenceKey(metadata)];
+    return readMediaVersionPreference(settingsService, metadata);
   } catch (_) {
     return null;
   }
@@ -335,6 +360,7 @@ Future<bool?> navigateToVideoPlayer(
   final navigator = Navigator.of(context);
   final sourceRoute = ModalRoute.of(context);
   final downloadProvider = context.read<DownloadProvider>();
+  final bandwidth = context.read<PlaybackBandwidth?>();
   final launchMusic = launchObserver == null ? null : context.read<MusicPlaybackService>();
   // Use the manager-routed lookup so Jellyfin items don't trip the
   // Plex-only client. The player branches on the returned type internally.
@@ -410,6 +436,46 @@ Future<bool?> navigateToVideoPlayer(
   // committed. Returned after the finally so the guard timing is unchanged.
   Future<bool?>? pushFuture;
   try {
+    if (bandwidth != null &&
+        mediaClient != null &&
+        (metadata.isMovie || metadata.isEpisode) &&
+        !isOffline &&
+        !usePushReplacement &&
+        watchTogetherCopy == null &&
+        launchObserver == null &&
+        (selectedQualityPreset?.isOriginal ?? true)) {
+      final versions = await resolveMediaVersions(metadata, mediaClient);
+      final version = mediaSourceId == null
+          ? versions.elementAtOrNull(mediaIndex)
+          : versions.where((candidate) => candidate.id == mediaSourceId).firstOrNull;
+      if (version != null && version.is4K) {
+        final localPath = downloadProvider.isDownloaded(metadata.globalKey)
+            ? await downloadProvider.getVideoFilePath(
+                metadata.globalKey,
+                mediaIndex: mediaIndex,
+                mediaSourceId: mediaSourceId,
+              )
+            : null;
+        if (localPath == null) {
+          final warning = await bandwidth.check(mediaClient, metadata, version);
+          if (!context.mounted || !launchCurrent()) return null;
+          if (warning != null) {
+            if (sourceRoute?.isCurrent == false) return null;
+            final playAnyway = await showConfirmDialog(
+              context,
+              title: t.mediaMenu.bufferingTitle,
+              message: t.mediaMenu.bufferingMessage(
+                speed: warning.measuredMbps.toStringAsFixed(1),
+                bitrate: warning.fileMbps.toStringAsFixed(1),
+              ),
+              confirmText: t.mediaMenu.playAnyway,
+            );
+            if (!playAnyway) return null;
+          }
+        }
+      }
+      if (!context.mounted || !launchCurrent()) return null;
+    }
     // Check if external player is enabled. The platform guard comes first so
     // platforms that can never launch an external player skip the settings
     // lookup, and the singleton the saved-version resolve above already

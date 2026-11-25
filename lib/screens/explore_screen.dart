@@ -197,21 +197,6 @@ class ExploreScreenState extends State<ExploreScreen>
     MainScreenFocusScope.focusSidebarOf(context);
   }
 
-  static IconData _rowIcon(CatalogRowId? row) => switch (row) {
-    null => Symbols.thumb_up_rounded,
-    CatalogRowId.watchlist => Symbols.bookmark_rounded,
-    CatalogRowId.recommendedMovies ||
-    CatalogRowId.recommendedShows ||
-    CatalogRowId.suggestedAnime => Symbols.thumb_up_rounded,
-    CatalogRowId.trendingMovies ||
-    CatalogRowId.trendingShows ||
-    CatalogRowId.trendingAnime ||
-    CatalogRowId.airingAnime ||
-    CatalogRowId.trending => Symbols.trending_up_rounded,
-    CatalogRowId.popularMovies || CatalogRowId.popularShows || CatalogRowId.popularAnime => Symbols.whatshot_rounded,
-    CatalogRowId.upcomingMovies || CatalogRowId.upcomingShows => Symbols.event_upcoming_rounded,
-  };
-
   List<AppMenuEntry<CatalogSourceId>> _sourceMenuEntries(CatalogSourcesProvider sources, CatalogSource active) => [
     for (final source in sources.connectedSources)
       AppMenuItem<CatalogSourceId>(
@@ -375,7 +360,6 @@ class ExploreScreenState extends State<ExploreScreen>
               hub: rowHubs[i].hub,
               totalResults: rowHubs[i].totalResults,
               focusMemory: _hubFocusMemory,
-              icon: _rowIcon(rowHubs[i].row),
               loadMoreItems: rowHubs[i].hub.more ? () => _explore.loadAllForHub(rowHubs[i]) : null,
               onVerticalNavigation: (isUp) => _handleVerticalNavigation(i, isUp),
               onNavigateUp: i == 0 ? searchFocusNode.requestFocus : null,
@@ -535,7 +519,6 @@ class ExploreScreenState extends State<ExploreScreen>
                 key: _tvBrowseRailKey,
                 hubs: tvHubs,
                 focusMemory: _hubFocusMemory,
-                iconForHub: (hub, _) => _rowIcon(_rowForHub(hub)?.row),
                 onFocusedItemChanged: _setSpotlightItem,
                 loadMoreItems: (hub) {
                   final rowHub = _rowForHub(hub);

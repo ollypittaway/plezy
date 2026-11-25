@@ -111,6 +111,18 @@ class GoogleRequestTest(unittest.TestCase):
 
 
 class AppleUploadTest(unittest.TestCase):
+    def test_each_apple_platform_looks_up_its_own_store_record(self) -> None:
+        client = deploy.AscClient({})
+        with mock.patch.object(client, "request") as request:
+            for platform, bundle_id in [
+                ("IOS", "com.gucciplexa.app"),
+                ("TV_OS", "com.edde746.plezy"),
+            ]:
+                with self.subTest(platform=platform):
+                    request.return_value.json.return_value = {"data": [{"id": platform}]}
+                    self.assertEqual(client.app_id(platform), platform)
+                    request.assert_called_with("GET", f"/apps?filter[bundleId]={bundle_id}")
+
     @staticmethod
     def _context() -> deploy.Context:
         return deploy.Context(

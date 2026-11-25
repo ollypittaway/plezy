@@ -18,6 +18,7 @@ import 'package:plezy/media/media_hub.dart';
 import 'package:plezy/media/media_item.dart';
 import 'package:plezy/media/media_kind.dart';
 import 'package:plezy/media/media_library.dart';
+import 'package:plezy/media/media_rating.dart';
 import 'package:plezy/media/media_server_client.dart';
 import 'package:plezy/media/server_capabilities.dart';
 import 'package:plezy/mixins/refreshable.dart';
@@ -34,6 +35,12 @@ import 'package:plezy/providers/hidden_libraries_provider.dart';
 import 'package:plezy/providers/libraries_provider.dart';
 import 'package:plezy/providers/multi_server_provider.dart';
 import 'package:plezy/screens/discover_screen.dart';
+import 'package:plezy/media/media_version.dart';
+import 'package:plezy/providers/download_provider.dart';
+import 'package:plezy/services/offline_watch_sync_service.dart';
+import 'package:plezy/screens/video_player_screen.dart';
+import 'package:plezy/utils/video_player_navigation.dart';
+import 'package:plezy/utils/media_server_http_client.dart';
 import 'package:plezy/screens/main_screen.dart';
 import 'package:plezy/services/data_aggregation_service.dart';
 import 'package:plezy/services/multi_server_manager.dart';
@@ -89,7 +96,14 @@ void main() {
       serverId: 'server_1',
       serverName: 'Server',
     );
-    final hub = MediaHub(id: 'hub_1', title: 'Recommended', type: 'movie', items: [item], size: 1);
+    final hub = MediaHub(
+      id: 'hub_1',
+      title: 'Recommended',
+      collectionLibraryTitle: 'Kids Movies',
+      type: 'movie',
+      items: [item],
+      size: 1,
+    );
     final client = _FakeMediaServerClient(hubs: [hub]);
     final manager = MultiServerManager()..debugRegisterClientForTesting(client);
     final multiServerProvider = testMultiServerProvider(manager);
@@ -177,6 +191,8 @@ void main() {
 
     await tester.pumpAndSettle();
     expect(find.byType(TvBrowseRail), findsOneWidget);
+    expect(find.text('Recommended'), findsWidgets);
+    expect(find.text('Recommended · Kids Movies'), findsNothing);
 
     final scale = TvLayoutConstants.scaleForSize(const Size(1280, 720));
     final spotlightLeft = (24 * scale).clamp(18.0, 40.0).toDouble();
@@ -613,19 +629,51 @@ void main() {
           backend: MediaBackend.plex,
           kind: MediaKind.movie,
           title: 'Movie $i',
+          mediaVersions: i == 1 ? const [MediaVersion(id: 'sole-4k', height: 2160)] : null,
+          durationMs: const Duration(hours: 2, minutes: 53).inMilliseconds,
+          viewOffsetMs: i == 0 ? const Duration(minutes: 53).inMilliseconds : null,
           serverId: 'server_1',
           serverName: 'Server',
         ),
     ];
-    final client = _FakeMediaServerClient(hubs: const [], continueWatching: onDeck);
+    final client = _FakeMediaServerClient(
+      hubs: const [],
+      continueWatching: onDeck,
+      details: {
+        'movie_0': onDeck.first.copyWith(
+          year: 2026,
+          durationMs: const Duration(hours: 2, minutes: 53).inMilliseconds,
+          genres: ['Adventure', 'Action', 'Fantasy'],
+          ratings: const [
+            MediaRatingSource(source: 'imdb', value: 8),
+            MediaRatingSource(source: 'rottenTomatoesAudience', value: 8.6),
+            MediaRatingSource(source: 'rottenTomatoesCritic', value: 9.1),
+          ],
+        ),
+      },
+    );
     final manager = MultiServerManager()..debugRegisterClientForTesting(client);
-    final multiServerProvider = testMultiServerProvider(manager);
+    final uhd = onDeck.first.copyWith(
+      id: 'uhd-copy',
+      viewOffsetMs: null,
+      mediaVersions: const [
+        MediaVersion(id: 'hd-file', height: 1080),
+        MediaVersion(id: 'uhd-file', height: 2160),
+      ],
+    );
+    final lookup = _HeroCopyLookup(manager, uhd);
+    final multiServerProvider = MultiServerProvider(manager, lookup);
+    final observer = _HeroPlayerObserver();
+    final downloads = _HeroDownloads();
+    addTearDown(downloads.dispose);
     final hiddenLibrariesProvider = HiddenLibrariesProvider();
     final librariesProvider = LibrariesProvider();
     final watchTogetherProvider = WatchTogetherProvider();
     final companionRemoteProvider = CompanionRemoteProvider();
 
     final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final offlineWatch = OfflineWatchSyncService(database: db, serverManager: manager);
+    addTearDown(offlineWatch.dispose);
     final profileRegistry = _FakeProfileRegistry(db);
     final connectionRegistry = _FakeConnectionRegistry(db);
     final profileConnectionRegistry = _FakeProfileConnectionRegistry(db);
@@ -667,6 +715,8 @@ void main() {
       TranslationProvider(
         child: MultiProvider(
           providers: [
+            ChangeNotifierProvider<DownloadProvider>.value(value: downloads),
+            ChangeNotifierProvider<OfflineWatchSyncService>.value(value: offlineWatch),
             ChangeNotifierProvider<MultiServerProvider>.value(value: multiServerProvider),
             ChangeNotifierProvider<HiddenLibrariesProvider>.value(value: hiddenLibrariesProvider),
             ChangeNotifierProvider<LibrariesProvider>.value(value: librariesProvider),
@@ -677,7 +727,8 @@ void main() {
           ],
           child: InputModeTracker(
             child: MaterialApp(
-              theme: monoTheme(MonoPalette.dark),
+              navigatorObservers: [observer],
+              theme: monoTheme(MonoPalette.dark).copyWith(platform: TargetPlatform.macOS),
               home: MainScreenFocusScope(
                 focusSidebar: () {},
                 sideNavigationWidth: SideNavigationRailState.expandedWidth,
@@ -699,8 +750,80 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));
 
+    final home = tester.widget<CustomScrollView>(find.byType(CustomScrollView)).controller!;
+    final heroCenter = tester.getCenter(find.byType(PageView));
+    final drag = await tester.startGesture(heroCenter);
+    await drag.moveBy(const Offset(0, 120));
+    await tester.pump();
+    expect(home.offset, home.position.minScrollExtent, reason: 'pulling down cannot expose space above the hero');
+    await drag.moveBy(const Offset(0, -160));
+    await tester.pump();
+    expect(home.offset, greaterThan(home.position.minScrollExtent), reason: 'the library rows remain scrollable');
+    await drag.moveBy(const Offset(0, 300));
+    await tester.pump();
+    expect(home.offset, home.position.minScrollExtent, reason: 'scrolling back stops exactly at the hero');
+    await drag.up();
+    await tester.pump();
     expect(find.byType(PageView), findsOneWidget);
     expect(find.byIcon(Symbols.pause_rounded), findsOneWidget, reason: 'hero indicators render in pointer mode');
+
+    expect(find.text('91  CRITICS', findRichText: true), findsOneWidget);
+    expect(find.text('86  AUDIENCE', findRichText: true), findsOneWidget);
+    expect(find.text('2026  ·  2h 53min  ·  Adventure  ·  Action  ·  Fantasy'), findsOneWidget);
+
+    void expectMatchingHeroButtons(String playLabel) {
+      final play = find
+          .ancestor(of: find.text(playLabel).hitTestable(), matching: find.byType(AnimatedContainer))
+          .first;
+      final details = find.widgetWithText(OutlinedButton, t.mediaMenu.viewDetails).hitTestable();
+      final detailsFace = find.descendant(of: details, matching: find.byType(Material)).first;
+      expect(tester.getSize(detailsFace), tester.getSize(play));
+      expect(tester.getTopLeft(detailsFace).dy, tester.getTopLeft(play).dy);
+    }
+
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+    expectMatchingHeroButtons(t.discover.minutesLeft(minutes: 120));
+    final fourKAction = find.widgetWithText(OutlinedButton, t.mediaMenu.playIn4k).hitTestable();
+    expect(fourKAction, findsOneWidget);
+    await tester.tap(fourKAction);
+    await tester.pump();
+    await tester.pump();
+    expect(observer.player?.metadata.id, 'uhd-copy');
+    expect(observer.player?.selectedMediaSourceId, 'uhd-file');
+    expect(observer.player?.selectedMediaIndex, 1);
+    expect(observer.player?.strictMediaSelection, isTrue);
+    expect(observer.player?.initialPosition, const Duration(minutes: 53));
+
+    final carousel = tester.widget<PageView>(find.byType(PageView)).controller!;
+    await tester.tap(find.byTooltip('Next page'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(carousel.page, 1);
+    await tester.pump();
+    expectMatchingHeroButtons(t.mediaMenu.playIn4k);
+    expect(find.widgetWithText(OutlinedButton, t.mediaMenu.playIn4k).hitTestable(), findsNothing);
+    expect(find.text('91  CRITICS', findRichText: true), findsNothing);
+    await tester.tap(find.byTooltip('Previous page'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(carousel.page, 0);
+    await tester.pump(); // The rebuilt slide receives its cached detail future.
+    expect(find.text('91  CRITICS', findRichText: true), findsOneWidget);
+    expect(client.detailLookups.where((id) => id == 'movie_0').length, 1);
+    expect(lookup.firstMovieLookups, 1);
+
+    // Pause/resume establishes a fresh interval aligned with the test clock.
+    await tester.tap(find.byIcon(Symbols.pause_rounded));
+    await tester.pump();
+    await tester.tap(find.byWidgetPredicate((w) => w is Icon && w.semanticLabel == t.accessibility.autoScrollPlay));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 9));
+    await tester.pump(const Duration(milliseconds: 999));
+    expect(carousel.page, 0);
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump(const Duration(milliseconds: 510));
+    expect(carousel.page, 1);
 
     // Entering keyboard mode must not hide the indicators on non-TV devices
     // (regression: back-key/BT-keyboard events left them permanently hidden).
@@ -742,7 +865,7 @@ void main() {
 
   testWidgets('the home clock is TV-only chrome', (tester) async {
     await _pumpDiscoverShell(tester, isTv: false);
-    expect(find.text(t.discover.title), findsOneWidget);
+    expect(find.text(t.discover.title), findsNothing);
     expect(
       find.byType(SystemClock),
       findsNothing,
@@ -1252,11 +1375,51 @@ Future<void> _pumpDiscoverShell(WidgetTester tester, {required bool isTv, WatchT
   await tester.pump(const Duration(milliseconds: 100));
 }
 
+class _HeroCopyLookup extends DataAggregationService {
+  _HeroCopyLookup(super.manager, this.alternate);
+  final MediaItem alternate;
+  int firstMovieLookups = 0;
+
+  @override
+  Future<List<MediaItem>> playbackCopies(MediaItem item, {required AbortController abort}) async {
+    if (item.id != 'movie_0') return [item];
+    firstMovieLookups++;
+    return [item, alternate];
+  }
+}
+
+class _HeroDownloads extends ChangeNotifier implements DownloadProvider {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _HeroPlayerObserver extends NavigatorObserver {
+  VideoPlayerScreen? player;
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (route is VideoPlayerRoute) {
+      player =
+          route.pageBuilder(navigator!.context, kAlwaysCompleteAnimation, kAlwaysDismissedAnimation)
+              as VideoPlayerScreen;
+      scheduleMicrotask(() => navigator?.pop());
+    }
+  }
+}
+
 class _FakeMediaServerClient implements MediaServerClient {
   final List<MediaHub> hubs;
   List<MediaItem> continueWatching;
 
-  _FakeMediaServerClient({required this.hubs, this.continueWatching = const []});
+  final Map<String, MediaItem> details;
+  final detailLookups = <String>[];
+
+  _FakeMediaServerClient({required this.hubs, this.continueWatching = const [], this.details = const {}});
+
+  @override
+  Future<MediaItem?> fetchItem(String id) async {
+    detailLookups.add(id);
+    return details[id];
+  }
 
   @override
   ServerId get serverId => ServerId('server_1');

@@ -15,6 +15,7 @@ extension _PlexVideoControlsNavigationMethods on _PlexVideoControlsState {
         player: widget.player,
         volumeController: widget.volumeController,
         metadata: widget.metadata,
+        formatInfo: widget.formatInfo,
         onNext: _abandoningBurst(widget.onNext),
         onPrevious: _abandoningBurst(widget.onPrevious),
         onPlayPause: () => unawaited(_playOrPause()),

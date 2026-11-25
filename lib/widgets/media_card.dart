@@ -277,7 +277,7 @@ class MediaCard extends StatefulWidget {
   /// Inset between a captioned grid card's cell and its artwork.
   static const EdgeInsets gridCardPadding = EdgeInsets.fromLTRB(3, 3, 3, 1);
 
-  static const TextStyle _gridTitleStyle = TextStyle(fontWeight: .w600, fontSize: 13, height: 1.1);
+  static const TextStyle _gridTitleStyle = TextStyle(fontWeight: .w500, fontSize: 13, height: 1.1);
 
   /// Height a captioned grid card spends outside its artwork: the vertical
   /// [gridCardPadding], the poster→title gap, and one title plus one caption
@@ -934,7 +934,7 @@ class _MediaCardList extends StatelessWidget {
                     if (enableDetailLinks && item is MediaItem && _hasClickableTitle(item as MediaItem))
                       _ClickableText(
                         text: (item as MediaItem).displayTitle,
-                        style: TextStyle(fontWeight: .w600, fontSize: _titleFontSize, height: 1.2),
+                        style: TextStyle(fontWeight: .w500, fontSize: _titleFontSize, height: 1.2),
                         onTap: () => _navigateToFocusedDetail(context, item as MediaItem, isOffline: isOffline),
                       )
                     else
@@ -943,7 +943,7 @@ class _MediaCardList extends StatelessWidget {
                           _displayTitle(),
                           maxLines: 2,
                           overflow: .ellipsis,
-                          style: TextStyle(fontWeight: .w600, fontSize: _titleFontSize, height: 1.2),
+                          style: TextStyle(fontWeight: .w500, fontSize: _titleFontSize, height: 1.2),
                         ),
                       ),
                     const SizedBox(height: 4),

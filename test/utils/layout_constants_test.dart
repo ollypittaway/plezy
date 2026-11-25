@@ -1,7 +1,14 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/utils/layout_constants.dart';
 
 void main() {
+  test('Android TV scale fits both logical viewport axes', () {
+    expect(TvLayoutConstants.androidTvScaleForSize(const Size(1920, 1080)), 1);
+    expect(TvLayoutConstants.androidTvScaleForSize(const Size(1280, 720)), closeTo(2 / 3, 0.0001));
+    expect(TvLayoutConstants.androidTvScaleForSize(const Size(960, 540)), 0.5);
+    expect(TvLayoutConstants.androidTvScaleForSize(const Size(960, 720)), 0.5);
+  });
   group('ScreenBreakpoints boundaries', () {
     test('isMobile: strict < 600', () {
       expect(ScreenBreakpoints.isMobile(0), isTrue);

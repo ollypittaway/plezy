@@ -8,6 +8,7 @@
 
 #include <auto_updater_windows/auto_updater_windows_plugin_c_api.h>
 #include <connectivity_plus/connectivity_plus_windows_plugin.h>
+#include <firebase_core/firebase_core_plugin_c_api.h>
 #include <os_media_controls/os_media_controls_plugin_c_api.h>
 #include <screen_retriever_windows/screen_retriever_windows_plugin_c_api.h>
 #include <sentry_flutter/sentry_flutter_plugin.h>
@@ -20,6 +21,8 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("AutoUpdaterWindowsPluginCApi"));
   ConnectivityPlusWindowsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("ConnectivityPlusWindowsPlugin"));
+  FirebaseCorePluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("FirebaseCorePluginCApi"));
   OsMediaControlsPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("OsMediaControlsPluginCApi"));
   ScreenRetrieverWindowsPluginCApiRegisterWithRegistrar(

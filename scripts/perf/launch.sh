@@ -5,7 +5,7 @@ set -euo pipefail
 
 ADB="$HOME/Library/Android/sdk/platform-tools/adb"
 DEVICE="${PLEZY_DEVICE:-192.168.1.7:5555}"
-PKG=com.edde746.plezy
+PKG=com.gucciplexa.app
 HOST_PORT="${PLEZY_VM_PORT:-9223}"
 
 a() { "$ADB" -s "$DEVICE" "$@"; }
@@ -20,7 +20,7 @@ a shell input keyevent 224 >/dev/null 2>&1 || true
 # `am start` must supply explicitly (only `flutter run` passes it for us).
 # Start the activity itself: the launcher alias (.MainActivity) is disabled
 # while an alternate app icon is chosen.
-a shell am start -W -S --ez enable-dart-profiling true -n "$PKG/$PKG.PlezyActivity" >/dev/null 2>&1
+a shell am start -W -S --ez enable-dart-profiling true -n "$PKG/com.edde746.plezy.PlezyActivity" >/dev/null 2>&1
 
 LINE=""
 for _ in $(seq 1 40); do

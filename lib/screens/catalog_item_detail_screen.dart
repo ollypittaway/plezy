@@ -733,7 +733,7 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
       title: Text(match.libraryTitle ?? match.serverName ?? match.backend.dialect?.productName ?? 'Plex'),
       subtitle: details.isEmpty ? null : Text(details.join(' • ')),
       trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
-      onTap: () => unawaited(navigateToMediaItemDetails(context, match)),
+      onTap: () => unawaited(navigateToMediaItemDetails(context, match, resolvedCopies: _matches)),
     );
   }
 
@@ -1366,7 +1366,6 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
         size: related.length,
       ),
       focusMemory: _hubFocusMemory,
-      icon: Symbols.recommend_rounded,
       inset: true,
       onNavigateUp: _focusSectionAboveRelated,
       cardSizing: HubCardSizing.grid,

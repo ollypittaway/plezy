@@ -24,6 +24,7 @@ import 'package:plezy/providers/libraries_provider.dart';
 import 'package:plezy/providers/multi_server_provider.dart';
 import 'package:plezy/screens/actor_media_screen.dart';
 import 'package:plezy/screens/search_screen.dart';
+import 'package:plezy/screens/media_detail_screen.dart';
 import 'package:plezy/services/multi_server_manager.dart';
 import 'package:plezy/services/storage_service.dart';
 import 'package:plezy/services/settings_service.dart';
@@ -237,6 +238,43 @@ void main() {
     expect(failedClient.queries, ['movie']);
     expect(find.text('Movie 1'), findsOneWidget);
     expect(find.text(t.messages.searchPartialResults), findsOneWidget);
+  });
+
+  testWidgets('duplicate results follow library order and open details with both copies', (tester) async {
+    final movies = MediaLibrary(id: 'm', title: 'Movies', serverId: 'server_1', backend: MediaBackend.plex);
+    final kids = MediaLibrary(id: 'k', title: 'Kids Movies', serverId: 'server_1', backend: MediaBackend.plex);
+    final movie = testMediaItem(
+      id: 'm1',
+      title: 'Christmas',
+      year: 2020,
+      serverId: 'server_1',
+      libraryId: 'm',
+      libraryTitle: movies.title,
+    );
+    final other = movie.copyWith(id: 'k1', libraryId: 'k', libraryTitle: kids.title);
+    final observer = _SearchObserver();
+    final (client, key) = await _pumpTvSearchScreen(
+      tester,
+      items: [other, movie],
+      libraries: [movies, kids],
+      observer: observer,
+    );
+    (key.currentState! as SearchInputFocusable).submitSearchQuery('Christmas');
+    await tester.pumpAndSettle();
+    FocusableMediaCard card() => tester.widget(find.byType(FocusableMediaCard));
+    expect(card().item, same(movie));
+    final context = tester.element(find.byType(SearchScreen));
+    await context.read<LibrariesProvider>().updateLibraryOrder([kids, movies]);
+    await tester.pumpAndSettle();
+    expect(card().item, same(other));
+    expect(client.queries, ['Christmas']);
+    card().onTap!();
+    final route = observer.latest as PageRouteBuilder;
+    final detail = route.pageBuilder(context, route.animation!, route.secondaryAnimation!) as MediaDetailScreen;
+    expect(detail.metadata.id, 'k1');
+    expect(detail.initialPlaybackCopies!.map((item) => item.id), unorderedEquals(['m1', 'k1']));
+    Navigator.of(context).pop();
+    await tester.pumpAndSettle();
   });
 
   testWidgets('results from a hidden library never reach the list', (tester) async {
@@ -818,6 +856,12 @@ void main() {
   });
 }
 
+class _SearchObserver extends NavigatorObserver {
+  Route<dynamic>? latest;
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) => latest = route;
+}
+
 Future<(_FakeMediaServerClient, GlobalKey<State<SearchScreen>>)> _pumpTvSearchScreen(
   WidgetTester tester, {
   List<MediaItem>? items,
@@ -829,6 +873,7 @@ Future<(_FakeMediaServerClient, GlobalKey<State<SearchScreen>>)> _pumpTvSearchSc
   bool registerClient = true,
   Object? searchError,
   List<_FakeMediaServerClient> additionalClients = const [],
+  NavigatorObserver? observer,
   HiddenLibrariesProvider? hiddenLibraries,
   List<MediaLibrary> libraries = const [],
 }) async {
@@ -883,6 +928,7 @@ Future<(_FakeMediaServerClient, GlobalKey<State<SearchScreen>>)> _pumpTvSearchSc
         child: MaterialApp(
           theme: monoTheme(MonoPalette.dark),
           home: SearchScreen(key: key),
+          navigatorObservers: [?observer],
         ),
       ),
     ),

@@ -1,6 +1,43 @@
 import 'ids.dart';
 import 'media_item.dart';
+import 'media_library.dart';
 import 'media_version.dart';
+
+/// The first matching library in the profile's order. Unlisted libraries
+/// use the app defaults, then the order the search server returned.
+MediaItem preferredLibraryCopy(List<MediaItem> copies, Map<String, int> order) {
+  int rank(MediaItem item) => order[item.libraryGlobalKey] ?? order.length + defaultLibraryRank(item.libraryTitle);
+  return copies.reduce((first, next) => rank(next) < rank(first) ? next : first);
+}
+
+typedef FourKPlayback = ({MediaItem item, MediaVersion version, int index});
+
+/// The first playable UHD file in preference order, retaining the original
+/// version index because the player opens a file within a particular item.
+FourKPlayback? findFourKPlayback(Iterable<MediaItem> copies) {
+  for (final item in copies) {
+    final versions = item.mediaVersions ?? const <MediaVersion>[];
+    for (final (index, version) in versions.indexed) {
+      if (version.isPlayable && version.is4K) {
+        return (item: item, version: version, index: index);
+      }
+    }
+  }
+  return null;
+}
+
+/// The primary action owns the 4K label when its effective file is UHD.
+FourKPlayback? primaryFourKPlayback(
+  MediaItem item,
+  int index,
+  FourKPlayback? fourK, {
+  required bool preferFourKLibrary,
+}) {
+  if (fourK == null || fourK.item.globalKey != item.globalKey) return null;
+  final version = index < 0 ? null : item.mediaVersions?.elementAtOrNull(index);
+  if (version != null && version.isPlayable && version.is4K) return (item: item, version: version, index: index);
+  return preferFourKLibrary ? fourK : null;
+}
 
 /// The library a copy belongs to: [MediaItem.libraryId] with the
 /// [MediaItem.libraryTitle] that labels it. The two travel as a pair, since a
@@ -75,7 +112,7 @@ int compareLibraryCopies(MediaItem a, MediaItem b) {
 String? libraryCopyQualityLabel(MediaItem copy) {
   MediaVersion? best;
   for (final version in copy.mediaVersions ?? const <MediaVersion>[]) {
-    if (version.resolutionHeight == null) continue;
+    if (!version.isPlayable || version.resolutionHeight == null) continue;
     if (best == null || version.resolutionHeight! > best.resolutionHeight!) best = version;
   }
   return best?.displayLabel;

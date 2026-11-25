@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../media/grouped_home_hubs.dart';
 import '../media/ids.dart';
 import '../media/media_hub.dart';
 import '../media/library_change_event.dart';
@@ -10,6 +11,7 @@ import '../media/media_server_client.dart';
 import '../mixins/disposable_change_notifier_mixin.dart';
 import '../mixins/event_aware.dart';
 import '../services/settings_service.dart';
+import '../services/playback_bandwidth.dart';
 import '../services/data_aggregation_service.dart';
 import '../services/system_shelf_service.dart';
 import '../utils/app_logger.dart';
@@ -92,6 +94,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
     required this.profileId,
     required this.isProfileBinding,
     WatchStateStore? watchStateStore,
+    this.bandwidth,
     DateTime Function()? now,
     bool Function()? isRefreshBlocked,
     this.libraryEventDebounce = const Duration(seconds: 3),
@@ -142,6 +145,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   }
 
   final MultiServerProvider _multiServer;
+  final PlaybackBandwidth? bandwidth;
   final HiddenLibrariesProvider _hiddenLibraries;
   final LibrariesProvider _libraries;
 
@@ -232,6 +236,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   Map<String, List<MediaItem>> _continueWatchingCopies = const {};
 
   List<MediaHub> _hubs = [];
+  List<MediaHub> _displayHubs = [];
   bool _hasMoreContinueWatching = false;
   DiscoverLoadState _onDeckState = DiscoverLoadState.initial;
   DiscoverLoadState _hubsState = DiscoverLoadState.initial;
@@ -278,7 +283,8 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
     return [for (final copy in copies) copy.globalKey == item.globalKey ? item : copy];
   }
 
-  List<MediaHub> get hubs => _hubs;
+  List<MediaHub> get hubs => _displayHubs;
+  bool get hubsSpanMultipleServers => _hubs.map((hub) => hub.serverId).nonNulls.toSet().length > 1;
   bool get hasMoreContinueWatching => _hasMoreContinueWatching;
 
   /// Raw load failure (unlocalized); the screen wraps it for display.
@@ -972,12 +978,15 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
 
   void _replaceOnDeck(List<MediaItem> onDeck, {required bool hasMore}) {
     _onDeck = onDeck;
+    bandwidth?.warmUp(onDeck, _multiServer.serverManager.visibleOnlineClients);
     _hasMoreContinueWatching = hasMore;
     ++_commitRevision;
   }
 
   void _replaceHubs(List<MediaHub> hubs) {
     _hubs = hubs;
+    bandwidth?.warmUp(hubs.expand((hub) => hub.items), _multiServer.serverManager.visibleOnlineClients);
+    _displayHubs = groupHomeHubs(hubs, libraryOrder: _libraries.libraryOrder);
     ++_commitRevision;
   }
 
@@ -1102,7 +1111,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
     if (_hubs.isEmpty) return;
 
     final sortedHubs = List<MediaHub>.from(_hubs);
-    if (!sortMediaHubsByLibraryOrder(sortedHubs, _libraries.libraries)) return;
+    sortMediaHubsByLibraryOrder(sortedHubs, _libraries.libraries);
     _replaceHubs(sortedHubs);
     safeNotifyListeners();
   }

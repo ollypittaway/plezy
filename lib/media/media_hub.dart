@@ -1,3 +1,4 @@
+import 'collection_title.dart';
 import 'media_item.dart';
 
 /// A named, ordered list of items grouped on the home screen (Plex `Hub`,
@@ -11,11 +12,24 @@ class MediaHub {
   final String? identifier;
 
   final String title;
+  final String? collectionLibraryTitle;
+
+  String get displayTitle => collectionTitleWithLibrary(title, collectionLibraryTitle);
+
+  /// Plex promotes individual collections using custom.collection identifiers
+  /// or a collection's children endpoint, even when the row type is "movie".
+  bool get isCollectionShelf =>
+      type == 'collection' ||
+      (identifier ?? '').toLowerCase().split('.').contains('collection') ||
+      Uri.tryParse(id)?.pathSegments.contains('collections') == true;
 
   /// Hub kind: `movie`, `show`, `mixed`, `clip`, etc. — drives UI rendering.
   final String type;
 
   final List<MediaItem> items;
+
+  /// Original backend rows when Home combines several shelves with the same title.
+  final List<MediaHub> sources;
 
   /// Total number of items the server reports (may exceed [items.length] when
   /// a "see more" affordance is available).
@@ -34,8 +48,10 @@ class MediaHub {
   const MediaHub({
     required this.id,
     required this.title,
+    this.collectionLibraryTitle,
     required this.type,
     required this.items,
+    this.sources = const [],
     this.identifier,
     this.size = 0,
     this.more = false,
@@ -54,18 +70,21 @@ class MediaHub {
   bool get usesContinueWatchingAction => isContinueWatchingHub || _anySemanticKey(_usesContinueWatchingActionKey);
 
   bool _anySemanticKey(bool Function(String key) matches) {
+    if (sources.isNotEmpty) return false;
     if (matches(id)) return true;
     final hubIdentifier = identifier;
     return hubIdentifier != null && matches(hubIdentifier);
   }
 
-  MediaHub copyWith({List<MediaItem>? items, int? size}) {
+  MediaHub copyWith({List<MediaItem>? items, int? size, String? collectionLibraryTitle}) {
     return MediaHub(
       id: id,
       identifier: identifier,
       title: title,
+      collectionLibraryTitle: collectionLibraryTitle ?? this.collectionLibraryTitle,
       type: type,
       items: items ?? this.items,
+      sources: sources,
       size: size ?? this.size,
       more: more,
       libraryId: libraryId,

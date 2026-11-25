@@ -7,6 +7,8 @@
 3. Run `scripts/codegen.sh` to generate translations and Dart model code
 4. Start developing!
 
+To install GucciPlexa on an iPhone or build an IPA, follow the [iOS build guide](ios/BUILDING.md).
+
 ## Development
 
 - Follow Dart/Flutter conventions

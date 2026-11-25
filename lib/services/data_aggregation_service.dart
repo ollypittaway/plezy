@@ -4,6 +4,7 @@ import '../media/ids.dart';
 import '../media/media_hub.dart';
 import '../media/media_item.dart';
 import '../media/media_item_merge.dart';
+import '../media/media_title_groups.dart';
 import '../media/media_kind.dart';
 import '../media/media_library.dart';
 import '../media/media_person.dart';
@@ -71,6 +72,7 @@ typedef LibraryAggregationResult = ({
 /// own filter.
 typedef SearchAggregationResult = ({
   List<SearchHit> hits,
+  Map<String, List<MediaItem>> copies,
   List<MediaItem> candidates,
   List<MediaPerson> people,
   Set<String> succeededServerIds,
@@ -669,7 +671,13 @@ class DataAggregationService {
             if (music.cancelled) legCancelledServerIds.add(serverId);
           }
           if (globalError != null) Error.throwWithStackTrace(globalError, globalStackTrace!);
-          hubs = [...globalHubs, if (music != null) ...music.hubs];
+          final libraryNames = {
+            for (final library in serverLibraries ?? const <MediaLibrary>[]) library.id: library.title,
+          };
+          hubs = [
+            for (final hub in globalHubs) _attributeGlobalCollection(hub, libraryNames),
+            if (music != null) ...music.hubs,
+          ];
         } else {
           // A fallback backend cannot run a hub leg without the libraries its
           // prefetch failed to discover.
@@ -770,7 +778,10 @@ class DataAggregationService {
             libraryKind: library.kind,
             diagnostics: diagnostics,
           );
-          results[index] = hubs;
+          results[index] = [
+            for (final hub in hubs)
+              if (hub.isCollectionShelf) hub.copyWith(collectionLibraryTitle: library.title) else hub,
+          ];
           if (hubs.isNotEmpty || (!diagnostics.failed && !diagnostics.cancelled)) succeeded = true;
         } catch (e, st) {
           if (_isCancellation(e)) {
@@ -789,6 +800,24 @@ class DataAggregationService {
     await Future.wait([for (var i = 0; i < concurrency && i < visible.length; i++) worker()]);
 
     return (hubs: [for (final list in results) ...list], succeeded: succeeded, failed: failed, cancelled: cancelled);
+  }
+
+  /// Resolve a promoted collection against its own server. An ambiguous
+  /// or unknown origin is left unlabelled even if the first item has a name.
+  MediaHub _attributeGlobalCollection(MediaHub hub, Map<String, String> libraryNames) {
+    if (!hub.isCollectionShelf) return hub;
+    final ids = {
+      for (final item in hub.items)
+        if (item.libraryId != null) item.libraryId!,
+    };
+    if (ids.length > 1) return hub;
+    final explicitName = libraryNames[hub.libraryId ?? ids.singleOrNull];
+    if (explicitName != null) return hub.copyWith(collectionLibraryTitle: explicitName);
+    final names = {
+      for (final item in hub.items)
+        if (item.libraryTitle?.trim().isNotEmpty == true) item.libraryTitle!.trim(),
+    };
+    return names.length == 1 ? hub.copyWith(collectionLibraryTitle: names.single) : hub;
   }
 
   /// Filter hidden-library items and drop empty hubs.
@@ -831,6 +860,7 @@ class DataAggregationService {
   Future<SearchAggregationResult> searchAcrossServers(
     String query, {
     int? limit,
+    List<MediaLibrary> libraryOrder = const [],
     Set<String>? hiddenLibraryKeys,
     AbortController? abort,
   }) async {
@@ -840,7 +870,7 @@ class DataAggregationService {
     final clients = _serverManager.visibleOnlineClients;
     if (clients.isEmpty) return _emptySearchResult;
 
-    final resultLimit = limit ?? defaultMediaSearchLimit;
+    final resultLimit = RangeError.checkNotNegative(limit ?? defaultMediaSearchLimit);
     final fetchLimit = resultLimit < defaultMediaSearchLimit ? defaultMediaSearchLimit : resultLimit;
 
     final fetched = await _fanOut<SearchHit>(
@@ -890,12 +920,35 @@ class DataAggregationService {
     // Before ranking, so hidden results cannot spend the `resultLimit` budget
     // and silently shrink what the user sees.
     final visible = _withoutHiddenLibraries(titles, hiddenLibraryKeys);
-    // Titles first: equal scores keep input order, so a tie goes to the title.
-    final hits = rankSearchHits(
-      [for (final item in visible) MediaSearchHit(item), for (final person in people) PersonSearchHit(person)],
-      query,
-      limit: resultLimit,
-    );
+    final order = {for (final (index, library) in libraryOrder.indexed) library.globalKey: index};
+    final representatives = <String, MediaItem>{};
+    final copies = <String, List<MediaItem>>{};
+    final candidates = <MediaItem>[];
+    for (final group in groupMediaCopiesByTitle(visible, requireReleaseYear: true)) {
+      final preferred = preferredLibraryCopy(group, order);
+      candidates.add(preferred);
+      if (group.length > 1) copies[preferred.globalKey] = group;
+      for (final item in group) {
+        representatives[item.globalKey] = preferred;
+      }
+    }
+    // The best matching alias earns the slot. The first library supplies its
+    // artwork and playback target. Apply the limit after collapsing copies.
+    final ranked = rankSearchHits([
+      for (final item in visible) MediaSearchHit(item),
+      for (final person in people) PersonSearchHit(person),
+    ], query);
+    final shown = <String>{};
+    final hits = <SearchHit>[];
+    for (final hit in ranked) {
+      if (hits.length >= resultLimit) break;
+      if (hit case MediaSearchHit(:final item)) {
+        final preferred = representatives[item.globalKey]!;
+        if (shown.add(preferred.globalKey)) hits.add(MediaSearchHit(preferred));
+      } else {
+        hits.add(hit);
+      }
+    }
 
     appLogger.i(
       'Search aggregation completed: ${hits.length} results '
@@ -905,7 +958,8 @@ class DataAggregationService {
 
     return (
       hits: hits,
-      candidates: visible,
+      copies: copies,
+      candidates: candidates,
       people: people,
       succeededServerIds: fetched.succeededServerIds,
       cancelledServerIds: fetched.cancelledServerIds,
@@ -914,6 +968,7 @@ class DataAggregationService {
   }
 
   static const SearchAggregationResult _emptySearchResult = (
+    copies: <String, List<MediaItem>>{},
     hits: <SearchHit>[],
     candidates: <MediaItem>[],
     people: <MediaPerson>[],
@@ -1026,6 +1081,28 @@ class DataAggregationService {
       failedServerIds: fetched.failedServerIds,
       unqueriedServerIds: fetched.unqueriedServerIds,
     );
+  }
+
+  /// Look up alternatives only for the active profile, keeping the clicked
+  /// copy usable when another server is slow or unavailable.
+  Future<List<MediaItem>> playbackCopies(MediaItem item, {required AbortController abort}) async {
+    final origin = _serverManager.visibleOnlineClients[item.serverId];
+    if (origin == null) return [item];
+    try {
+      final query = await _withinServerDeadline(
+        MediaServerTimeouts.libraryLookup,
+        operation: 'Library title identity',
+        parent: abort,
+        run: (leg) => TitleQuery.forLibraryItem(item, origin, leg),
+      );
+      if (query == null) return [item];
+      final result = await findTitleCopiesAcrossServers(query, abort: abort);
+      return mergeLibraryCopies([item], result.items);
+    } catch (e) {
+      abort.throwIfAborted();
+      appLogger.d('Could not look up other library copies', error: e);
+      return [item];
+    }
   }
 
   /// Group libraries by server (internal aggregation helper).

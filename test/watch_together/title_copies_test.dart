@@ -318,6 +318,27 @@ void main() {
   });
 
   group('episodes', () {
+    test('a library season or episode resolves under the matching series in the other library', () async {
+      final originalShow = _item('series', kind: MediaKind.show, title: 'Example', year: 2018);
+      final seriesCopy = originalShow.copyWith(id: 'series-4k', libraryId: '4', libraryTitle: 'UHD TV');
+      final season = _item('season', kind: MediaKind.season, index: 2).copyWith(parentId: originalShow.id);
+      final episode = _episode('hd', season: 2, episode: 8).copyWith(grandparentId: originalShow.id);
+      final library = _Library(
+        'nas',
+        full: {originalShow.id: originalShow},
+        hits: [seriesCopy],
+        children: {
+          seriesCopy.id: [_item('other-season', kind: MediaKind.season, index: 1), season.copyWith(id: 's2-4k')],
+          's2-4k': [_episode('e7-4k', season: 2, episode: 7), _episode('e8-4k', season: 2, episode: 8)],
+        },
+      );
+      for (final (source, expected) in [(season, 's2-4k'), (episode, 'e8-4k')]) {
+        final query = await TitleQuery.forLibraryItem(source, library, AbortController());
+        final copy = (await library.findTitleCopies(query!)).single;
+        expect((copy.id, copy.libraryTitle), (expected, 'UHD TV'));
+      }
+    });
+
     test('found through the show IDs, its season and the episode number', () async {
       final show = _item('show', kind: MediaKind.show, title: 'Severance', year: 2022);
       final library = _Library(

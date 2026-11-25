@@ -281,6 +281,24 @@ void main() {
   });
 
   group('LibrariesProvider.syncToOnlineServers', () {
+    test('orders the six named libraries by default and respects an explicitly saved order on refresh', () async {
+      const defaults = ['Movies', '4K Movies', 'Kids Movies', 'TV Shows', '4K TV Shows', 'Kids TV Shows'];
+      final server = ServerId('A');
+      final incoming = [
+        for (final title in ['Extras', ...defaults.reversed]) _serverLib(server, title, title),
+      ];
+      final manager = MultiServerManager();
+      manager.debugRegisterClientForTesting(_FakeClient(serverId: server, libraries: incoming));
+      final provider = LibrariesProvider()..initialize(DataAggregationService(manager));
+      addTearDown(manager.dispose);
+      addTearDown(provider.dispose);
+      await provider.syncToOnlineServers({'A'});
+      expect(provider.libraries.map((library) => library.title), [...defaults, 'Extras']);
+      await provider.updateLibraryOrder(incoming);
+      await provider.refresh();
+      expect(provider.libraries.map((library) => library.title), incoming.map((library) => library.title));
+    });
+
     test('loads when a server first comes online', () async {
       final manager = MultiServerManager();
       final clientA = _FakeClient(serverId: ServerId('A'), libraries: [_serverLib(ServerId('A'), '1', 'Movies A')]);

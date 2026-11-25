@@ -15,7 +15,6 @@ import '../../../mixins/item_updatable.dart';
 import '../../../mixins/watch_state_aware.dart';
 import '../../../services/settings_service.dart';
 import '../../../utils/deletion_notifier.dart';
-import '../../../utils/hub_icons.dart';
 import '../../../utils/media_event_keys.dart';
 import '../../../utils/platform_detector.dart';
 import '../../../utils/provider_extensions.dart';
@@ -306,7 +305,6 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<MediaHub, LibraryR
                   key: hubKeys[index],
                   hub: hub,
                   focusMemory: _hubFocusMemory,
-                  icon: hubIconFor(hub),
                   isInContinueWatching: isContinueWatching,
                   usesContinueWatchingAction: usesContinueWatchingAction,
                   onRefresh: updateItem,
@@ -342,7 +340,6 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<MediaHub, LibraryR
                 key: _tvBrowseRailKey,
                 hubs: tvHubs,
                 focusMemory: _hubFocusMemory,
-                iconForHub: (hub, _) => hubIconFor(hub),
                 onFocusedItemChanged: _setSpotlightItem,
                 onRefresh: updateItem,
                 onRemoveFromContinueWatching: _refreshContinueWatching,

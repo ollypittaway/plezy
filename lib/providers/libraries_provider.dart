@@ -67,6 +67,8 @@ class LibrariesProvider extends ChangeNotifier with DisposableChangeNotifierMixi
   /// Unmodifiable list of all libraries (ordered)
   List<MediaLibrary> get libraries => List.unmodifiable(_libraries);
 
+  Map<String, int> get libraryOrder => {for (final (index, library) in _libraries.indexed) library.globalKey: index};
+
   bool get isLoading => _loadState == LibrariesLoadState.loading;
 
   /// Whether libraries have been loaded at least once
@@ -442,22 +444,12 @@ class LibrariesProvider extends ChangeNotifier with DisposableChangeNotifierMixi
 
   /// Apply saved library order to a list of libraries.
   List<MediaLibrary> _applyLibraryOrder(List<MediaLibrary> libraries, List<String>? savedOrder) {
-    if (savedOrder == null || savedOrder.isEmpty) {
-      return libraries;
-    }
-
-    final libraryMap = {for (final lib in libraries) lib.globalKey: lib};
-
-    final orderedLibraries = <MediaLibrary>[];
-    for (final key in savedOrder) {
-      final lib = libraryMap.remove(key);
-      if (lib != null) {
-        orderedLibraries.add(lib);
-      }
-    }
-
-    orderedLibraries.addAll(libraryMap.values);
-
-    return orderedLibraries;
+    final saved = {for (final (index, key) in (savedOrder ?? const <String>[]).indexed) key: index};
+    int rank(MediaLibrary library) =>
+        saved[library.globalKey] ?? (savedOrder?.length ?? 0) + defaultLibraryRank(library.title);
+    // Stable sorting keeps server order for other libraries and for ties across servers.
+    final ordered = List.of(libraries);
+    mergeSort(ordered, compare: (a, b) => rank(a).compareTo(rank(b)));
+    return ordered;
   }
 }

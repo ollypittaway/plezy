@@ -12,7 +12,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'connection/connection.dart';
 import 'connection/connection_bootstrap.dart';
@@ -41,8 +40,10 @@ import 'services/video_decode_capabilities.dart';
 import 'services/macos_window_service.dart';
 import 'services/native_window_service.dart';
 import 'services/fullscreen_state_manager.dart';
+import 'services/announcement_service.dart';
 import 'services/settings_service.dart';
 import 'services/agent_control_service.dart';
+import 'widgets/splash_logo.dart';
 import 'widgets/agent_control_scope.dart';
 import 'widgets/settings_builder.dart';
 import 'utils/iphone_duo.dart';
@@ -111,6 +112,7 @@ import 'services/startup_diagnostics.dart';
 import 'utils/dialogs.dart';
 import 'widgets/dialog_action_button.dart';
 import 'widgets/startup_failure_view.dart';
+import 'widgets/startup_playback_check.dart';
 
 const bool _enableSentry = bool.fromEnvironment('ENABLE_SENTRY', defaultValue: false);
 const String _sentryDsn = 'https://6a1a6ef8c72140099b2798973c1bfb2f@bugs.plezy.app/1';
@@ -194,6 +196,7 @@ void _bootstrapApp() {
       onCommitted: (dependencies) => _startNonessentialInitialization(dependencies.settings),
       lightTheme: monoTheme(MonoPalette.light),
       darkTheme: monoTheme(MonoPalette.dark),
+      themeMode: material.ThemeMode.dark,
       resolveTheme: _resolveStartupTheme,
       // Android runs the Flutter surface in transparent mode over a window
       // whose background PlezyActivity already restored, so the loading frame
@@ -1088,7 +1091,7 @@ Future<void> _logEnvironmentDiagnostics() async {
     await Future.sync(() => Sentry.configureScope((scope) => scope.setTag('renderer', rendererName ?? 'unknown')));
   }
   appLogger.i(
-    'Plezy v${appVersion.label}$commitSuffix$renderer'
+    'GucciPlexa v${appVersion.label}$commitSuffix$renderer'
     ' [effects: ${DevicePerformance.describeSync()}]',
   );
   appLogger.i('Display: ${DevicePerformance.describeDisplay()}');
@@ -1203,6 +1206,10 @@ FutureOr<SentryEvent?> _beforeSend(SentryEvent event, Hint _) {
 /// the event never finishes enriching. The collectors are lazy, so registering
 /// them here loads nothing until a reader runs.
 void _registerAppLicenses() {
+  LicenseRegistry.addLicense(() async* {
+    final notice = await rootBundle.loadString('assets/licenses/InterTight.txt');
+    yield LicenseEntryWithLineBreaks(const ['Inter Tight'], notice);
+  });
   _registerShaderLicenses();
   // iOS covers iPhone, iPad, and Apple TV; mpv-build links SpatialAudioBridge
   // into libmpv there and not on macOS.
@@ -1744,7 +1751,9 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
         // Expose AppDatabase + ConnectionRegistry so screens (Settings, Setup)
         // can manage stored Jellyfin/Plex connections without re-creating
         // the registry per-call site.
+        ChangeNotifierProvider<AnnouncementService>(lazy: false, create: (_) => AnnouncementService()..start()),
         Provider<SettingsService>.value(value: widget.settings),
+        Provider<StartupPlaybackCheck>(create: (_) => StartupPlaybackCheck(widget.settings)),
         Provider<StorageService>.value(value: widget.storage),
         Provider<AppDatabase>.value(value: _appDatabase),
         Provider<ConnectionRegistry>.value(value: _connections),
@@ -2055,6 +2064,41 @@ class FormFactorScale extends StatelessWidget {
     // behavior and overscan handling remain unchanged.
     if (PlatformDetector.isAppleTV()) {
       return _scaledSurface(child: child, scale: _appleTvScale, zeroInsets: true);
+    }
+    if (Platform.isAndroid && PlatformDetector.isTV()) {
+      // Give fixed-size controls a usable logical viewport on low-density
+      // Fire OS/Android TV surfaces. FittedBox preserves layout and hit tests
+      // while shrinking the virtual viewport to the real window.
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final outer = MediaQuery.of(context);
+          if (!constraints.hasBoundedWidth || !constraints.hasBoundedHeight ||
+              constraints.maxWidth <= 0 || constraints.maxHeight <= 0) return child;
+          final widthScale = constraints.maxWidth / 1280;
+          final heightScale = constraints.maxHeight / 720;
+          final scale = (widthScale < heightScale ? widthScale : heightScale).clamp(0.01, 1.0).toDouble();
+          if (scale == 1.0) return child;
+          final size = Size(constraints.maxWidth / scale, constraints.maxHeight / scale);
+          return FittedBox(
+            fit: BoxFit.contain,
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: MediaQuery(
+                data: outer.copyWith(
+                  size: size,
+                  devicePixelRatio: outer.devicePixelRatio * scale,
+                  padding: outer.padding * (1 / scale),
+                  viewPadding: outer.viewPadding * (1 / scale),
+                  viewInsets: outer.viewInsets * (1 / scale),
+                  systemGestureInsets: outer.systemGestureInsets * (1 / scale),
+                ),
+                child: child,
+              ),
+            ),
+          );
+        },
+      );
     }
     if (!PlatformDetector.isAutomotive()) return child;
 
@@ -2527,7 +2571,7 @@ class _SetupScreenState extends State<SetupScreen> with MountedSetStateMixin {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SvgPicture.asset('assets/plezy_adaptive_foreground.svg', width: 160, height: 160),
+                  const SplashLogo(size: 160),
                   _buildStatusText(context),
                   const SizedBox(height: 16),
                   Center(
@@ -2550,7 +2594,7 @@ class _SetupScreenState extends State<SetupScreen> with MountedSetStateMixin {
       color: Theme.of(context).scaffoldBackgroundColor,
       child: Stack(
         children: [
-          Center(child: SvgPicture.asset('assets/plezy_adaptive_foreground.svg', width: 288, height: 288)),
+          const Center(child: SplashLogo(size: 288)),
           Positioned(left: 0, right: 0, bottom: height * 0.5 - 170, child: _buildStatusText(context)),
           Positioned(
             left: 0,

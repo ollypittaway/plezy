@@ -78,6 +78,19 @@ void main() {
     expect(tester.widget<FocusableMediaCard>(find.byType(FocusableMediaCard)).cardShapeOverride, CardShape.square);
   });
 
+  testWidgets('collection shows the preferred copy at the first matching position', (tester) async {
+    final kids = _movie('kids', 'Holiday', year: 2020).copyWith(libraryTitle: 'Kids Movies');
+    final movies = kids.copyWith(id: 'movies', libraryTitle: 'Movies');
+    final sequel = _movie('sequel', 'Holiday', year: 2025);
+    final harness = await _createHarness([kids, sequel, movies]);
+    await tester.pumpWidget(harness.wrap(CollectionDetailScreen(collection: _movieCollection)));
+    await tester.pumpAndSettle();
+
+    final cards = tester.widgetList<FocusableMediaCard>(find.byType(FocusableMediaCard));
+    expect(cards.map((card) => (card.item as MediaItem).id), ['movies', 'sequel']);
+    expect(find.textContaining('2 items'), findsOneWidget);
+  });
+
   testWidgets('collection cards announce list position without duplicate actions', (tester) async {
     final semantics = tester.ensureSemantics();
     final items = [
@@ -121,12 +134,18 @@ void main() {
     ]);
 
     await tester.pumpWidget(
-      harness.wrap(SizedBox(width: 1280, height: 720, child: CollectionDetailScreen(collection: _movieCollection))),
+      harness.wrap(
+        SizedBox(
+          width: 1280,
+          height: 720,
+          child: CollectionDetailScreen(collection: _movieCollection.copyWith(libraryTitle: 'Movie Archive')),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
     // Header title plus the pinned (initially invisible) bar title.
-    expect(find.text('Sinners'), findsNWidgets(2));
+    expect(find.text('Sinners · Movie Archive'), findsNWidgets(2));
     expect(find.text('2 items  ·  2007–2013'), findsOneWidget);
     expect(find.textContaining('ten animated films'), findsOneWidget);
     expect(find.byTooltip('Play'), findsOneWidget);

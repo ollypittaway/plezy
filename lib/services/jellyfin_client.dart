@@ -281,6 +281,7 @@ class JellyfinClient
         _JellyfinMetadataEditMethods
     implements
         MediaServerClient,
+        PlaybackSpeedClient,
         SeasonEpisodePagingClient,
         MediaDeletionPermissionClient,
         ScopedMediaServerClient,
@@ -399,6 +400,15 @@ class JellyfinClient
 
   @override
   final FailoverHttpClient _http;
+
+  @override
+  String get playbackEndpoint => _http.baseUrl;
+
+  @override
+  Future<double?> samplePlaybackMbps(MediaItem item, AbortController abort) => _http.sampleDownloadMbps(
+    buildDirectStreamUrl(item.id, mediaSourceId: item.mediaVersions?.firstOrNull?.id),
+    abort,
+  );
   final FavoriteChannelsRepository _favoritesRepository;
   bool _offlineMode = false;
 

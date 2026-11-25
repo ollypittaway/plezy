@@ -170,8 +170,8 @@ class NavigationRailItem extends StatelessWidget {
     // The collapsed TV rail is a transparent overlay strip; a persistent
     // active pill over artwork is noise there, so it shows focus only.
     final showSelected = isSelected && !suppressSelectedBackground && !(collapsedLayout && PlatformDetector.isTV());
-    if (focused) return t.text.withValues(alpha: showSelected ? selectedFocusAlpha : focusAlpha);
-    if (showSelected) return t.text.withValues(alpha: 0.1);
+    if (focused) return t.accent.withValues(alpha: showSelected ? selectedFocusAlpha : focusAlpha);
+    if (showSelected) return t.accent.withValues(alpha: 0.14);
     return null;
   }
 

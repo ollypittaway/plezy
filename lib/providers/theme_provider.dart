@@ -19,7 +19,7 @@ typedef ThemeChoice = ({settings.ThemeMode mode, MonoPalette? palette});
 class ThemeProvider extends ChangeNotifier with DisposableChangeNotifierMixin, WidgetsBindingObserver {
   final SupporterService _supporter;
   late final SettingsBindingOwner _settingsBinding;
-  settings.ThemeMode _storedMode = settings.ThemeMode.system;
+  settings.ThemeMode _storedMode = settings.SettingsService.themeMode.resolvedDefault;
   MonoPalette? _customPalette;
   late ThemeChoice _choice;
   late Brightness _systemBrightness;
@@ -109,7 +109,7 @@ class ThemeProvider extends ChangeNotifier with DisposableChangeNotifierMixin, W
 
   /// What [stored] paints. A Supporter perk applies only while [unlocked], and
   /// Custom only once a palette is saved; otherwise the app paints the theme a
-  /// fresh install gets on this device (System, OLED on TV), read from the
+  /// fresh install gets on this device (Dark, OLED on TV), read from the
   /// pref's own default so the TV rule lives in one place.
   ///
   /// Static so the pre-provider startup frame resolves through the same rule

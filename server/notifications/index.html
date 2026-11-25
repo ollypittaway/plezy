@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>GucciPlexa Notifications</title>
+    <link rel="stylesheet" href="/panel.css" />
+    <script src="/panel.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <strong>GucciPlexa</strong><span>Notifications</span
+      ><button id="signout" hidden>Sign out</button>
+    </header>
+    <main>
+      <section id="login">
+        <h1>Notification panel</h1>
+        <form id="signin">
+          <label for="admin">Admin key</label
+          ><input id="admin" type="password" autocomplete="current-password" required /><button>
+            Sign in
+          </button>
+        </form>
+      </section>
+      <div id="workspace" hidden>
+        <div class="heading">
+          <h1>Notifications</h1>
+          <button id="pair">Pair a device</button>
+        </div>
+        <dialog id="pairing">
+          <h2>Pair a device</h2>
+          <p>In GucciPlexa, open Settings → General → Notifications and paste this link.</p>
+          <input id="link" aria-label="Private device pairing link" readonly />
+          <div class="actions">
+            <button id="copy">Copy link</button><button id="close">Done</button>
+          </div>
+        </dialog>
+        <div class="columns">
+          <section class="card">
+            <h2>New announcement</h2>
+            <p id="phones"></p>
+            <form id="compose">
+              <label for="title">Title</label><input id="title" maxlength="120" required /><label
+                for="body"
+                >Message</label
+              ><textarea id="body" maxlength="1000" rows="5" required></textarea
+              ><button id="send">Send notification</button>
+            </form>
+          </section>
+          <section class="card">
+            <h2>Recent announcements</h2>
+            <ol id="history"></ol>
+          </section>
+        </div>
+      </div>
+      <p id="status" role="status"></p>
+    </main>
+  </body>
+</html>

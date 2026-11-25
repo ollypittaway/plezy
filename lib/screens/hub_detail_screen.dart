@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'package:provider/provider.dart';
+import '../providers/libraries_provider.dart';
+import '../media/grouped_home_hubs.dart';
 import '../media/catalog_item_ref.dart';
 import '../media/ids.dart';
 
@@ -203,7 +206,10 @@ class _HubDetailScreenState extends State<HubDetailScreen>
 
   void _applySort() {
     setState(() {
-      _filteredItems = List.from(_items);
+      final hub = widget.hub;
+      _filteredItems = hub.isCollectionShelf && hub.sources.isEmpty
+          ? interleaveHubItems([itemsInHubLibrary(hub, _items)], libraryOrder: _libraryOrder)
+          : List.from(_items);
 
       final selectedSort = _selectedSort;
       if (selectedSort != null) {
@@ -281,8 +287,9 @@ class _HubDetailScreenState extends State<HubDetailScreen>
   Future<void> _loadMoreItems() async {
     if (_isLoading) return;
 
-    final serverId = widget.hub.serverId;
-    final loader = widget.loadItems;
+    final hub = widget.hub;
+    final serverId = hub.serverId;
+    final loader = widget.loadItems ?? (hub.sources.isEmpty ? null : _loadGroupedItems);
     if (loader == null && serverId == null) {
       appLogger.w('Hub has no serverId; cannot load more items for ${widget.hub.id}');
       return;
@@ -314,12 +321,12 @@ class _HubDetailScreenState extends State<HubDetailScreen>
         } else if (loader == null) {
           final page = client == null
               ? const LibraryPage<MediaItem>(items: [], totalCount: 0)
-              : await client.fetchMoreHubItemsPage(widget.hub.id, start: 0, size: _pageSize);
-          items = _applySectionFilter(page.items);
+              : await client.fetchMoreHubItemsPage(hub.id, start: 0, size: _pageSize);
+          items = _applySectionFilter(page.items, hub);
           totalCount = page.totalCount;
           loadedCount = page.items.length;
         } else {
-          items = _applySectionFilter(await loader());
+          items = _applySectionFilter(await loader(), hub);
           totalCount = items.length;
           loadedCount = items.length;
         }
@@ -347,7 +354,7 @@ class _HubDetailScreenState extends State<HubDetailScreen>
 
       appLogger.d('Loaded ${items.length} items for hub: ${widget.hub.title}');
     } catch (e, stackTrace) {
-      final message = localizedLoadErrorMessage(e, stackTrace, context: widget.hub.title);
+      final message = localizedLoadErrorMessage(e, stackTrace, context: hub.title);
       if (!mounted) return;
       setState(() {
         _errorMessage = message;
@@ -356,13 +363,43 @@ class _HubDetailScreenState extends State<HubDetailScreen>
     }
   }
 
+  Map<String, int> get _libraryOrder => context.read<LibrariesProvider?>()?.libraryOrder ?? const {};
+
+  Future<List<MediaItem>> _loadGroupedItems() async {
+    final lists = await Future.wait(
+      widget.hub.sources.map((source) async {
+        if (!source.more) return itemsInHubLibrary(source, source.items);
+        final id = serverIdOrNull(source.serverId);
+        final client = id == null ? null : context.tryGetMediaClientForServer(id);
+        if (client == null) throw StateError('No media client available for ${source.id}');
+
+        var page = await client.fetchMoreHubItemsPage(source.id, start: 0, size: _pageSize);
+        var items = List.of(page.items);
+        if (items.length < page.totalCount && !client.backend.usesMediaBrowserApi) {
+          // Plex's filtered pages rescan from the beginning on each offset.
+          // Its full-hub request walks the underlying collection just once.
+          items = await client.fetchMoreHubItems(source.id);
+          if (items.isEmpty) throw StateError('Incomplete hub response for ${source.id}');
+        } else {
+          while (items.length < page.totalCount) {
+            if (page.items.isEmpty) throw StateError('Incomplete hub page for ${source.id}');
+            page = await client.fetchMoreHubItemsPage(source.id, start: items.length, size: _pageSize);
+            items.addAll(page.items);
+          }
+        }
+        return itemsInHubLibrary(source, _applySectionFilter(items, source));
+      }),
+    );
+    return mounted ? interleaveHubItems(lists, libraryOrder: _libraryOrder) : const [];
+  }
+
   Future<ContinuationPage<MediaItem>> _fetchContinuationPage(int startIndex) async {
     final serverId = widget.hub.serverId;
     final client = serverId == null ? null : context.tryGetMediaClientForServer(ServerId(serverId));
     if (client == null) throw StateError('No media client available for hub continuation');
 
     if (_replaceContinuationItems) {
-      final items = _applySectionFilter(await client.fetchMoreHubItems(widget.hub.id));
+      final items = _applySectionFilter(await client.fetchMoreHubItems(widget.hub.id), widget.hub);
       if (items.isEmpty && _items.isNotEmpty) {
         throw StateError('Hub continuation returned no items');
       }
@@ -371,7 +408,7 @@ class _HubDetailScreenState extends State<HubDetailScreen>
 
     final page = await client.fetchMoreHubItemsPage(widget.hub.id, start: startIndex, size: _pageSize);
     return ContinuationPage(
-      items: _applySectionFilter(page.items),
+      items: _applySectionFilter(page.items, widget.hub),
       totalCount: page.totalCount,
       consumedCount: page.items.length,
     );
@@ -447,8 +484,8 @@ class _HubDetailScreenState extends State<HubDetailScreen>
     }
   }
 
-  List<MediaItem> _applySectionFilter(List<MediaItem> items) {
-    final sectionFilter = int.tryParse(widget.hub.libraryId ?? '');
+  List<MediaItem> _applySectionFilter(List<MediaItem> items, MediaHub hub) {
+    final sectionFilter = int.tryParse(hub.libraryId ?? '');
     if (sectionFilter == null) return items;
     return items.where((item) => int.tryParse(item.libraryId ?? '') == sectionFilter).toList();
   }
@@ -510,7 +547,7 @@ class _HubDetailScreenState extends State<HubDetailScreen>
               clipBehavior: Clip.none,
               slivers: [
                 CustomAppBar(
-                  title: Text(widget.hub.title),
+                  title: Text(widget.hub.displayTitle),
                   pinned: true,
                   actions: buildFocusableAppBarActions(),
                   onBackPressed: popFromAppBar,

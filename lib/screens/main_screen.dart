@@ -2,6 +2,7 @@ import 'dart:async';
 import '../media/ids.dart';
 import '../media/media_server_client.dart';
 import '../navigation/main_screen_scope.dart';
+import '../navigation/desktop_escape.dart';
 import '../navigation/page_refresh_shortcut.dart';
 import 'dart:io' show Platform, exit;
 
@@ -21,6 +22,7 @@ import '../services/tvos_system_navigation_service.dart';
 import '../services/update_service.dart';
 import '../utils/app_logger.dart';
 import '../widgets/auth_error_banner.dart';
+import '../widgets/startup_playback_check.dart';
 import '../widgets/app_icon.dart';
 import '../utils/iphone_duo.dart';
 import '../utils/platform_detector.dart';
@@ -35,6 +37,7 @@ import '../navigation/navigation_tabs.dart';
 import '../navigation/profile_navigation_scope.dart';
 import '../navigation/settings_shortcut.dart';
 import '../profiles/active_profile_binder.dart';
+import '../connection/connection.dart';
 import '../connection/connection_registry.dart';
 import '../profiles/active_profile_provider.dart';
 import '../profiles/plex_home_service.dart';
@@ -63,6 +66,8 @@ import '../services/deep_links/deep_link_launcher.dart';
 import '../services/deep_links/deep_link_service.dart';
 import '../widgets/music/mini_player.dart';
 import '../widgets/navigation_label_fit.dart';
+import '../widgets/desktop_navigation_bar.dart';
+import '../utils/layout_constants.dart';
 import '../widgets/mobile_navigation_rail.dart';
 import '../widgets/vertical_bar_shell.dart';
 import '../widgets/side_navigation_rail.dart';
@@ -86,27 +91,6 @@ import '../watch_together/watch_together.dart';
 // MainScreenFocusScope and SideNavigationBleedBuilder live in
 // navigation/main_screen_scope.dart (re-exported above) so widgets like the
 // browse rail can import the scope without an import cycle through this file.
-
-/// Desktop embedders report every hardware key as a keyboard key, so a remote
-/// (HDMI-CEC, IR receiver) Escape cannot be told apart from a keyboard Escape.
-/// TV mode is the signal that the machine is remote-driven: there Escape stays
-/// Back and keeps the press-back-again exit (#2490).
-@visibleForTesting
-bool shouldHandleDesktopRootEscape({
-  required bool isDesktop,
-  required bool isTV,
-  required bool isPhysicalKeyboardEvent,
-  required LogicalKeyboardKey logicalKey,
-  required bool isCurrentRoute,
-  required bool isHomeTab,
-}) {
-  return isDesktop &&
-      !isTV &&
-      isPhysicalKeyboardEvent &&
-      logicalKey == LogicalKeyboardKey.escape &&
-      isCurrentRoute &&
-      isHomeTab;
-}
 
 /// Whether a lifecycle resume should raise the "ask for a profile on open"
 /// picker.
@@ -408,6 +392,7 @@ class _MainScreenState extends State<MainScreen>
     with RouteAware, WindowListener, WidgetsBindingObserver, MountedSetStateMixin {
   NavigationTabId _currentTab = NavigationTabId.discover;
   String? _selectedLibraryGlobalKey;
+  final _desktopBackHistory = <({NavigationTabId tab, String? library})>[];
   Future<void>? _desktopExitFuture;
 
   /// Whether the app is in offline mode (no server connection)
@@ -549,6 +534,7 @@ class _MainScreenState extends State<MainScreen>
     _contentFocusScope.addListener(_syncSidebarFocusWithContent);
 
     if (PlatformDetector.isDesktopOS()) {
+      FocusManager.instance.addEarlyKeyEventHandler(_handleDesktopEscape);
       windowManager.addListener(this);
       windowManager.setPreventClose(true);
     }
@@ -641,6 +627,19 @@ class _MainScreenState extends State<MainScreen>
           unawaited(_autoStartCompanionRemoteServer());
         }
       }
+
+      // The dialog belongs to this profile's navigator. Settle it before a
+      // launch link can open a title or the update check can show another dialog.
+      final linkedConnections = activeProfile.connectionsByProfile[activeProfile.activeId] ?? const [];
+      final hasPlex =
+          activeProfile.active?.isPlexHome == true ||
+          linkedConnections.any((link) => activeProfile.connectionsById[link.connectionId] is PlexAccountConnection);
+      await context.read<StartupPlaybackCheck>().run(
+        context,
+        mobile: PlatformDetector.isMobile(context),
+        hasPlex: hasPlex,
+      );
+      if (!mounted) return;
 
       // Links act once the profile is settled and its preferences are loaded.
       _attachDeepLinks();
@@ -1102,6 +1101,7 @@ class _MainScreenState extends State<MainScreen>
     // A replacement MainScreen may already have attached its session.
     _detachDeepLinks();
 
+    FocusManager.instance.removeEarlyKeyEventHandler(_handleDesktopEscape);
     super.dispose();
   }
 
@@ -1378,6 +1378,7 @@ class _MainScreenState extends State<MainScreen>
     );
 
     if (newOffline == _isOffline) return;
+    _desktopBackHistory.clear();
 
     final previousTab = _currentTab;
     final wasOffline = _isOffline;
@@ -1642,32 +1643,43 @@ class _MainScreenState extends State<MainScreen>
     return KeyEventResult.handled;
   }
 
-  /// Desktop physical-keyboard Escape at root Home is reserved for leaving
-  /// window fullscreen; it never arms the press-back-again quit, so an Escape
-  /// aimed at fullscreen can't close the app (#1748). In TV mode Escape is the
-  /// remote's Back and keeps the double-press exit path, as do gamepad B,
-  /// companion-remote back, and system back. On macOS this also keeps player
-  /// Escape away from native fullscreen, which is window state shared by
-  /// every route.
-  KeyEventResult _handleDesktopRootEscape(KeyEvent event) {
-    final tabs = _getVisibleTabs(_isOffline);
-    final shouldHandle = shouldHandleDesktopRootEscape(
-      isDesktop: PlatformDetector.isDesktopOS(),
-      isTV: PlatformDetector.isTV(),
-      isPhysicalKeyboardEvent: event.isPhysicalKeyboardEvent,
-      logicalKey: event.logicalKey,
-      isCurrentRoute: ModalRoute.of(context)?.isCurrent == true,
-      isHomeTab: tabs.isNotEmpty && _currentTab == tabs.first.id,
+  KeyEventResult _handleDesktopEscape(KeyEvent event) {
+    if (!mounted || _isShowingProfileSelection) return KeyEventResult.ignored;
+    return dispatchDesktopEscape(
+      context,
+      event,
+      searchSelected: _currentTab == NavigationTabId.search,
+      suppressKeyUp: _suppressBackAfterPop,
+      goBack: _backDesktopStage,
     );
-    if (!shouldHandle) return KeyEventResult.ignored;
+  }
 
-    if (event is KeyUpEvent) {
-      BackKeyCoordinator.markHandled();
-      unawaited(FullscreenStateManager().exitFullscreenIfActive());
+  void _backDesktopStage() {
+    if (_isSidebarFocused) {
+      _focusContent();
+      return;
     }
-    return event is KeyDownEvent || event is KeyRepeatEvent || event is KeyUpEvent
-        ? KeyEventResult.handled
-        : KeyEventResult.ignored;
+    final tabs = _getVisibleTabs(_isOffline);
+    while (_desktopBackHistory.isNotEmpty) {
+      final stage = _desktopBackHistory.removeLast();
+      if (!tabs.any((tab) => tab.id == stage.tab)) continue;
+      final library = stage.library;
+      if (library != null) {
+        if (context.read<LibrariesProvider>().libraryByGlobalKey(library) == null ||
+            context.read<HiddenLibrariesProvider>().hiddenLibraryKeys.contains(library)) {
+          continue;
+        }
+        _selectLibrary(library, remember: false);
+      } else {
+        _selectTab(stage.tab, remember: false);
+      }
+      return;
+    }
+    if (tabs.isNotEmpty && _currentTab != tabs.first.id) {
+      _selectTab(tabs.first.id, remember: false);
+      return;
+    }
+    unawaited(FullscreenStateManager().exitFullscreenIfActive());
   }
 
   KeyEventResult _handlePageRefreshShortcut(KeyEvent event) {
@@ -1797,11 +1809,15 @@ class _MainScreenState extends State<MainScreen>
     _fullRefreshContentTabs();
   }
 
-  void _selectTab(NavigationTabId tab, {bool focusSearchInput = true}) {
+  void _selectTab(NavigationTabId tab, {bool focusSearchInput = true, String? libraryKey, bool remember = true}) {
     // Guard: ignore if tab isn't available in current mode
     if (!_getVisibleTabs(_isOffline).any((t) => t.id == tab)) return;
 
     final previousTab = _currentTab;
+    if (remember && (previousTab != tab || (libraryKey != null && libraryKey != _selectedLibraryGlobalKey))) {
+      _rememberDesktopStage();
+    }
+    if (libraryKey != null) _selectedLibraryGlobalKey = libraryKey;
     final wasMounted = _mountedTabs.contains(tab);
     setState(() {
       _currentTab = tab;
@@ -1866,16 +1882,24 @@ class _MainScreenState extends State<MainScreen>
     }
   }
 
-  /// Handle library selection from side navigation rail
-  void _selectLibrary(String libraryGlobalKey) {
+  void _rememberDesktopStage() {
+    if (!PlatformDetector.isDesktopOS() || PlatformDetector.isTV()) return;
+    final stage = (
+      tab: _currentTab,
+      library: _currentTab == NavigationTabId.libraries ? _selectedLibraryGlobalKey : null,
+    );
+    if (_desktopBackHistory.lastOrNull != stage) _desktopBackHistory.add(stage);
+  }
+
+  /// Handle library selection from the desktop menu or side navigation rail.
+  void _selectLibrary(String libraryGlobalKey, {bool remember = true}) {
     if (!_getVisibleTabs(_isOffline).any((tab) => tab.id == NavigationTabId.libraries)) return;
 
-    _selectedLibraryGlobalKey = libraryGlobalKey;
-    _selectTab(NavigationTabId.libraries);
+    _selectTab(NavigationTabId.libraries, libraryKey: libraryGlobalKey, remember: remember);
     // A first visit promotes LibrariesScreen in _selectTab. Wait for its State
     // before applying the requested library and focus; neither action may drop.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted || _currentTab != NavigationTabId.libraries || _selectedLibraryGlobalKey != libraryGlobalKey) return;
       _onScreen<LibraryLoadable>(NavigationTabId.libraries, (screen) => screen.loadLibraryByKey(libraryGlobalKey));
       _onScreen<FocusableTab>(NavigationTabId.libraries, (screen) => screen.focusActiveTabIfReady());
     });
@@ -1893,6 +1917,7 @@ class _MainScreenState extends State<MainScreen>
 
   void _handleLibrariesScreenSelected(String libraryGlobalKey) {
     if (_selectedLibraryGlobalKey == libraryGlobalKey) return;
+    if (_currentTab == NavigationTabId.libraries && _selectedLibraryGlobalKey != null) _rememberDesktopStage();
     setState(() => _selectedLibraryGlobalKey = libraryGlobalKey);
   }
 
@@ -2082,13 +2107,46 @@ class _MainScreenState extends State<MainScreen>
     return CoveredRouteFocusBoundary(child: _buildContent(context, useSideNav));
   }
 
+  Widget _buildDesktopNavigationBar({Widget? homeActions}) {
+    return Consumer2<LibrariesProvider, HiddenLibrariesProvider>(
+      builder: (context, libraries, hidden, _) {
+        final hiddenKeys = hidden.hiddenLibraryKeys;
+        return DesktopNavigationBar(
+          tabs: _getVisibleTabs(_isOffline),
+          selected: _currentTab,
+          libraries: !_isOffline && hidden.isInitialized
+              ? libraries.libraries.where((lib) => !hiddenKeys.contains(lib.globalKey)).toList()
+              : const [],
+          selectedLibraryKey: _selectedLibraryGlobalKey,
+          onSelectLibrary: (key) {
+            _selectLibrary(key);
+            if (_isSidebarFocused) _focusContent(restorePreviousFocus: false);
+          },
+          onSelect: (tab) {
+            _selectTab(tab);
+            if (_isSidebarFocused) _focusContent(restorePreviousFocus: false);
+          },
+          onMenu: _isSidebarFocused ? _focusContent : _focusSidebar,
+          homeActions: homeActions,
+        );
+      },
+    );
+  }
+
   Widget _buildContent(BuildContext context, bool useSideNav) {
     if (useSideNav) {
       return SettingValueBuilder<bool>(
         pref: SettingsService.alwaysKeepSidebarOpen,
         builder: (context, alwaysExpanded, _) {
-          final targetContentOffset = _sideNavigationWidth(context, alwaysExpanded: alwaysExpanded);
-          final reservedContentOffset = alwaysExpanded
+          final useTopBar =
+              !alwaysExpanded &&
+              PlatformDetector.isDesktopOS() &&
+              !PlatformDetector.isTV() &&
+              ScreenBreakpoints.isWideTabletOrLarger(MediaQuery.sizeOf(context).width);
+          final targetContentOffset = useTopBar ? 0.0 : _sideNavigationWidth(context, alwaysExpanded: alwaysExpanded);
+          final reservedContentOffset = useTopBar
+              ? 0.0
+              : alwaysExpanded
               ? SideNavigationRailState.expandedWidth
               : SideNavigationRailState.collapsedWidthForContext(context);
 
@@ -2102,8 +2160,6 @@ class _MainScreenState extends State<MainScreen>
             canPop: false,
             child: Focus(
               onKeyEvent: (node, event) {
-                final rootEscapeResult = _handleDesktopRootEscape(event);
-                if (rootEscapeResult == KeyEventResult.handled) return rootEscapeResult;
                 final fullscreenResult = _handleFullscreenShortcut(event);
                 if (fullscreenResult == KeyEventResult.handled) return fullscreenResult;
                 final refreshResult = _handlePageRefreshShortcut(event);
@@ -2136,84 +2192,109 @@ class _MainScreenState extends State<MainScreen>
                     viewportWidth: viewportWidth,
                     selectLibrary: _selectLibrary,
                     openSettings: _openSettings,
-                    child: SideNavigationScope(
-                      child: Stack(
-                        clipBehavior: Clip.hardEdge,
-                        children: [
-                          Positioned.fill(child: ColoredBox(color: Theme.of(context).scaffoldBackgroundColor)),
-                          Positioned(
-                            top: 0,
-                            bottom: 0,
-                            left: contentLayout.left,
-                            width: contentLayout.width,
-                            child: TweenAnimationBuilder<double>(
-                              duration: SideNavigationRailState.expandDuration,
-                              curve: SideNavigationRailState.expandCurve,
-                              tween: Tween<double>(end: targetContentOffset),
-                              child: FocusScope(
-                                node: _contentFocusScope,
-                                // No autofocus - we control focus programmatically to prevent
-                                // autofocus from stealing focus back after setState() rebuilds
-                                child: _buildTickerAwareStack(),
-                              ),
-                              // Duration/curve must stay in sync with
-                              // SideNavigationBleedBuilder and the rail's width
-                              // animation so all three track tick for tick.
-                              builder: (context, contentLeftPadding, contentChild) {
-                                return Transform.translate(
-                                  offset: Offset(contentLeftPadding - targetContentOffset, 0),
-                                  child: contentChild!,
-                                );
-                              },
+                    child: Column(
+                      children: [
+                        if (useTopBar && _currentTab != NavigationTabId.discover) _buildDesktopNavigationBar(),
+                        Expanded(
+                          child: SideNavigationScope(
+                            child: Stack(
+                              clipBehavior: Clip.hardEdge,
+                              children: [
+                                Positioned.fill(child: ColoredBox(color: Theme.of(context).scaffoldBackgroundColor)),
+                                Positioned(
+                                  top: 0,
+                                  bottom: 0,
+                                  left: contentLayout.left,
+                                  width: contentLayout.width,
+                                  child: TweenAnimationBuilder<double>(
+                                    duration: SideNavigationRailState.expandDuration,
+                                    curve: SideNavigationRailState.expandCurve,
+                                    tween: Tween<double>(end: targetContentOffset),
+                                    child: FocusScope(
+                                      node: _contentFocusScope,
+                                      // No autofocus - we control focus programmatically to prevent
+                                      // autofocus from stealing focus back after setState() rebuilds
+                                      child: Provider<DesktopHomeHeaderBuilder?>.value(
+                                        value: useTopBar && _currentTab == NavigationTabId.discover
+                                            ? (actions) => _buildDesktopNavigationBar(homeActions: actions)
+                                            : null,
+                                        child: _buildTickerAwareStack(),
+                                      ),
+                                    ),
+                                    // Duration/curve must stay in sync with
+                                    // SideNavigationBleedBuilder and the rail's width
+                                    // animation so all three track tick for tick.
+                                    builder: (context, contentLeftPadding, contentChild) {
+                                      return Transform.translate(
+                                        offset: Offset(contentLeftPadding - targetContentOffset, 0),
+                                        child: contentChild!,
+                                      );
+                                    },
+                                  ),
+                                ),
+                                // Scrim behind the modal (hover/touch) rail
+                                // overlay; purely visual so content stays
+                                // interactive and hover-out still collapses.
+                                Positioned.fill(
+                                  child: IgnorePointer(
+                                    child: AnimatedOpacity(
+                                      opacity: _isSidebarFloatingPanel ? 1.0 : 0.0,
+                                      duration: SideNavigationRailState.expandDuration,
+                                      curve: SideNavigationRailState.expandCurve,
+                                      child: const ColoredBox(color: Color(0x66000000)),
+                                    ),
+                                  ),
+                                ),
+                                if (useTopBar && _isSidebarFocused)
+                                  Positioned.fill(
+                                    child: ModalBarrier(
+                                      color: Colors.black45,
+                                      dismissible: true,
+                                      onDismiss: _focusContent,
+                                      semanticsLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+                                    ),
+                                  ),
+                                Positioned(
+                                  top: 0,
+                                  bottom: 0,
+                                  left: 0,
+                                  child: Visibility(
+                                    visible: !useTopBar || _isSidebarFocused,
+                                    maintainState: true,
+                                    child: FocusScope(
+                                      node: _sidebarFocusScope,
+                                      child: SideNavigationRail(
+                                        key: _sideNavKey,
+                                        selectedTab: _currentTab,
+                                        selectedLibraryKey: _selectedLibraryGlobalKey,
+                                        isOfflineMode: _isOffline,
+                                        isSidebarFocused: _isSidebarFocused,
+                                        alwaysExpanded: alwaysExpanded,
+                                        isReconnecting: _isReconnecting,
+                                        onDestinationSelected: (tab) {
+                                          final restorePreviousFocus = tab == _currentTab;
+                                          _selectTab(tab);
+                                          _focusContent(restorePreviousFocus: restorePreviousFocus);
+                                        },
+                                        onLibrarySelected: (key) {
+                                          _selectLibrary(key);
+                                          _focusContent(restorePreviousFocus: false);
+                                        },
+                                        onNavigateToContent: _focusContent,
+                                        onFloatingPanelChanged: (floating) {
+                                          if (_isSidebarFloatingPanel == floating) return;
+                                          setState(() => _isSidebarFloatingPanel = floating);
+                                        },
+                                        onReconnect: _triggerReconnect,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          // Scrim behind the modal (hover/touch) rail
-                          // overlay; purely visual so content stays
-                          // interactive and hover-out still collapses.
-                          Positioned.fill(
-                            child: IgnorePointer(
-                              child: AnimatedOpacity(
-                                opacity: _isSidebarFloatingPanel ? 1.0 : 0.0,
-                                duration: SideNavigationRailState.expandDuration,
-                                curve: SideNavigationRailState.expandCurve,
-                                child: const ColoredBox(color: Color(0x66000000)),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            top: 0,
-                            bottom: 0,
-                            left: 0,
-                            child: FocusScope(
-                              node: _sidebarFocusScope,
-                              child: SideNavigationRail(
-                                key: _sideNavKey,
-                                selectedTab: _currentTab,
-                                selectedLibraryKey: _selectedLibraryGlobalKey,
-                                isOfflineMode: _isOffline,
-                                isSidebarFocused: _isSidebarFocused,
-                                alwaysExpanded: alwaysExpanded,
-                                isReconnecting: _isReconnecting,
-                                onDestinationSelected: (tab) {
-                                  final restorePreviousFocus = tab == _currentTab;
-                                  _selectTab(tab);
-                                  _focusContent(restorePreviousFocus: restorePreviousFocus);
-                                },
-                                onLibrarySelected: (key) {
-                                  _selectLibrary(key);
-                                  _focusContent(restorePreviousFocus: false);
-                                },
-                                onNavigateToContent: _focusContent,
-                                onFloatingPanelChanged: (floating) {
-                                  if (_isSidebarFloatingPanel == floating) return;
-                                  setState(() => _isSidebarFloatingPanel = floating);
-                                },
-                                onReconnect: _triggerReconnect,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   );
                 },

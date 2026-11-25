@@ -104,6 +104,30 @@ class CodecUtils {
     };
   }
 
+  /// Format a video codec name for display. Handles mpv's descriptive
+  /// strings ('hevc (Main 10)'), ExoPlayer's RFC 6381 codec IDs
+  /// ('hvc1.2.4.L153.B0', 'av01.0.08M.10'), and `video/...` MIME types
+  /// ('video/hevc') used as a fallback when the container carries no
+  /// codecs string.
+  static String? formatPlayerVideoCodec(String? codec) {
+    if (codec == null || codec.isEmpty) return null;
+    final upper = codec.toUpperCase();
+    if (upper.contains('DVHE') || upper.contains('DVH1') || upper.contains('DOLBY-VISION')) {
+      return 'Dolby Vision';
+    }
+    if (upper.contains('HEVC') || upper.contains('H265') || upper.contains('HVC1') || upper.contains('HEV1')) {
+      return 'HEVC';
+    }
+    if (upper.contains('H264') || upper.contains('AVC')) return 'H.264';
+    if (upper.contains('AV1') || upper.contains('AV01')) return 'AV1';
+    if (upper.contains('VP9') || upper.contains('VP09')) return 'VP9';
+    if (upper.contains('VP8') || upper.contains('VP08')) return 'VP8';
+    if (upper.contains('MP4V')) return 'MPEG-4';
+    if (upper.contains('MPEG2')) return 'MPEG-2';
+    if (upper.startsWith('VIDEO/')) return codec.substring('video/'.length).toUpperCase();
+    return codec;
+  }
+
   /// Formats an audio channel count as a friendly layout name (2 → 'Stereo',
   /// 6 → '5.1'). Returns null when [channels] is null or not positive.
   static String? formatAudioChannels(int? channels) {

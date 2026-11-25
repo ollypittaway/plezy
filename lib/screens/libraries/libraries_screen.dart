@@ -37,13 +37,12 @@ import 'tabs/library_browse_tab.dart';
 import 'tabs/library_recommended_tab.dart';
 import 'tabs/library_collections_tab.dart';
 import 'tabs/library_genres_tab.dart';
-import 'tabs/library_playlists_tab.dart';
 import 'tabs/base_library_tab.dart';
 
-enum LibraryTabType { recommended, browse, collections, playlists, genres }
+enum LibraryTabType { recommended, collections, genres, browse }
 
 List<LibraryTabType> visibleLibraryTabs(MediaLibrary library) {
-  if (library.isShared) return [LibraryTabType.browse, LibraryTabType.playlists];
+  if (library.isShared) return [LibraryTabType.browse];
   // Genres filter the library's own type; only movie and show libraries
   // browse a type both backends tag with genres.
   final hasGenres = library.kind == MediaKind.movie || library.kind == MediaKind.show;
@@ -80,7 +79,6 @@ class _LibrariesScreenState extends State<LibrariesScreen>
   final _browseTabKey = GlobalKey();
   final _collectionsTabKey = GlobalKey();
   final _genresTabKey = GlobalKey();
-  final _playlistsTabKey = GlobalKey();
 
   String? _selectedLibraryGlobalKey;
 
@@ -333,7 +331,6 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       LibraryTabType.browse => _browseTabKey.currentState,
       LibraryTabType.collections => _collectionsTabKey.currentState,
       LibraryTabType.genres => _genresTabKey.currentState,
-      LibraryTabType.playlists => _playlistsTabKey.currentState,
     };
   }
 
@@ -438,7 +435,6 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     LibraryTabType.browse => t.libraries.tabs.browse,
     LibraryTabType.collections => t.libraries.tabs.collections,
     LibraryTabType.genres => t.libraries.tabs.genres,
-    LibraryTabType.playlists => t.libraries.tabs.playlists,
   };
 
   Widget _buildTabContent(
@@ -485,14 +481,6 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         onDataLoaded: () => _handleTabDataLoaded(tabIndex),
         onBack: focusTabBar,
         onGenreSelected: (genre) => unawaited(_openGenre(library, genre, canGroupByFolders: canGroupByFolders)),
-      ),
-      LibraryTabType.playlists => LibraryPlaylistsTab(
-        key: _playlistsTabKey,
-        library: library,
-        isActive: isActive,
-        suppressAutoFocus: suppressAutoFocus,
-        onDataLoaded: () => _handleTabDataLoaded(tabIndex),
-        onBack: focusTabBar,
       ),
     };
   }
@@ -548,7 +536,9 @@ class _LibrariesScreenState extends State<LibrariesScreen>
 
     // Restore saved tab by name
     final savedTabName = storage.getLibraryTab(libraryGlobalKey);
-    final savedType = LibraryTabType.values.where((t) => t.name == savedTabName).firstOrNull;
+    final savedType = savedTabName == 'playlists'
+        ? _visibleTabs.first
+        : LibraryTabType.values.where((t) => t.name == savedTabName).firstOrNull;
     final targetTabIndex = savedType != null ? _visibleTabs.indexOf(savedType) : -1;
     if (targetTabIndex >= 0 && targetTabIndex != tabController.index) {
       // Set flag to prevent _onTabChanged from triggering focus
