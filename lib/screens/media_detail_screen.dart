@@ -2885,15 +2885,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     return KeyEventResult.ignored;
   }
 
-  IconData _getRelatedHubIcon(MediaHub hub) {
-    final lower = hub.title.toLowerCase();
-    if (lower.contains('collection')) return Symbols.video_library_rounded;
-    if (lower.contains('similar')) return Symbols.auto_awesome_rounded;
-    if (lower.contains('more from') || lower.contains('more with')) return Symbols.person_rounded;
-    if (lower.contains('genre') || lower.contains('director')) return Symbols.movie_rounded;
-    return Symbols.recommend_rounded;
-  }
-
   static const Widget _sectionLoading = Center(
     child: Padding(padding: .all(32), child: CircularProgressIndicator()),
   );
@@ -3655,7 +3646,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                                   key: _relatedHubKeys[i],
                                   hub: _relatedHubs[i],
                                   focusMemory: _hubFocusMemory,
-                                  icon: _getRelatedHubIcon(_relatedHubs[i]),
                                   inset: true,
                                   onVerticalNavigation: (isUp) => _handleRelatedHubNavigation(i, isUp),
                                 ),
@@ -3842,7 +3832,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
               key: _tvDetailRailKey,
               hubs: detailHubs,
               focusMemory: _hubFocusMemory,
-              iconForHub: _getTvDetailHubIcon,
               onFocusedHubItemChanged: _handleTvDetailFocusedRailItemChanged,
               onRefresh: (source) => unawaited(_refreshItemInPlace(source)),
               onActiveHubChanged: _handleTvDetailHubChanged,
@@ -4659,15 +4648,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     final seasonIndex = int.tryParse(hub.id.substring(_tvDetailSeasonHubIdPrefix.length));
     if (seasonIndex == null || seasonIndex < 0 || seasonIndex >= _seasons.length) return null;
     return _seasons[seasonIndex];
-  }
-
-  IconData _getTvDetailHubIcon(MediaHub hub, int index) {
-    if (hub.id == _tvDetailSeasonsErrorHubId) return Symbols.error_outline_rounded;
-    if (hub.id.startsWith(_tvDetailSeasonHubIdPrefix)) return Symbols.tv_rounded;
-    if (hub.id == 'detail_episodes') return Symbols.tv_rounded;
-    if (hub.id == _tvDetailExtrasHubId) return Symbols.theaters_rounded;
-    if (hub.id == _tvDetailActorsHubId) return Symbols.group_rounded;
-    return _getRelatedHubIcon(hub);
   }
 
   /// Height of the backdrop paint box, which is deliberately taller than the

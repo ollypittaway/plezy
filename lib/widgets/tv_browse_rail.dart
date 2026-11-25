@@ -34,6 +34,7 @@ import 'focus_builders.dart';
 import 'horizontal_scroll_with_arrows.dart';
 import 'listenable_selector.dart';
 import 'media_card.dart';
+import 'shelf_heading.dart';
 import 'media_context_menu.dart';
 import 'optimized_media_image.dart';
 import 'rasterized_gradient.dart';
@@ -347,7 +348,6 @@ enum TvRailTrailing { none, loading, error, viewAll }
 class TvBrowseRail extends StatefulWidget {
   final List<MediaHub> hubs;
   final HubFocusMemory focusMemory;
-  final IconData Function(MediaHub hub, int index) iconForHub;
 
   /// Whether to show each hub's originating server name in its header. Used when
   /// the loaded hubs span more than one connected server so their origin stays
@@ -406,7 +406,6 @@ class TvBrowseRail extends StatefulWidget {
     super.key,
     required this.hubs,
     required this.focusMemory,
-    required this.iconForHub,
     this.showServerName = false,
     this.onFocusedItemChanged,
     this.onFocusedHubItemChanged,
@@ -1446,7 +1445,7 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
                   listenable: _focusModel,
                   selector: isActiveHub,
                   builder: (context, isActive, _) =>
-                      _buildHubHeader(context, hub: hub, hubIndex: hubIndex, isActive: isActive, scale: scale),
+                      _buildHubHeader(context, hub: hub, isActive: isActive, scale: scale),
                 ),
                 _buildHubRail(
                   hub: hub,
@@ -1531,16 +1530,9 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
     return [hub.title, if (selection.isNotEmpty) selection].join(', ');
   }
 
-  Widget _buildHubHeader(
-    BuildContext context, {
-    required MediaHub hub,
-    required int hubIndex,
-    required bool isActive,
-    required double scale,
-  }) {
+  Widget _buildHubHeader(BuildContext context, {required MediaHub hub, required bool isActive, required double scale}) {
     final colorScheme = Theme.of(context).colorScheme;
     final titleColor = isActive ? colorScheme.onSurface : colorScheme.onSurface.withValues(alpha: 0.54);
-    final iconColor = isActive ? colorScheme.onSurface : colorScheme.onSurface.withValues(alpha: 0.42);
     final showServerName = widget.showServerName && hub.serverName != null;
     final serverColor = colorScheme.primary.withValues(alpha: isActive ? 0.7 : 0.4);
     final serverStyle = Theme.of(
@@ -1554,39 +1546,16 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
           alignment: .centerLeft,
           child: Row(
             children: [
-              AppIcon(widget.iconForHub(hub, hubIndex), fill: 1, size: 20 * scale, color: iconColor),
-              SizedBox(width: 8 * scale),
-              Expanded(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        hub.title,
-                        maxLines: 1,
-                        overflow: .ellipsis,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: titleColor,
-                          fontSize: 18 * scale,
-                          height: 1,
-                          fontWeight: isActive ? FontWeight.w800 : FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    if (showServerName) ...[
-                      SizedBox(width: 8 * scale),
-                      Text('•', style: serverStyle),
-                      SizedBox(width: 8 * scale),
-                      Flexible(
-                        child: Text(hub.serverName!, maxLines: 1, overflow: .ellipsis, style: serverStyle),
-                      ),
-                    ],
-                  ],
-                ),
+              Flexible(
+                child: ShelfHeading(hub.title, fontSize: 22 * scale, color: titleColor),
               ),
-              if (_trailingFor(hub) == TvRailTrailing.viewAll) ...[
+              if (showServerName) ...[
                 SizedBox(width: 8 * scale),
-                AppIcon(Symbols.chevron_right_rounded, fill: 1, size: 20 * scale, color: iconColor),
-                SizedBox(width: 30 * scale),
+                Text('•', style: serverStyle),
+                SizedBox(width: 8 * scale),
+                Flexible(
+                  child: Text(hub.serverName!, maxLines: 1, overflow: .ellipsis, style: serverStyle),
+                ),
               ],
             ],
           ),

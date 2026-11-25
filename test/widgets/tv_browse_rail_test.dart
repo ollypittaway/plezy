@@ -443,7 +443,6 @@ void main() {
                       focusMemory: focusMemory,
                       hubs: [hub],
                       autofocus: true,
-                      iconForHub: (_, _) => Icons.movie_rounded,
                       onActivateItem: (_, item) {
                         activatedItemId = item.id;
                         return true;
@@ -518,12 +517,7 @@ void main() {
                   body: SizedBox(
                     width: 1280,
                     height: 720,
-                    child: TvBrowseRail(
-                      focusMemory: focusMemory,
-                      hubs: hubs,
-                      autofocus: true,
-                      iconForHub: (_, _) => Icons.movie_rounded,
-                    ),
+                    child: TvBrowseRail(focusMemory: focusMemory, hubs: hubs, autofocus: true),
                   ),
                 ),
               ),
@@ -574,7 +568,7 @@ void main() {
             body: SizedBox(
               width: 1280,
               height: 720,
-              child: TvBrowseRail(focusMemory: focusMemory, hubs: [hub], iconForHub: (_, _) => Icons.tv_rounded),
+              child: TvBrowseRail(focusMemory: focusMemory, hubs: [hub]),
             ),
           ),
         ),
@@ -614,11 +608,7 @@ void main() {
             body: SizedBox(
               width: 1280,
               height: 720,
-              child: TvBrowseRail(
-                focusMemory: focusMemory,
-                hubs: [hubFor('serverA'), hubFor('serverB')],
-                iconForHub: (_, _) => Icons.movie_rounded,
-              ),
+              child: TvBrowseRail(focusMemory: focusMemory, hubs: [hubFor('serverA'), hubFor('serverB')]),
             ),
           ),
         ),
@@ -658,7 +648,7 @@ void main() {
             body: SizedBox(
               width: 1280,
               height: 720,
-              child: TvBrowseRail(focusMemory: focusMemory, hubs: [hub], iconForHub: (_, _) => Icons.movie_rounded),
+              child: TvBrowseRail(focusMemory: focusMemory, hubs: [hub]),
             ),
           ),
         ),
@@ -701,12 +691,7 @@ void main() {
               body: SizedBox(
                 width: 1280,
                 height: 720,
-                child: TvBrowseRail(
-                  focusMemory: focusMemory,
-                  hubs: [hub],
-                  autofocus: true,
-                  iconForHub: (_, _) => Icons.movie_rounded,
-                ),
+                child: TvBrowseRail(focusMemory: focusMemory, hubs: [hub], autofocus: true),
               ),
             ),
           ),
@@ -791,12 +776,7 @@ void main() {
               body: SizedBox(
                 width: 1280,
                 height: 720,
-                child: TvBrowseRail(
-                  focusMemory: focusMemory,
-                  hubs: [firstHub, secondHub],
-                  autofocus: true,
-                  iconForHub: (_, _) => Icons.movie_rounded,
-                ),
+                child: TvBrowseRail(focusMemory: focusMemory, hubs: [firstHub, secondHub], autofocus: true),
               ),
             ),
           ),
@@ -871,12 +851,7 @@ void main() {
               body: SizedBox(
                 width: 1280,
                 height: 720,
-                child: TvBrowseRail(
-                  focusMemory: focusMemory,
-                  hubs: [firstHub, secondHub],
-                  autofocus: true,
-                  iconForHub: (_, _) => Icons.movie_rounded,
-                ),
+                child: TvBrowseRail(focusMemory: focusMemory, hubs: [firstHub, secondHub], autofocus: true),
               ),
             ),
           ),
@@ -950,12 +925,7 @@ void main() {
               body: SizedBox(
                 width: 1280,
                 height: 720,
-                child: TvBrowseRail(
-                  focusMemory: focusMemory,
-                  hubs: [hub],
-                  autofocus: true,
-                  iconForHub: (_, _) => Icons.movie_rounded,
-                ),
+                child: TvBrowseRail(focusMemory: focusMemory, hubs: [hub], autofocus: true),
               ),
             ),
           ),
@@ -1010,12 +980,7 @@ void main() {
               body: SizedBox(
                 width: 1280,
                 height: 720,
-                child: TvBrowseRail(
-                  focusMemory: focusMemory,
-                  hubs: [hub],
-                  autofocus: true,
-                  iconForHub: (_, _) => Icons.movie_rounded,
-                ),
+                child: TvBrowseRail(focusMemory: focusMemory, hubs: [hub], autofocus: true),
               ),
             ),
           ),
@@ -1084,7 +1049,6 @@ void main() {
                 focusMemory: focusMemory,
                 hubs: [hub],
                 autofocus: true,
-                iconForHub: (_, _) => Icons.movie_rounded,
                 trailingForHub: (_) => TvRailTrailing.loading,
               ),
             ),
@@ -1142,7 +1106,6 @@ void main() {
                     focusMemory: focusMemory,
                     hubs: [hub],
                     autofocus: true,
-                    iconForHub: (_, _) => Icons.movie_rounded,
                     trailingForHub: (_) => trailing,
                     onActivateItem: (_, _) {
                       activations++;
@@ -1197,11 +1160,7 @@ void main() {
             body: SizedBox(
               width: 1280,
               height: 720,
-              child: TvBrowseRail(
-                focusMemory: focusMemory,
-                hubs: [firstHub, secondHub],
-                iconForHub: (_, _) => Icons.movie_rounded,
-              ),
+              child: TvBrowseRail(focusMemory: focusMemory, hubs: [firstHub, secondHub]),
             ),
           ),
         ),
@@ -1256,7 +1215,6 @@ void main() {
                 initialHubId: initialHubId,
                 initialItemId: initialItemId,
                 autofocus: autofocus,
-                iconForHub: (_, _) => Icons.tv_rounded,
                 onActiveHubChanged: (hub, _) => activeHubIds.add(hub.id),
               ),
             ),
@@ -1296,7 +1254,6 @@ void main() {
                 key: const ValueKey('rail'),
                 hubs: hubs,
                 initialHubId: initialHubId,
-                iconForHub: (_, _) => Icons.tv_rounded,
                 onActiveHubChanged: (hub, _) => activeHubIds.add(hub.id),
               ),
             ),
@@ -1373,7 +1330,6 @@ void main() {
                   hubs: hubs,
                   initialHubId: continueHub.id,
                   autofocus: true,
-                  iconForHub: (_, _) => Icons.tv_rounded,
                   onFocusedHubItemChanged: (hub, item) => focusedSelections.add((hub.id, item.id)),
                 ),
               ),
@@ -1416,7 +1372,6 @@ void main() {
                 key: const ValueKey('rail'),
                 hubs: hubs,
                 initialItemId: initialItemId,
-                iconForHub: (_, _) => Icons.tv_rounded,
                 onFocusedItemChanged: (item) => focusedItemIds.add(item.id),
               ),
             ),
@@ -1497,7 +1452,6 @@ void main() {
                     focusMemory: focusMemory,
                     hubs: [movieHub, episodeHub],
                     autofocus: true,
-                    iconForHub: (_, _) => Icons.tv_rounded,
                     onActiveHubChanged: (hub, _) {
                       activeHubIds.add(hub.id);
                       setParentState(() => parentRebuilds++);
@@ -1609,7 +1563,6 @@ void main() {
                 key: const ValueKey('rail'),
                 hubs: hubs,
                 autofocus: true,
-                iconForHub: (_, _) => Icons.tv_rounded,
                 episodePosterModeForHub: (_) => EpisodePosterMode.episodeThumbnail,
               ),
             ),
@@ -1692,7 +1645,6 @@ void main() {
                 key: const ValueKey('rail'),
                 hubs: [firstHub, activeHub, backgroundLoaded ? backgroundUpdatedHub : backgroundInitialHub],
                 autofocus: true,
-                iconForHub: (_, _) => Icons.tv_rounded,
                 episodePosterModeForHub: (_) => EpisodePosterMode.episodeThumbnail,
               ),
             ),
@@ -1769,7 +1721,6 @@ void main() {
                     focusMemory: focusMemory,
                     hubs: [firstHub, middleLoaded ? middleUpdatedHub : middleInitialHub, lastHub],
                     autofocus: true,
-                    iconForHub: (_, _) => Icons.tv_rounded,
                     episodePosterModeForHub: (_) => EpisodePosterMode.episodeThumbnail,
                     onActiveHubChanged: (hub, _) {
                       if (updateMiddleOnFocus && hub.id == middleInitialHub.id && !middleLoaded) {
@@ -1871,7 +1822,6 @@ void main() {
                     focusMemory: focusMemory,
                     hubs: [movieHub, episodeHub],
                     autofocus: true,
-                    iconForHub: (_, _) => Icons.tv_rounded,
                     onActiveHubChanged: (_, _) => setParentState(() {}),
                     onFocusedHubItemChanged: (hub, item) => focused.add('${hub.id}:${item.id}'),
                     episodePosterModeForHub: (_) => EpisodePosterMode.episodeThumbnail,
@@ -1945,7 +1895,6 @@ void main() {
                   focusMemory: owner,
                   hubs: hubs,
                   autofocus: true,
-                  iconForHub: (_, _) => Icons.tv_rounded,
                   onFocusedHubItemChanged: (hub, item) => focused.add('${hub.id}:${item.id}'),
                   episodePosterModeForHub: (_) => EpisodePosterMode.episodeThumbnail,
                 ),
@@ -2034,7 +1983,6 @@ void main() {
                 focusMemory: focusMemory,
                 hubs: [hub],
                 autofocus: true,
-                iconForHub: (_, _) => Icons.tv_rounded,
                 episodePosterModeForHub: (_) => EpisodePosterMode.episodeThumbnail,
               ),
             ),
@@ -2103,12 +2051,7 @@ void main() {
               body: SizedBox(
                 width: 1280,
                 height: 720,
-                child: TvBrowseRail(
-                  focusMemory: focusMemory,
-                  hubs: [hub],
-                  autofocus: true,
-                  iconForHub: (_, _) => Icons.movie_rounded,
-                ),
+                child: TvBrowseRail(focusMemory: focusMemory, hubs: [hub], autofocus: true),
               ),
             ),
           ),
@@ -2199,7 +2142,6 @@ void main() {
                 focusMemory: focusMemory,
                 hubs: [hub],
                 autofocus: true,
-                iconForHub: (_, _) => Icons.tv_rounded,
                 onFocusedItemChanged: (item) => focusedItemIds.add(item.id),
                 episodePosterModeForHub: (_) => EpisodePosterMode.episodeThumbnail,
               ),
@@ -2271,7 +2213,6 @@ void main() {
                   child: TvBrowseRail(
                     focusMemory: focusMemory,
                     hubs: [hub],
-                    iconForHub: (_, _) => Icons.person_rounded,
                     onActivateItem: (_, _) {
                       activations++;
                       return Future.value(true);
@@ -2331,12 +2272,7 @@ void main() {
             body: SizedBox(
               width: 1280,
               height: 720,
-              child: TvBrowseRail(
-                focusMemory: focusMemory,
-                hubs: [hub],
-                autofocus: autofocus,
-                iconForHub: (_, _) => Icons.tv_rounded,
-              ),
+              child: TvBrowseRail(focusMemory: focusMemory, hubs: [hub], autofocus: autofocus),
             ),
           ),
         ),
@@ -2373,11 +2309,7 @@ void main() {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    child: TvBrowseRail(
-                      focusMemory: focusMemory,
-                      hubs: [hub],
-                      iconForHub: (_, _) => Icons.movie_rounded,
-                    ),
+                    child: TvBrowseRail(focusMemory: focusMemory, hubs: [hub]),
                   ),
                 ],
               ),
@@ -2423,7 +2355,6 @@ void main() {
               child: TvBrowseRail(
                 focusMemory: focusMemory,
                 hubs: [hub],
-                iconForHub: (_, _) => Icons.movie_rounded,
                 backgroundBleedLeft: SideNavigationRailState.expandedWidth,
               ),
             ),
@@ -2465,7 +2396,6 @@ void main() {
                 focusMemory: focusMemory,
                 key: const ValueKey('rail'),
                 hubs: [hub],
-                iconForHub: (_, _) => Icons.movie_rounded,
                 backgroundBleedLeft: backgroundBleedLeft,
                 onFocusedItemChanged: (focused) => focusedItemIds.add(focused.id),
                 onActiveHubChanged: (active, _) => activeHubIds.add(active.id),
@@ -2520,7 +2450,6 @@ void main() {
                   key: const ValueKey('rail'),
                   hubs: hubs,
                   autofocus: true,
-                  iconForHub: (_, _) => Icons.tv_rounded,
                   onFocusedItemChanged: (item) => focusedItemIds.add(item.id),
                 ),
               ),
@@ -2598,7 +2527,6 @@ void main() {
                   key: const ValueKey('rail'),
                   hubs: hubs,
                   autofocus: true,
-                  iconForHub: (_, _) => Icons.tv_rounded,
                   onFocusedItemChanged: (item) => focusedItemIds.add(item.id),
                 ),
               ),
@@ -2685,7 +2613,6 @@ void main() {
                       ),
                     ],
                     autofocus: true,
-                    iconForHub: (_, _) => Icons.tv_rounded,
                     onFocusedItemChanged: (item) => focusedItemIds.add(item.id),
                   ),
                 ),
@@ -2971,7 +2898,6 @@ void main() {
                   focusMemory: focusMemory,
                   hubs: [hub],
                   autofocus: true,
-                  iconForHub: (_, _) => Icons.tv_rounded,
                   leadingItemForHub: (h) => h.id == hub.id ? season : null,
                   onFocusedItemChanged: (item) => focusedItemIds.add(item.id),
                   onNavigateToSidebar: () => sidebarRequests++,
@@ -3055,7 +2981,6 @@ void main() {
                 focusMemory: focusMemory,
                 hubs: [hub],
                 autofocus: true,
-                iconForHub: (_, _) => Icons.tv_rounded,
                 leadingItemForHub: (h) => h.id == hub.id ? season : null,
                 initialHubId: hub.id,
                 initialItemId: 'episode_2',
@@ -3107,7 +3032,6 @@ void main() {
                 focusMemory: focusMemory,
                 hubs: hubs,
                 autofocus: true,
-                iconForHub: (_, _) => Icons.tv_rounded,
                 leadingItemForHub: (h) => h.id == 'detail_season_0' ? season : null,
                 onFocusedItemChanged: (item) => focusedItemIds.add(item.id),
               ),
@@ -3174,7 +3098,6 @@ void main() {
                   focusMemory: focusMemory,
                   hubs: [hub],
                   autofocus: true,
-                  iconForHub: (_, _) => Icons.tv_rounded,
                   leadingItemForHub: (h) => h.id == hub.id ? season : null,
                 ),
               ),
@@ -3245,7 +3168,6 @@ void main() {
                 focusMemory: focusMemory,
                 hubs: [movieHub, seasonHub],
                 autofocus: true,
-                iconForHub: (_, _) => Icons.tv_rounded,
                 leadingItemForHub: (h) => h.id == seasonHub.id ? season : null,
               ),
             ),

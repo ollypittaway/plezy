@@ -18,6 +18,7 @@ import 'package:plezy/media/media_hub.dart';
 import 'package:plezy/media/media_item.dart';
 import 'package:plezy/media/media_kind.dart';
 import 'package:plezy/media/media_library.dart';
+import 'package:plezy/media/media_rating.dart';
 import 'package:plezy/media/media_server_client.dart';
 import 'package:plezy/media/server_capabilities.dart';
 import 'package:plezy/mixins/refreshable.dart';
@@ -617,7 +618,22 @@ void main() {
           serverName: 'Server',
         ),
     ];
-    final client = _FakeMediaServerClient(hubs: const [], continueWatching: onDeck);
+    final client = _FakeMediaServerClient(
+      hubs: const [],
+      continueWatching: onDeck,
+      details: {
+        'movie_0': onDeck.first.copyWith(
+          year: 2026,
+          durationMs: const Duration(hours: 2, minutes: 53).inMilliseconds,
+          genres: ['Adventure', 'Action', 'Fantasy'],
+          ratings: const [
+            MediaRatingSource(source: 'imdb', value: 8),
+            MediaRatingSource(source: 'rottenTomatoesAudience', value: 8.6),
+            MediaRatingSource(source: 'rottenTomatoesCritic', value: 9.1),
+          ],
+        ),
+      },
+    );
     final manager = MultiServerManager()..debugRegisterClientForTesting(client);
     final multiServerProvider = testMultiServerProvider(manager);
     final hiddenLibrariesProvider = HiddenLibrariesProvider();
@@ -702,15 +718,23 @@ void main() {
     expect(find.byType(PageView), findsOneWidget);
     expect(find.byIcon(Symbols.pause_rounded), findsOneWidget, reason: 'hero indicators render in pointer mode');
 
+    expect(find.text('91  CRITICS', findRichText: true), findsOneWidget);
+    expect(find.text('86  AUDIENCE', findRichText: true), findsOneWidget);
+    expect(find.text('2026  ·  2h 53min  ·  Adventure  ·  Action  ·  Fantasy'), findsOneWidget);
+
     final carousel = tester.widget<PageView>(find.byType(PageView)).controller!;
     await tester.tap(find.byTooltip('Next page'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(carousel.page, 1);
+    expect(find.text('91  CRITICS', findRichText: true), findsNothing);
     await tester.tap(find.byTooltip('Previous page'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(carousel.page, 0);
+    await tester.pump(); // The rebuilt slide receives its cached detail future.
+    expect(find.text('91  CRITICS', findRichText: true), findsOneWidget);
+    expect(client.detailLookups.where((id) => id == 'movie_0').length, 1);
 
     // Entering keyboard mode must not hide the indicators on non-TV devices
     // (regression: back-key/BT-keyboard events left them permanently hidden).
@@ -1266,7 +1290,16 @@ class _FakeMediaServerClient implements MediaServerClient {
   final List<MediaHub> hubs;
   List<MediaItem> continueWatching;
 
-  _FakeMediaServerClient({required this.hubs, this.continueWatching = const []});
+  final Map<String, MediaItem> details;
+  final detailLookups = <String>[];
+
+  _FakeMediaServerClient({required this.hubs, this.continueWatching = const [], this.details = const {}});
+
+  @override
+  Future<MediaItem?> fetchItem(String id) async {
+    detailLookups.add(id);
+    return details[id];
+  }
 
   @override
   ServerId get serverId => ServerId('server_1');

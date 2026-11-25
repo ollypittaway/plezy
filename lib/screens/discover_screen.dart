@@ -21,7 +21,6 @@ import '../media/media_item_types.dart';
 import '../media/media_server_client.dart';
 import '../media/media_hub.dart';
 import '../utils/media_image_helper.dart';
-import '../utils/content_utils.dart';
 import '../widgets/cycling_media_backdrop.dart';
 import '../widgets/hero_carousel_backdrop.dart';
 import '../widgets/optimized_media_image.dart' show ClearLogoImage, blurArtwork;
@@ -52,8 +51,7 @@ import '../mixins/tab_visibility_aware.dart';
 import '../i18n/strings.g.dart';
 import '../utils/app_logger.dart';
 import '../utils/dialogs.dart';
-import '../utils/formatters.dart';
-import '../utils/hub_icons.dart';
+import '../widgets/featured_metadata.dart';
 import '../utils/media_navigation_helper.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/snackbar_helper.dart';
@@ -97,6 +95,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   String? get _errorMessage => _discover.errorMessage == null ? null : t.errors.unableToLoad(context: t.discover.title);
 
   bool _switchingProfile = false;
+  final _heroDetails = <(MediaServerClient, String), Future<MediaItem?>>{};
   final PageController _heroController = PageController();
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<int> _heroIndex = ValueNotifier<int>(0);
@@ -430,6 +429,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
     if (renderChanged) {
       setState(() {
+        if (isNewLoad) _heroDetails.clear();
         if (isNewLoad || heroOutOfBounds) _heroIndex.value = 0;
         _updateHubKeys();
       });
@@ -1053,7 +1053,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       key: _continueWatchingHubKey,
                       hub: continueWatchingHub,
                       focusMemory: _hubFocusMemory,
-                      icon: hubIconFor(continueWatchingHub),
                       onRefresh: _discover.updateItem,
                       onRemoveFromContinueWatching: _discover.refreshContinueWatching,
                       isInContinueWatching: true,
@@ -1071,7 +1070,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                       key: i < _orderedHubKeys.length ? _orderedHubKeys[i] : null,
                       hub: _hubs[i],
                       focusMemory: _hubFocusMemory,
-                      icon: hubIconFor(_hubs[i]),
                       showServerName: showServerNameOnHubs || hubsSpanMultipleServers,
                       onRefresh: _discover.updateItem,
                       // Hub index is i + 1 if continue watching exists, otherwise i
@@ -1158,7 +1156,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       initialHubId: 'continue_watching',
       focusMemory: _hubFocusMemory,
       showServerName: showServerName,
-      iconForHub: (hub, _) => hubIconFor(hub),
       onFocusedItemChanged: _setSpotlightItem,
       onRefresh: _discover.updateItem,
       onRemoveFromContinueWatching: _discover.refreshContinueWatching,
@@ -1540,7 +1537,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       shadows: [Shadow(color: colorScheme.surface.withValues(alpha: 0.8), blurRadius: 8)],
     );
 
-    final contentTypeLabel = heroItem.isMovie ? t.discover.movie : t.discover.tvShow;
+    final detailId = isEpisode ? heroItem.grandparentId ?? heroItem.id : heroItem.id;
+    final detailKey = (heroClient, detailId);
+    // PageView builds the visible slides lazily. Reuse a title's lookup on
+    // rotation and across episodes, until Discover reloads the library.
+    final details = heroClient == null || detailId.isEmpty
+        ? null
+        : _heroDetails.putIfAbsent((heroClient, detailId), () => heroClient.fetchItem(detailId));
 
     final hideSpoilers = SettingsService.instance.read(SettingsService.hideSpoilers);
     final shouldHideSpoiler = hideSpoilers && heroItem.shouldHideSpoiler;
@@ -1631,24 +1634,12 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                               ),
                             ),
 
-                            // Metadata as dot-separated text with content type
-                            if (heroItem.year != null || heroItem.contentRating != null || heroItem.rating != null) ...[
-                              const SizedBox(height: 16),
-                              Text(
-                                [
-                                  contentTypeLabel,
-                                  if (heroItem.rating != null) '★ ${formatRating(heroItem.rating!)}',
-                                  if (heroItem.contentRating != null) formatContentRating(heroItem.contentRating!),
-                                  if (heroItem.year != null) heroItem.year.toString(),
-                                ].join(' • '),
-                                style: TextStyle(
-                                  color: colorScheme.onSurface,
-                                  fontSize: isTv ? 18 : 14,
-                                  fontWeight: .w600,
-                                ),
-                                textAlign: alignLeft ? TextAlign.left : TextAlign.center,
-                              ),
-                            ],
+                            FutureBuilder<MediaItem?>(
+                              key: ValueKey(detailKey),
+                              future: details,
+                              builder: (context, snapshot) =>
+                                  FeaturedMetadata(item: heroItem, details: snapshot.data, centered: !alignLeft),
+                            ),
 
                             if (!alignLeft) ...[const SizedBox(height: 20), _buildSmartPlayButton(heroItem)],
 
@@ -1659,9 +1650,9 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                                 overflow: .ellipsis,
                                 textAlign: alignLeft ? TextAlign.left : TextAlign.center,
                                 text: TextSpan(
-                                  style: TextStyle(
-                                    color: colorScheme.onSurface.withValues(alpha: 0.7),
-                                    fontSize: isTv ? 18 : 14,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: colorScheme.onSurface.withValues(alpha: 0.9),
+                                    fontSize: isTv ? 18 : 15,
                                     height: isTv ? 1.45 : 1.4,
                                   ),
                                   children: [

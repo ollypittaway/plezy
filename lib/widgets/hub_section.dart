@@ -12,6 +12,7 @@ import '../focus/focus_navigation_intent.dart';
 import '../focus/key_event_utils.dart';
 import '../services/settings_service.dart';
 import 'settings_builder.dart';
+import 'shelf_heading.dart';
 import '../utils/layout_constants.dart';
 import '../utils/platform_detector.dart';
 import '../theme/mono_tokens.dart';
@@ -41,7 +42,7 @@ enum HubCardSizing {
 }
 
 /// Shared hub section widget used in both discover and library screens
-/// Displays a hub title with icon and a horizontal scrollable list of items
+/// Displays a hub title and a horizontal scrollable list of items
 ///
 /// Uses a "locked" focus pattern where:
 /// - A single Focus widget at the hub level intercepts ALL arrow keys
@@ -51,7 +52,6 @@ enum HubCardSizing {
 class HubSection extends StatefulWidget {
   final MediaHub hub;
   final HubFocusMemory focusMemory;
-  final IconData icon;
   final void Function(MediaItem source)? onRefresh;
   final VoidCallback? onRemoveFromContinueWatching;
   final bool isInContinueWatching;
@@ -103,7 +103,6 @@ class HubSection extends StatefulWidget {
     super.key,
     required this.hub,
     required this.focusMemory,
-    required this.icon,
     this.onRefresh,
     this.onRemoveFromContinueWatching,
     this.isInContinueWatching = false,
@@ -497,10 +496,6 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
     final isKeyboardMode = InputModeTracker.isKeyboardMode(context);
     final isTv = PlatformDetector.isTV();
     final leadingPadding = _leadingPaddingFor(isTv);
-    final titleStyle = Theme.of(
-      context,
-    ).textTheme.titleLarge?.copyWith(fontSize: isTv ? 26 : null, fontWeight: FontWeight.w700, letterSpacing: -0.6);
-
     return Padding(
       padding: .only(
         bottom: isTv && !widget.inset && widget.cardSizing == HubCardSizing.shelf
@@ -528,11 +523,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
                   child: Row(
                     mainAxisSize: .min,
                     children: [
-                      AppIcon(widget.icon, fill: 1, size: isTv ? 28 : null),
-                      SizedBox(width: isTv ? 12 : 8),
-                      Flexible(
-                        child: Text(widget.hub.title, style: titleStyle, overflow: .ellipsis, maxLines: 1),
-                      ),
+                      Flexible(child: ShelfHeading(widget.hub.title, fontSize: isTv ? 26 : 24)),
                       if (widget.totalResults case final totalResults?) ...[
                         SizedBox(width: isTv ? 12 : 8),
                         Text(
@@ -560,10 +551,6 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
                             color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
                           ),
                         ),
-                      ],
-                      if (widget.hub.more && !isKeyboardMode) ...[
-                        const SizedBox(width: 4),
-                        AppIcon(Symbols.chevron_right_rounded, fill: 1, size: isTv ? 26 : 20),
                       ],
                     ],
                   ),

@@ -1366,7 +1366,6 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
         size: related.length,
       ),
       focusMemory: _hubFocusMemory,
-      icon: Symbols.recommend_rounded,
       inset: true,
       onNavigateUp: _focusSectionAboveRelated,
       cardSizing: HubCardSizing.grid,
