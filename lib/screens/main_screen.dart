@@ -22,6 +22,7 @@ import '../services/tvos_system_navigation_service.dart';
 import '../services/update_service.dart';
 import '../utils/app_logger.dart';
 import '../widgets/auth_error_banner.dart';
+import '../widgets/startup_playback_check.dart';
 import '../widgets/app_icon.dart';
 import '../utils/iphone_duo.dart';
 import '../utils/platform_detector.dart';
@@ -36,6 +37,7 @@ import '../navigation/navigation_tabs.dart';
 import '../navigation/profile_navigation_scope.dart';
 import '../navigation/settings_shortcut.dart';
 import '../profiles/active_profile_binder.dart';
+import '../connection/connection.dart';
 import '../connection/connection_registry.dart';
 import '../profiles/active_profile_provider.dart';
 import '../profiles/plex_home_service.dart';
@@ -625,6 +627,19 @@ class _MainScreenState extends State<MainScreen>
           unawaited(_autoStartCompanionRemoteServer());
         }
       }
+
+      // The dialog belongs to this profile's navigator. Settle it before a
+      // launch link can open a title or the update check can show another dialog.
+      final linkedConnections = activeProfile.connectionsByProfile[activeProfile.activeId] ?? const [];
+      final hasPlex =
+          activeProfile.active?.isPlexHome == true ||
+          linkedConnections.any((link) => activeProfile.connectionsById[link.connectionId] is PlexAccountConnection);
+      await context.read<StartupPlaybackCheck>().run(
+        context,
+        mobile: PlatformDetector.isMobile(context),
+        hasPlex: hasPlex,
+      );
+      if (!mounted) return;
 
       // Links act once the profile is settled and its preferences are loaded.
       _attachDeepLinks();

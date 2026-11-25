@@ -112,6 +112,7 @@ import 'services/startup_diagnostics.dart';
 import 'utils/dialogs.dart';
 import 'widgets/dialog_action_button.dart';
 import 'widgets/startup_failure_view.dart';
+import 'widgets/startup_playback_check.dart';
 
 const bool _enableSentry = bool.fromEnvironment('ENABLE_SENTRY', defaultValue: false);
 const String _sentryDsn = 'https://6a1a6ef8c72140099b2798973c1bfb2f@bugs.plezy.app/1';
@@ -1752,6 +1753,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
         // the registry per-call site.
         ChangeNotifierProvider<AnnouncementService>(lazy: false, create: (_) => AnnouncementService()..start()),
         Provider<SettingsService>.value(value: widget.settings),
+        Provider<StartupPlaybackCheck>(create: (_) => StartupPlaybackCheck(widget.settings)),
         Provider<StorageService>.value(value: widget.storage),
         Provider<AppDatabase>.value(value: _appDatabase),
         Provider<ConnectionRegistry>.value(value: _connections),

@@ -1424,6 +1424,19 @@
     "copyLogs": "Copy Logs",
     "uploadLogs": "Upload Logs"
   },
+  "playbackCheck": {
+    "title": "Playback settings check",
+    "description": "Your current settings can make the server convert video. This can lower the resolution or remove HDR from a film or show.",
+    "originalQuality": "Switch from ${current} to Original.",
+    "cellularQuality": "Remove the ${current} mobile data limit and follow Default Quality.",
+    "directPlay": "Direct play on Plex",
+    "enableDirectPlay": "Allow Plex to play the original file when it fits the selected quality limit.",
+    "mobileData": "Streaming at Original quality can use more mobile data.",
+    "fix": "Fix settings",
+    "ignore": "Ignore and continue",
+    "saveFailed": "Some settings could not be saved. Try again or continue with your current settings.",
+    "saved": "Playback settings updated."
+  },
   "startup": {
     "failedTitle": "GucciPlexa could not start",
     "failedBody": "Something went wrong during startup. The details below identify what failed.",

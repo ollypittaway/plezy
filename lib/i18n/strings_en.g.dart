@@ -73,6 +73,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$serverSelection$en serverSelection = Translations$serverSelection$en.internal(_root);
 	late final Translations$hubDetail$en hubDetail = Translations$hubDetail$en.internal(_root);
 	late final Translations$logs$en logs = Translations$logs$en.internal(_root);
+	late final Translations$playbackCheck$en playbackCheck = Translations$playbackCheck$en.internal(_root);
 	late final Translations$startup$en startup = Translations$startup$en.internal(_root);
 	late final Translations$licenses$en licenses = Translations$licenses$en.internal(_root);
 	late final Translations$navigation$en navigation = Translations$navigation$en.internal(_root);
@@ -3735,6 +3736,48 @@ class Translations$logs$en {
 
 	/// en: 'Upload Logs'
 	String get uploadLogs => 'Upload Logs';
+}
+
+// Path: playbackCheck
+class Translations$playbackCheck$en {
+	Translations$playbackCheck$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Playback settings check'
+	String get title => 'Playback settings check';
+
+	/// en: 'Your current settings can make the server convert video. This can lower the resolution or remove HDR from a film or show.'
+	String get description => 'Your current settings can make the server convert video. This can lower the resolution or remove HDR from a film or show.';
+
+	/// en: 'Switch from ${current} to Original.'
+	String originalQuality({required Object current}) => 'Switch from ${current} to Original.';
+
+	/// en: 'Remove the ${current} mobile data limit and follow Default Quality.'
+	String cellularQuality({required Object current}) => 'Remove the ${current} mobile data limit and follow Default Quality.';
+
+	/// en: 'Direct play on Plex'
+	String get directPlay => 'Direct play on Plex';
+
+	/// en: 'Allow Plex to play the original file when it fits the selected quality limit.'
+	String get enableDirectPlay => 'Allow Plex to play the original file when it fits the selected quality limit.';
+
+	/// en: 'Streaming at Original quality can use more mobile data.'
+	String get mobileData => 'Streaming at Original quality can use more mobile data.';
+
+	/// en: 'Fix settings'
+	String get fix => 'Fix settings';
+
+	/// en: 'Ignore and continue'
+	String get ignore => 'Ignore and continue';
+
+	/// en: 'Some settings could not be saved. Try again or continue with your current settings.'
+	String get saveFailed => 'Some settings could not be saved. Try again or continue with your current settings.';
+
+	/// en: 'Playback settings updated.'
+	String get saved => 'Playback settings updated.';
 }
 
 // Path: startup
@@ -9520,6 +9563,17 @@ extension on Translations {
 			'logs.clearLogs' => 'Clear Logs',
 			'logs.copyLogs' => 'Copy Logs',
 			'logs.uploadLogs' => 'Upload Logs',
+			'playbackCheck.title' => 'Playback settings check',
+			'playbackCheck.description' => 'Your current settings can make the server convert video. This can lower the resolution or remove HDR from a film or show.',
+			'playbackCheck.originalQuality' => ({required Object current}) => 'Switch from ${current} to Original.',
+			'playbackCheck.cellularQuality' => ({required Object current}) => 'Remove the ${current} mobile data limit and follow Default Quality.',
+			'playbackCheck.directPlay' => 'Direct play on Plex',
+			'playbackCheck.enableDirectPlay' => 'Allow Plex to play the original file when it fits the selected quality limit.',
+			'playbackCheck.mobileData' => 'Streaming at Original quality can use more mobile data.',
+			'playbackCheck.fix' => 'Fix settings',
+			'playbackCheck.ignore' => 'Ignore and continue',
+			'playbackCheck.saveFailed' => 'Some settings could not be saved. Try again or continue with your current settings.',
+			'playbackCheck.saved' => 'Playback settings updated.',
 			'startup.failedTitle' => 'GucciPlexa could not start',
 			'startup.failedBody' => 'Something went wrong during startup. The details below identify what failed.',
 			'startup.failedBodyRepairable' => 'GucciPlexa\'s saved settings file is damaged and has to be rebuilt before GucciPlexa can start. Retrying will not help — choose Repair storage.',
@@ -9742,6 +9796,8 @@ extension on Translations {
 			'liveTv.noFavoriteChannelsHint' => 'Show all channels, then long-press a channel to add it to your favorites.',
 			'liveTv.showAllChannels' => 'Show All Channels',
 			'liveTv.favoritesLoadFailed' => 'Could not load favorites. Check your connection and try again.',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.favoritesUpdateFailed' => 'Could not update favorites. Check your connection and try again.',
 			'liveTv.joinSession' => 'Join Session in Progress',
 			'liveTv.watchFromStart' => ({required Object minutes}) => 'Watch from start (${minutes} min ago)',
@@ -9753,8 +9809,6 @@ extension on Translations {
 			'liveTv.recordOptions' => 'Record Options',
 			'liveTv.saveTo' => 'Save to',
 			'liveTv.recordings' => 'Recordings',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.scheduledRecordings' => 'Scheduled',
 			'liveTv.recordingRules' => 'Recording Rules',
 			'liveTv.noScheduledRecordings' => 'Nothing scheduled to record',
@@ -10256,6 +10310,8 @@ extension on Translations {
 			'performanceOverlay.color' => 'Color',
 			'performanceOverlay.performance' => 'Performance',
 			'performanceOverlay.buffer' => 'Buffer',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.app' => 'App',
 			'performanceOverlay.decoder' => 'Decoder',
 			'performanceOverlay.rawDecoder' => 'Raw Decoder',
@@ -10267,8 +10323,6 @@ extension on Translations {
 			'performanceOverlay.dvPath' => 'DV Path',
 			'performanceOverlay.dvRouteDecoder' => 'Dolby Vision decoder',
 			'performanceOverlay.dvRouteDecoderP81' => 'Dolby Vision decoder (P7→8.1)',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.dvRouteBaseLayer' => 'Base layer',
 			'performanceOverlay.dvRouteBaseLayerHdr10' => 'HDR10 base layer',
 			'performanceOverlay.dvRouteBaseLayerHlg' => 'HLG base layer',
