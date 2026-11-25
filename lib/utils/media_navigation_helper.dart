@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../i18n/strings.g.dart';
 import '../media/catalog_item_ref.dart';
-import '../media/ids.dart';
 import '../media/media_backend.dart';
+import '../media/ids.dart';
 import '../media/media_item.dart';
-import '../media/media_item_merge.dart';
 import '../media/media_item_types.dart';
 import '../media/media_kind.dart';
 import '../media/media_playlist.dart';
@@ -18,8 +17,7 @@ import '../screens/playlist/playlist_detail_screen.dart';
 import '../services/settings_service.dart';
 import '../utils/global_key_utils.dart';
 import 'catalog_navigation_helper.dart';
-import 'dialogs.dart';
-import 'formatters.dart';
+import 'playback_library_picker.dart';
 import 'music_navigation.dart';
 import 'plex_library_section_utils.dart';
 import 'video_player_navigation.dart';
@@ -130,31 +128,6 @@ bool shouldOpenEpisodeDetailsForActivation({
   return episodeAction == EpisodeAction.details;
 }
 
-/// Ask which copy a Continue Watching row should open when the row stands for
-/// several — the same title in a 4K and an HD library, or on two servers.
-/// Returns null when the user dismisses the picker.
-Future<MediaItem?> _pickContinueWatchingCopy(BuildContext context, List<MediaItem> copies) {
-  // Rows say only what tells the copies apart: the episode when the copies
-  // stopped at different ones, the server when they span several.
-  final showEpisode = copies.map((copy) => (copy.parentIndex, copy.index)).toSet().length > 1;
-  final showServer = copies.map((copy) => copy.serverId).toSet().length > 1;
-  String label(MediaItem copy) {
-    final library = copy.libraryTitle;
-    return [
-      if (showEpisode && copy.isEpisode) ?formatSeasonEpisodeLabel(copy.parentIndex, copy.index),
-      library ?? copy.serverName ?? copy.backend.dialect?.productName ?? 'Plex',
-      ?libraryCopyQualityLabel(copy),
-      if (showServer && library != null) ?copy.serverName,
-    ].join(' • ');
-  }
-
-  return showOptionPickerDialog<MediaItem>(
-    context,
-    title: t.discover.selectVersion,
-    options: [for (final copy in copies) (icon: null, label: label(copy), value: copy)],
-  );
-}
-
 /// Navigates to the appropriate screen based on the item type.
 ///
 /// Accepts a [MediaItem] or a [MediaPlaylist] (typed as [Object] because Dart
@@ -215,17 +188,6 @@ Future<MediaNavigationResult> navigateToMediaItem(
     return MediaNavigationResult.navigated;
   }
 
-  // One Continue Watching row can stand for several copies of a title; it
-  // opens the one the viewer picks, under the row's own activation setting.
-  if (playDirectly && !isOffline) {
-    final copies = context.read<DiscoverProvider?>()?.continueWatchingCopiesOf(mi) ?? const <MediaItem>[];
-    if (copies.length > 1) {
-      final picked = await _pickContinueWatchingCopy(context, copies);
-      if (picked == null || !context.mounted) return MediaNavigationResult.navigated;
-      mi = picked;
-    }
-  }
-
   final settings = SettingsService.instanceOrNull;
   final continueWatchingAction = settings?.read(SettingsService.continueWatchingAction) ?? ContinueWatchingAction.play;
   final episodeAction = settings?.read(SettingsService.episodeAction) ?? EpisodeAction.play;
@@ -248,6 +210,15 @@ Future<MediaNavigationResult> navigateToMediaItem(
       return MediaNavigationResult.librarySelected;
     }
     return MediaNavigationResult.unsupported;
+  }
+
+  List<MediaItem>? resolvedCopies;
+  if (!isOffline && mi.isVideoContent) {
+    final known = playDirectly ? context.read<DiscoverProvider?>()?.continueWatchingCopiesOf(mi) : null;
+    final choice = await choosePlaybackLibrary(context, mi, known: known ?? const []);
+    if (choice == null || !context.mounted) return MediaNavigationResult.navigated;
+    mi = choice.item;
+    resolvedCopies = choice.matches;
   }
 
   switch (mi.kind) {
@@ -281,7 +252,13 @@ Future<MediaNavigationResult> navigateToMediaItem(
     case MediaKind.clip:
     case MediaKind.episode:
       if (mi.kind == MediaKind.episode && shouldOpenEpisodeDetails) {
-        return navigateToMediaItemDetails(context, mi, onRefresh: onRefresh, isOffline: isOffline);
+        return navigateToMediaItemDetails(
+          context,
+          mi,
+          onRefresh: onRefresh,
+          isOffline: isOffline,
+          resolvedCopies: resolvedCopies,
+        );
       }
       final result = await navigateToVideoPlayer(context, metadata: mi, isOffline: isOffline);
       if (result == true && context.mounted) {
@@ -297,13 +274,31 @@ Future<MediaNavigationResult> navigateToMediaItem(
         }
         return MediaNavigationResult.navigated;
       }
-      return navigateToMediaItemDetails(context, mi, isOffline: isOffline, onRefresh: onRefresh);
+      return navigateToMediaItemDetails(
+        context,
+        mi,
+        isOffline: isOffline,
+        onRefresh: onRefresh,
+        resolvedCopies: resolvedCopies,
+      );
 
     case MediaKind.season:
-      return navigateToMediaItemDetails(context, mi, isOffline: isOffline, onRefresh: onRefresh);
+      return navigateToMediaItemDetails(
+        context,
+        mi,
+        isOffline: isOffline,
+        onRefresh: onRefresh,
+        resolvedCopies: resolvedCopies,
+      );
 
     default:
-      return navigateToMediaItemDetails(context, mi, isOffline: isOffline, onRefresh: onRefresh);
+      return navigateToMediaItemDetails(
+        context,
+        mi,
+        isOffline: isOffline,
+        onRefresh: onRefresh,
+        resolvedCopies: resolvedCopies,
+      );
   }
 }
 
@@ -313,6 +308,8 @@ Future<MediaNavigationResult> navigateToMediaItemDetails(
   bool isOffline = false,
   void Function(MediaItem source)? onRefresh,
   MediaItem? metadataOverride,
+  List<MediaItem>? resolvedCopies,
+  bool chooseLibrary = false,
 }) async {
   // Catalog stand-ins (Explore tab) must never reach MediaDetailScreen — it
   // hard-requires a server id. Guarded here (not only in navigateToMediaItem)
@@ -324,11 +321,20 @@ Future<MediaNavigationResult> navigateToMediaItemDetails(
     return MediaNavigationResult.navigated;
   }
 
+  if (chooseLibrary && !isOffline && mi.isVideoContent) {
+    final choice = await choosePlaybackLibrary(context, mi);
+    if (choice == null || !context.mounted) return MediaNavigationResult.navigated;
+    if (choice.item.globalKey != mi.globalKey) metadataOverride = null;
+    mi = choice.item;
+    resolvedCopies = choice.matches;
+  }
+
   final target = mediaDetailNavigationTargetFor(mi, metadataOverride: metadataOverride);
   final result = await Navigator.push<bool>(
     context,
     mediaDetailRoute(
       metadata: target.metadata,
+      initialPlaybackCopies: resolvedCopies,
       isOffline: isOffline,
       initialSeasonIndex: target.initialSeasonIndex,
       initialSeasonId: target.initialSeasonId,

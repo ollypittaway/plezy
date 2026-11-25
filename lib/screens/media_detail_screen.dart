@@ -29,6 +29,10 @@ import '../widgets/focus_builders.dart';
 import '../media/library_query.dart';
 import '../media/library_change_event.dart';
 import '../media/media_hub.dart';
+import '../media/media_item_merge.dart';
+import '../models/transcode_quality_preset.dart';
+import '../widgets/playback_copy_builder.dart';
+import '../utils/playback_library_picker.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/plex_season_display.dart';
 import '../media/media_item.dart';
@@ -286,6 +290,7 @@ abstract final class _HeroChips {
 
 class MediaDetailScreen extends StatefulWidget {
   final MediaItem metadata;
+  final List<MediaItem>? initialPlaybackCopies;
   final bool isOffline;
 
   /// If provided, auto-selects this season index when the screen loads.
@@ -297,6 +302,7 @@ class MediaDetailScreen extends StatefulWidget {
   const MediaDetailScreen({
     super.key,
     required this.metadata,
+    this.initialPlaybackCopies,
     this.isOffline = false,
     this.initialSeasonIndex,
     this.initialSeasonId,
@@ -309,6 +315,7 @@ class MediaDetailScreen extends StatefulWidget {
 
 PageRoute<bool> mediaDetailRoute({
   required MediaItem metadata,
+  List<MediaItem>? initialPlaybackCopies,
   bool isOffline = false,
   int? initialSeasonIndex,
   String? initialSeasonId,
@@ -316,6 +323,7 @@ PageRoute<bool> mediaDetailRoute({
 }) {
   final page = MediaDetailScreen(
     metadata: metadata,
+    initialPlaybackCopies: initialPlaybackCopies,
     isOffline: isOffline,
     initialSeasonIndex: initialSeasonIndex,
     initialSeasonId: initialSeasonId,
@@ -2955,13 +2963,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
               : null,
           localPosterPath: localPosterPath,
           onTap: () async {
-            await navigateToVideoPlayerWithRefresh(
-              context,
-              metadata: episode,
-              isOffline: widget.isOffline,
-              onRefresh: () => unawaited(_refreshItemInPlace(episode)),
-              isLaunchCurrent: () => _canUseDetail,
-            );
+            await _playFromLibrary(context, episode, onRefresh: () => unawaited(_refreshItemInPlace(episode)));
           },
           onRefresh: widget.isOffline ? null : _refreshItemInPlace,
           onListRefresh: widget.isOffline ? null : _refreshCurrentEpisodes,
@@ -3309,6 +3311,26 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     });
   }
 
+  Future<void> _playFromLibrary(
+    BuildContext context,
+    MediaItem item, {
+    required VoidCallback onRefresh,
+    bool choose = true,
+  }) async {
+    if (!widget.isOffline && choose) {
+      final choice = await choosePlaybackLibrary(context, item);
+      if (choice == null || !context.mounted || !_canUseDetail) return;
+      item = choice.item;
+    }
+    await navigateToVideoPlayerWithRefresh(
+      context,
+      metadata: item,
+      isOffline: widget.isOffline,
+      onRefresh: onRefresh,
+      isLaunchCurrent: () => _canUseDetail,
+    );
+  }
+
   Future<void> _playFirstEpisode() async {
     if (!_canUseDetail) return;
     // Loading seasons and resolving the first episode cost network round
@@ -3383,12 +3405,11 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       );
       if (mounted && _canUseDetail) {
         appLogger.d('Playing first episode: ${episodeWithServerId.title}');
-        await navigateToVideoPlayerWithRefresh(
+        await _playFromLibrary(
           context,
-          metadata: episodeWithServerId,
-          isOffline: widget.isOffline,
+          episodeWithServerId,
           onRefresh: _refreshWatchState,
-          isLaunchCurrent: () => _canUseDetail,
+          choose: widget.initialPlaybackCopies == null,
         );
       }
     } catch (e) {
@@ -4488,13 +4509,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   Future<bool> _handleTvDetailRailItemActivated(MediaHub hub, MediaItem item) async {
     if (_isTvDetailEpisodeHub(hub) && item.isEpisode) {
-      await navigateToVideoPlayerWithRefresh(
-        context,
-        metadata: item,
-        isOffline: widget.isOffline,
-        onRefresh: () => unawaited(_refreshItemInPlace(item)),
-        isLaunchCurrent: () => _canUseDetail,
-      );
+      await _playFromLibrary(context, item, onRefresh: () => unawaited(_refreshItemInPlace(item)));
       return true;
     }
     if (hub.id != _tvDetailActorsHubId) return false;

@@ -61,6 +61,9 @@ class MediaVersion {
   /// them when metadata is fetched with `checkFiles=1`.
   bool get isPlayable => parts.isEmpty || parts.any((part) => part.isPlayable);
 
+  bool get is4K =>
+      resolutionDisplayLabel(videoResolution ?? '') == '4K' || resolutionLabelFromDimensions(width, height) == '4k';
+
   /// Approximate vertical resolution, for ordering versions best-first.
   ///
   /// Plex reports either a numeric height (`"1080"`) or a named tier
@@ -68,6 +71,7 @@ class MediaVersion {
   /// Null when the backend gave neither.
   int? get resolutionHeight {
     final reported = height;
+    if (is4K && (reported ?? 0) < 2160) return 2160;
     if (reported != null && reported > 0) return reported;
     final named = (videoResolution ?? '').trim().toLowerCase();
     return switch (named) {
@@ -87,7 +91,9 @@ class MediaVersion {
   String get displayLabel {
     final parts = <String>[];
 
-    if (videoResolution != null && videoResolution!.isNotEmpty) {
+    if (is4K) {
+      parts.add('4K');
+    } else if (videoResolution != null && videoResolution!.isNotEmpty) {
       parts.add(resolutionDisplayLabel(videoResolution!));
     } else if (height != null) {
       parts.add('${height}p');

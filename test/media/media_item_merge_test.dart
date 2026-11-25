@@ -4,10 +4,32 @@ import 'package:plezy/media/media_backend.dart';
 import 'package:plezy/media/media_item.dart';
 import 'package:plezy/media/media_item_merge.dart';
 import 'package:plezy/media/media_kind.dart';
+import 'package:plezy/media/media_part.dart';
 import 'package:plezy/media/media_version.dart';
 import '../test_helpers/media_items.dart';
 
 void main() {
+  test('4K respects file accessibility, version index, and the chosen library order', () {
+    final selected = testMediaItem(
+      id: 'a',
+      mediaVersions: const [
+        MediaVersion(
+          id: 'missing',
+          videoResolution: '4K',
+          parts: [MediaPart(id: '1', exists: false)],
+        ),
+        MediaVersion(id: 'hd', height: 1080),
+        MediaVersion(id: 'four', videoResolution: '2160p'),
+      ],
+    );
+    final other = testMediaItem(
+      id: 'b',
+      mediaVersions: const [MediaVersion(id: 'cropped', width: 3840, height: 1608)],
+    );
+    expect(findFourKPlayback([selected, other])?.index, 2);
+    expect(findFourKPlayback([other, selected])?.version.id, 'cropped');
+    expect(findFourKPlayback([selected.copyWith(mediaVersions: selected.mediaVersions!.take(2).toList())]), isNull);
+  });
   MediaItem item({String? serverId, String? serverName, String? libraryId, String? libraryTitle}) => testMediaItem(
     id: 'item',
     backend: MediaBackend.plex,

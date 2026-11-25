@@ -763,7 +763,8 @@
     "mediaDeletionDisabledOnServer": "Media deletion is turned off on this server. Turn on \"Allow media deletion\" in the server's Library settings.",
     "rate": "Rate",
     "playFromBeginning": "Play from Beginning",
-    "playVersion": "Play Version..."
+    "playVersion": "Play Version...",
+    "playIn4k": "Play in 4K"
   },
   "rateSheet": {
     "title": "Rate",

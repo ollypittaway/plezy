@@ -57,6 +57,7 @@ import '../utils/media_navigation_helper.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/video_player_navigation.dart';
+import '../utils/playback_library_picker.dart';
 import '../utils/layout_constants.dart';
 import '../utils/platform_detector.dart';
 import '../utils/tone_mapped_logo_image.dart';
@@ -1684,6 +1685,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                                           onPressed: () => navigateToMediaItemDetails(
                                             context,
                                             heroItem,
+                                            chooseLibrary: true,
                                             onRefresh: _discover.updateItem,
                                           ),
                                           style: OutlinedButton.styleFrom(
@@ -1739,9 +1741,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             final backgroundColor = colorScheme.primary;
             final foregroundColor = colorScheme.onPrimary;
             return InkWell(
-              onTap: () {
-                appLogger.d('Playing: ${heroItem.title}');
-                navigateToVideoPlayer(context, metadata: heroItem);
+              onTap: () async {
+                final choice = await choosePlaybackLibrary(
+                  context,
+                  heroItem,
+                  known: _discover.continueWatchingCopiesOf(heroItem),
+                );
+                if (context.mounted && choice != null) await navigateToVideoPlayer(context, metadata: choice.item);
               },
               borderRadius: BorderRadius.all(Radius.circular(12)),
               child: AnimatedContainer(

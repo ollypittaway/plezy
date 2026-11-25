@@ -17,10 +17,23 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
   Widget _buildActionButtons(MediaItem metadata) {
     // Tie asynchronous playback prompts to the actionable subtree, not the
     // route's State: a deleted first-route detail intentionally stays mounted.
-    return Builder(builder: (context) => _buildAvailableActionButtons(context, metadata));
+    return Builder(
+      builder: (context) {
+        var target = _playbackTargetItem(metadata);
+        if (target == null && metadata.isShow) {
+          final firstSeason = defaultPlaybackSeason(_seasons);
+          if (firstSeason != null) target = _seasonEpisodePager.stateFor(firstSeason.id).items.firstOrNull;
+        }
+        return PlaybackCopyBuilder(
+          target: !widget.isOffline && (target?.isMovie == true || target?.isEpisode == true) ? target : null,
+          initialCopies: widget.initialPlaybackCopies,
+          builder: (fourK) => _buildAvailableActionButtons(context, metadata, fourK),
+        );
+      },
+    );
   }
 
-  Widget _buildAvailableActionButtons(BuildContext context, MediaItem metadata) {
+  Widget _buildAvailableActionButtons(BuildContext context, MediaItem metadata, FourKPlayback? fourK) {
     final isTv = PlatformDetector.isTV();
     final tvScale = TvLayoutConstants.scaleOf(context);
     final actionSize = isTv ? _tvDetailActionSize * tvScale : 48.0;
@@ -68,12 +81,11 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
         final episode = _showPlayEpisode();
         if (episode != null) {
           appLogger.d('Playing episode: ${episode.title}');
-          await navigateToVideoPlayerWithRefresh(
+          await _playFromLibrary(
             context,
-            metadata: episode,
-            isOffline: widget.isOffline,
+            episode,
             onRefresh: _refreshWatchState,
-            isLaunchCurrent: () => _canUseDetail,
+            choose: widget.initialPlaybackCopies == null,
           );
         } else {
           await _playFirstEpisode();
@@ -81,12 +93,11 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       } else if (metadata.isSeason) {
         // For seasons, play the first episode
         if (_episodes.isNotEmpty) {
-          await navigateToVideoPlayerWithRefresh(
+          await _playFromLibrary(
             context,
-            metadata: _episodes.first,
-            isOffline: widget.isOffline,
+            _episodes.first,
             onRefresh: _refreshWatchState,
-            isLaunchCurrent: () => _canUseDetail,
+            choose: widget.initialPlaybackCopies == null,
           );
         } else {
           await _playFirstEpisode();
@@ -94,12 +105,11 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       } else {
         appLogger.d('Playing: ${metadata.title}');
         // For movies or episodes, play directly
-        await navigateToVideoPlayerWithRefresh(
+        await _playFromLibrary(
           context,
-          metadata: metadata,
-          isOffline: widget.isOffline,
+          metadata,
           onRefresh: _refreshWatchState,
-          isLaunchCurrent: () => _canUseDetail,
+          choose: widget.initialPlaybackCopies == null,
         );
       }
     }
@@ -262,6 +272,54 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
           )
         : null;
 
+    final VoidCallback? playFourK = fourK == null
+        ? null
+        : () async {
+            if (!_canUseDetail) return;
+            await navigateToVideoPlayer(
+              context,
+              metadata: fourK.item,
+              selectedMediaIndex: fourK.index,
+              selectedMediaSourceId: fourK.version.id.isEmpty ? null : fourK.version.id,
+              selectedQualityPreset: TranscodeQualityPreset.original,
+              strictMediaSelection: true,
+              isLaunchCurrent: () => _canUseDetail,
+            );
+            if (_canUseDetail) await _refreshWatchState();
+          };
+    final label4k = t.mediaMenu.playIn4k;
+    final fourKAction = metadata.isVideoContent
+        ? FocusableAction(
+            debugLabel: 'detail_play_4k',
+            onPressed: playFourK,
+            builder: (context, state) => SizedBox(
+              height: actionSize,
+              child: FilledButton.tonal(
+                onPressed: playFourK,
+                style: playFourK == null
+                    ? null
+                    : actionButtonStyle(
+                        showFocus: state.showFocus,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                child: Text(label4k, style: playTextStyle),
+              ),
+            ),
+          )
+        : null;
+    final compactFourK = fourKAction == null
+        ? null
+        : FocusableAction(
+            debugLabel: 'detail_play_4k_compact',
+            onPressed: playFourK,
+            builder: (context, state) => IconButton.filledTonal(
+              tooltip: label4k,
+              icon: const AppIcon(Symbols.four_k_rounded),
+              onPressed: playFourK,
+              style: playFourK == null ? null : actionButtonStyle(showFocus: state.showFocus),
+            ),
+          );
+
     final trailerAction = primaryTrailer == null
         ? null
         : FocusableAction(
@@ -360,6 +418,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     final allActions = <FocusableAction>[
       playAction,
       ?versionAction,
+      ?fourKAction,
       ?trailerAction,
       ?shuffleAction,
       ?downloadAction,
@@ -368,26 +427,31 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       ?moreActionsAction,
     ];
 
-    double playButtonWidthEstimate() {
-      if (playButtonLabel.isEmpty) return 64.0;
+    double labelWidth(String label) {
       final textPainter = TextPainter(
-        text: TextSpan(text: playButtonLabel, style: playTextStyle),
+        text: TextSpan(text: label, style: playTextStyle),
         maxLines: 1,
         textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
       )..layout();
       final textWidth = textPainter.width;
       textPainter.dispose();
-      final horizontalPadding = isTv ? 34.0 * tvScale : 32.0;
-      final iconGap = isTv ? 7.0 * tvScale : 8.0;
-      return (horizontalPadding + playIconSize + iconGap + textWidth).clamp(64.0, double.infinity).toDouble();
+      return textWidth;
     }
 
-    final estimatedPlayWidth = playButtonWidthEstimate();
+    final estimatedPlayWidth = playButtonLabel.isEmpty
+        ? 64.0
+        : math.max(64.0, labelWidth(playButtonLabel) + playIconSize + (isTv ? 41 * tvScale : 40));
+    final fourKWidth = math.max(64.0, labelWidth(label4k) + 32);
     double estimatedRowWidth(List<FocusableAction> actions) {
       if (actions.isEmpty) return 0;
       var width = estimatedPlayWidth;
       for (var i = 1; i < actions.length; i++) {
-        final actionWidth = identical(actions[i], versionAction) ? versionSegmentWidth : actionSize;
+        final actionWidth = identical(actions[i], versionAction)
+            ? versionSegmentWidth
+            : identical(actions[i], fourKAction)
+            ? fourKWidth
+            : actionSize;
         width += (actions[i].spacingBefore ?? gap) + actionWidth;
       }
       return width;
@@ -395,18 +459,25 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
 
     List<FocusableAction> compactActionsFor(double maxWidth) {
       if (widget.isOffline) {
-        final compact = <FocusableAction>[playAction, watchedAction];
+        final compact = <FocusableAction>[playAction, ?compactFourK, watchedAction];
         if (maxWidth.isFinite && estimatedRowWidth(compact) > maxWidth) return [playAction];
         return compact;
       }
 
-      final medium = <FocusableAction>[playAction, ?versionAction, ?downloadAction, watchedAction, ?moreActionsAction];
+      final medium = <FocusableAction>[
+        playAction,
+        ?versionAction,
+        ?compactFourK,
+        ?downloadAction,
+        watchedAction,
+        ?moreActionsAction,
+      ];
       if (!maxWidth.isFinite || estimatedRowWidth(medium) <= maxWidth) return medium;
 
-      final compact = <FocusableAction>[playAction, ?versionAction, watchedAction, ?moreActionsAction];
+      final compact = <FocusableAction>[playAction, ?versionAction, ?compactFourK, watchedAction, ?moreActionsAction];
       if (estimatedRowWidth(compact) <= maxWidth) return compact;
 
-      return [playAction, ?versionAction, ?moreActionsAction];
+      return [playAction, ?versionAction, ?compactFourK, ?moreActionsAction];
     }
 
     Widget actionBar(List<FocusableAction> actions) {

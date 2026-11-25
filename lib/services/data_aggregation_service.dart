@@ -1055,6 +1055,28 @@ class DataAggregationService {
     );
   }
 
+  /// Look up alternatives only for the active profile, keeping the clicked
+  /// copy usable when another server is slow or unavailable.
+  Future<List<MediaItem>> playbackCopies(MediaItem item, {required AbortController abort}) async {
+    final origin = _serverManager.visibleOnlineClients[item.serverId];
+    if (origin == null) return [item];
+    try {
+      final query = await _withinServerDeadline(
+        MediaServerTimeouts.libraryLookup,
+        operation: 'Library title identity',
+        parent: abort,
+        run: (leg) => TitleQuery.forLibraryItem(item, origin, leg),
+      );
+      if (query == null) return [item];
+      final result = await findTitleCopiesAcrossServers(query, abort: abort);
+      return mergeLibraryCopies([item], result.items);
+    } catch (e) {
+      abort.throwIfAborted();
+      appLogger.d('Could not look up other library copies', error: e);
+      return [item];
+    }
+  }
+
   /// Group libraries by server (internal aggregation helper).
   Map<String, List<MediaLibrary>> _groupLibrariesByServer(List<MediaLibrary> libraries) {
     final grouped = <String, List<MediaLibrary>>{};
