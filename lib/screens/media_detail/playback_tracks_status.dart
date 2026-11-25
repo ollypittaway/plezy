@@ -108,8 +108,7 @@ extension _MediaDetailPlaybackTracksStatus on _MediaDetailScreenState {
       }
       if (!current()) return;
       _playbackSources[key] = (item: item, source: source, mediaIndex: mediaIndex);
-      // Only the status repaints: do not rebuild the rail or replace its
-      // focused item with a cached probe snapshot.
+      // Refresh the playback controls without replacing the focused rail item.
       _playbackStatusRevision.value++;
     } catch (e, stackTrace) {
       appLogger.d('Playback track probe failed for ${target.id}', error: e, stackTrace: stackTrace);

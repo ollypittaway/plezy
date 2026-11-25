@@ -27,8 +27,11 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
         return PlaybackCopyBuilder(
           target: !widget.isOffline && (target?.isMovie == true || target?.isEpisode == true) ? target : null,
           initialCopies: widget.initialPlaybackCopies,
-          builder: (selected, copies, select, fourK) =>
-              _buildAvailableActionButtons(context, metadata, selected ?? target, copies, select, fourK),
+          builder: (selected, copies, select, fourK) => ValueListenableBuilder<int>(
+            valueListenable: _playbackStatusRevision,
+            builder: (_, _, _) =>
+                _buildAvailableActionButtons(context, metadata, selected ?? target, copies, select, fourK),
+          ),
         );
       },
     );
@@ -55,14 +58,46 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
         (playItem.libraryId == null || playItem.libraryId == metadata.libraryId);
     final library =
         libraryName(playItem) ?? (sameLibrary ? libraryName(metadata) ?? widget.metadata.libraryTitle : null);
-    final playButtonLabel = metadata.isVideoContent && library != null && library.isNotEmpty
+    final label4k = t.mediaMenu.playIn4k;
+    final probe = _playbackSources[playItem.globalKey];
+    final versionItem = probe?.item.mediaVersions?.isNotEmpty == true ? probe!.item : playItem;
+    final versions = versionItem.mediaVersions ?? const [];
+    final settings = SettingsService.instanceOrNull;
+    final preference = settings == null || versions.length < 2 || widget.isOffline
+        ? null
+        : readMediaVersionPreference(settings, versionItem)?.resolveIndex(versions);
+    final index = probe?.mediaIndex ?? preference ?? versions.indexWhere((version) => version.isPlayable);
+    final version = index < 0 ? null : versions.elementAtOrNull(index);
+    final FourKPlayback? primarySource;
+    if (fourK != null && fourK.item.globalKey == playItem.globalKey) {
+      if (version != null && version.is4K && version.isPlayable) {
+        primarySource = (item: versionItem, version: version, index: index);
+      } else if (preference == null && isFourKLibraryTitle(library)) {
+        primarySource = fourK;
+      } else {
+        primarySource = null;
+      }
+    } else {
+      primarySource = null;
+    }
+    // An offline multi-version title needs the identity of the file actually downloaded.
+    final offlineFourK =
+        widget.isOffline &&
+        (probe?.mediaIndex != null
+            ? version?.is4K == true
+            : versions.isNotEmpty && versions.every((version) => version.is4K));
+    if (widget.isOffline && probe == null && versions.length > 1) _scheduleTargetProbe(context, playItem);
+    final primaryFourK = primarySource != null || offlineFourK;
+    final playButtonLabel = primaryFourK
+        ? label4k
+        : metadata.isVideoContent && library != null && library.isNotEmpty
         ? t.mediaMenu.playFromLibrary(library: library)
         : _getPlayButtonLabel(metadata);
     final naturalLabelWidth = math.min(isTv ? 260.0 * tvScale : 260.0, MediaQuery.sizeOf(context).width * .32);
     var maxLabelWidth = naturalLabelWidth;
     final playIcon = _getPlayButtonIcon(playItem);
     final playActionLabel = playIcon == Symbols.resume_rounded ? t.common.resume : t.common.play;
-    final playSemanticsLabel = library != null && metadata.isVideoContent
+    final playSemanticsLabel = primaryFourK || (library != null && metadata.isVideoContent)
         ? playButtonLabel
         : playButtonLabel.isEmpty
         ? playActionLabel
@@ -93,15 +128,35 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     final versionSegmentWidth = actionSize * 0.75;
     final splitInnerRadius = Radius.circular(isTv ? 8.0 * tvScale : 8.0);
     final splitOuterRadius = Radius.circular(actionSize / 2);
-    final hasLibraryMenu = copies.length > 1;
+    final hasLibraryMenu = copies.any((copy) => copy.globalKey != playItem.globalKey);
     final playShape = hasLibraryMenu || showVersionSplit
         ? RoundedRectangleBorder(
             borderRadius: BorderRadiusDirectional.horizontal(start: splitOuterRadius, end: splitInnerRadius),
           )
         : null;
 
+    Future<void> playFourKFile(FourKPlayback fourK) async {
+      if (!_canUseDetail) return;
+      await navigateToVideoPlayer(
+        context,
+        metadata: fourK.item,
+        selectedMediaIndex: fourK.index,
+        selectedMediaSourceId: fourK.version.id.isEmpty ? null : fourK.version.id,
+        selectedQualityPreset: TranscodeQualityPreset.original,
+        strictMediaSelection: true,
+        isLaunchCurrent: () => _canUseDetail,
+      );
+      if (_canUseDetail) await _refreshWatchState();
+    }
+
+    final VoidCallback? playFourK = fourK == null ? null : () => playFourKFile(fourK);
+
     Future<void> onPlayPressed() async {
       if (!_canUseDetail) return;
+      if (primarySource != null) {
+        await playFourKFile(primarySource);
+        return;
+      }
       if (selected == null && (metadata.isShow || metadata.isSeason)) {
         await _playFirstEpisode();
         return;
@@ -314,23 +369,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
           )
         : null;
 
-    final VoidCallback? playFourK = fourK == null
-        ? null
-        : () async {
-            if (!_canUseDetail) return;
-            await navigateToVideoPlayer(
-              context,
-              metadata: fourK.item,
-              selectedMediaIndex: fourK.index,
-              selectedMediaSourceId: fourK.version.id.isEmpty ? null : fourK.version.id,
-              selectedQualityPreset: TranscodeQualityPreset.original,
-              strictMediaSelection: true,
-              isLaunchCurrent: () => _canUseDetail,
-            );
-            if (_canUseDetail) await _refreshWatchState();
-          };
-    final label4k = t.mediaMenu.playIn4k;
-    final fourKAction = metadata.isVideoContent
+    final fourKAction = metadata.isVideoContent && !primaryFourK
         ? FocusableAction(
             debugLabel: 'detail_play_4k',
             onPressed: playFourK,

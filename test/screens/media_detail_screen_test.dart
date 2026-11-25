@@ -1591,7 +1591,7 @@ void main() {
       await tester.pump();
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await settleSelection(tester);
-      expect(find.text('S1E2'), findsOneWidget);
+      expect(find.text(t.mediaMenu.playIn4k), findsOneWidget);
       expect(status(tester), contains('4K'));
       expect(status(tester), contains('Japanese'));
       expect(status(tester), isNot(contains('English')));
@@ -1637,6 +1637,7 @@ void main() {
       });
       await pumpDetail(tester, client, downloads: downloads);
       expect(status(tester), contains('4K'));
+      expect(find.text(t.mediaMenu.playIn4k), findsOneWidget);
       expect(status(tester), isNot(contains('1080p')));
       expect(status(tester), isNot(contains('Japanese')));
       expect(status(tester), isNot(contains('Off')));
@@ -2218,7 +2219,52 @@ void main() {
       );
       await pumpPhoneDetail(tester, _FakeMediaServerClient(show: movie, childrenByParent: const {}), movie);
       expect(find.byTooltip(t.libraries.selectLibrary), findsNothing);
+      expect(find.text('Play from 4K Movies'), findsNothing);
       expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, t.mediaMenu.playIn4k)).onPressed, isNotNull);
+    });
+
+    testWidgets('opening a 4K copy keeps one primary 4K action and allows switching to its HD library', (tester) async {
+      final uhd = testMediaItem(
+        id: 'origin',
+        title: 'Film',
+        year: 2022,
+        libraryId: '2',
+        libraryTitle: '4K Movies',
+        serverId: 'server_1',
+        mediaVersions: const [
+          MediaVersion(id: 'small', height: 1080),
+          MediaVersion(id: 'large', height: 2160),
+        ],
+      );
+      final hd = uhd.copyWith(
+        id: 'standard',
+        libraryId: '1',
+        libraryTitle: 'Movies',
+        mediaVersions: const [MediaVersion(id: 'hd', height: 1080)],
+      );
+      final client = _FakeMediaServerClient(show: uhd, childrenByParent: const {}, searchHits: [hd, uhd]);
+      final observer = _RecordingNavigatorObserver(popVideoPlayerImmediately: true);
+      await pumpPhoneDetail(tester, client, uhd, observer: observer);
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pumpAndSettle();
+      expect(find.text(t.mediaMenu.playIn4k), findsOneWidget);
+      expect(find.text('Play from Movies'), findsNothing);
+      await tester.tap(find.text(t.mediaMenu.playIn4k));
+      await tester.pumpAndSettle();
+      expect(observer.player?.metadata.id, uhd.id);
+      expect(observer.player?.selectedMediaIndex, 1);
+      expect(observer.player?.selectedMediaSourceId, 'large');
+      expect(observer.player?.strictMediaSelection, isTrue);
+      await tester.tap(find.byTooltip(t.libraries.selectLibrary));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('4K Movies •'), findsNothing);
+      await tester.tap(find.textContaining('Movies • 1080p'));
+      await tester.pumpAndSettle();
+      expect(find.text('Play from Movies'), findsOneWidget);
+      expect(find.text(t.mediaMenu.playIn4k), findsOneWidget);
+      await tester.tap(find.text('Play from Movies'));
+      await tester.pumpAndSettle();
+      expect(observer.player?.metadata.id, hd.id);
     });
 
     testWidgets('movie with multiple versions gets a split segment that plays the picked version', (tester) async {

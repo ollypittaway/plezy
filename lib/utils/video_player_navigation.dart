@@ -196,14 +196,18 @@ String _legacyMediaVersionPreferenceKey(MediaItem metadata) => metadata.grandpar
 /// (by write time, legacy entries first) are evicted past it.
 const _maxMediaVersionPreferences = 500;
 
+MediaVersionPreference? readMediaVersionPreference(SettingsService settings, MediaItem item) {
+  final prefs = settings.read(SettingsService.mediaVersionPreferences);
+  return prefs[_mediaVersionPreferenceKey(item)] ?? prefs[_legacyMediaVersionPreferenceKey(item)];
+}
+
 /// Saved media-version preference for [metadata]'s series/movie, or null when
 /// none is stored. Shared by launch navigation and in-player version
 /// switching so reads and writes can't drift onto different keys.
 Future<MediaVersionPreference?> savedMediaVersionPreferenceFor(MediaItem metadata) async {
   try {
     final settingsService = await SettingsService.getInstance();
-    final prefs = settingsService.read(SettingsService.mediaVersionPreferences);
-    return prefs[_mediaVersionPreferenceKey(metadata)] ?? prefs[_legacyMediaVersionPreferenceKey(metadata)];
+    return readMediaVersionPreference(settingsService, metadata);
   } catch (_) {
     return null;
   }
