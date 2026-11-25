@@ -493,6 +493,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   final GlobalKey _episodeTailKey = GlobalKey();
 
   final _libraryMenuKey = GlobalKey();
+  final _libraryMenuFocusNode = FocusNode(debugLabel: 'detail_episode_library');
+  MediaItem? _remoteSelectedEpisode;
+  String? _pendingEpisodeLibraryFocus;
   late final FocusNode _playButtonFocusNode;
   late final FocusNode _ratingChipFocusNode;
   late final FocusNode _backButtonFocusNode;
@@ -1156,6 +1159,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     _extrasFocusNode.dispose();
     _focusedExtraIndexNotifier.dispose();
     _playButtonFocusNode.dispose();
+    _libraryMenuFocusNode.dispose();
     _ratingChipFocusNode.dispose();
     _backButtonFocusNode.dispose();
     _overviewFocusNode.dispose();
@@ -2923,6 +2927,22 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     );
   }
 
+  void _selectEpisodeForRemotePlayback(MediaItem episode) {
+    if (!_canUseDetail) return;
+    setState(() {
+      _remoteSelectedEpisode = episode;
+      _pendingEpisodeLibraryFocus = episode.globalKey;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_canUseDetail || _remoteSelectedEpisode?.globalKey != episode.globalKey) return;
+      _playButtonFocusNode.requestFocus();
+      final actionContext = _playButtonFocusNode.context;
+      if (actionContext != null) {
+        unawaited(Scrollable.ensureVisible(actionContext, duration: const Duration(milliseconds: 220), alignment: 0.35));
+      }
+    });
+  }
+
   /// Build episode list directly when the library hides seasons for single-season shows
   Widget _buildEpisodesList() {
     final client = _getMediaClientForMetadata(context);
@@ -2964,6 +2984,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                 }
               : null,
           localPosterPath: localPosterPath,
+          onRemoteSelect: PlatformDetector.isFireTV() && !widget.isOffline
+              ? () => _selectEpisodeForRemotePlayback(episode)
+              : null,
           onTap: () async {
             await navigateToVideoPlayerWithRefresh(
               context,
@@ -5033,7 +5056,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   /// The episode a show's Play button plays. On TV the hero follows the rail's
   /// focused episode, so Play must agree with what the hero describes (#2217);
   /// with nothing focused (and everywhere off TV) it is the on-deck episode.
-  MediaItem? _showPlayEpisode() => _tvDetailFocusedEpisode.value ?? _onDeckEpisode;
+  MediaItem? _showPlayEpisode() => _remoteSelectedEpisode ?? _tvDetailFocusedEpisode.value ?? _onDeckEpisode;
 
   String _getPlayButtonLabel(MediaItem metadata) {
     // For TV shows - use compact S1E1 format

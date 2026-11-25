@@ -12,7 +12,9 @@ extension _MediaDetailPlaybackTracksStatus on _MediaDetailScreenState {
   MediaItem? _playbackTargetItem(MediaItem metadata) {
     if (!_canUseDetail) return null;
     final MediaItem? target;
-    if (metadata.isShow) {
+    if (_remoteSelectedEpisode != null && (metadata.isShow || metadata.isSeason)) {
+      target = _remoteSelectedEpisode;
+    } else if (metadata.isShow) {
       target = _showPlayEpisode();
     } else if (metadata.isSeason) {
       target = _episodes.isEmpty ? null : _episodes.first;

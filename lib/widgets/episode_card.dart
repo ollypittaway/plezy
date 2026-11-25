@@ -32,6 +32,7 @@ class EpisodeCard extends StatefulWidget {
   final MediaItem episode;
   final MediaServerClient? client;
   final VoidCallback onTap;
+  final VoidCallback? onRemoteSelect;
   final Future<void> Function(MediaItem source)? onRefresh;
   final Future<void> Function()? onListRefresh;
   final bool autofocus;
@@ -45,6 +46,7 @@ class EpisodeCard extends StatefulWidget {
     required this.episode,
     this.client,
     required this.onTap,
+    this.onRemoteSelect,
     this.onRefresh,
     this.onListRefresh,
     this.autofocus = false,
@@ -138,7 +140,7 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
           autofocus: widget.autofocus,
           enableLongPress: true,
           onNavigateUp: widget.onNavigateUp,
-          onSelect: widget.onTap,
+          onSelect: widget.onRemoteSelect ?? widget.onTap,
           onLongPress: showContextMenuFromTap,
           disableScale: true,
           child: MediaContextMenu(

@@ -45,7 +45,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     ValueChanged<MediaItem> select,
     FourKPlayback? fourK,
   ) {
-    final isTv = PlatformDetector.isTV();
+    final isTv = PlatformDetector.usesTvPresentation();
     final tvScale = TvLayoutConstants.scaleOf(context);
     final actionSize = isTv ? _tvDetailActionSize * tvScale : 48.0;
     final libraries = context.watch<LibrariesProvider?>()?.libraries;
@@ -82,11 +82,15 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
             : versions.isNotEmpty && versions.every((version) => version.is4K));
     if (widget.isOffline && probe == null && versions.length > 1) _scheduleTargetProbe(context, playItem);
     final primaryFourK = primarySource != null || offlineFourK;
-    final playButtonLabel = primaryFourK
+    final episodePrefix = _remoteSelectedEpisode != null && (metadata.isShow || metadata.isSeason)
+        ? formatSeasonEpisodeLabel(_remoteSelectedEpisode!.parentIndex, _remoteSelectedEpisode!.index)
+        : null;
+    final basePlayButtonLabel = primaryFourK
         ? label4k
         : metadata.isVideoContent && library != null && library.isNotEmpty
         ? t.mediaMenu.playFromLibrary(library: library)
         : _getPlayButtonLabel(metadata);
+    final playButtonLabel = episodePrefix == null ? basePlayButtonLabel : '$episodePrefix · $basePlayButtonLabel';
     final naturalLabelWidth = math.min(isTv ? 260.0 * tvScale : 260.0, MediaQuery.sizeOf(context).width * .32);
     var maxLabelWidth = naturalLabelWidth;
     final playIcon = _getPlayButtonIcon(playItem);
@@ -123,6 +127,16 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     final splitInnerRadius = Radius.circular(isTv ? 8.0 * tvScale : 8.0);
     final splitOuterRadius = Radius.circular(actionSize / 2);
     final hasLibraryMenu = copies.any((copy) => copy.globalKey != playItem.globalKey);
+    if (hasLibraryMenu && _pendingEpisodeLibraryFocus == _remoteSelectedEpisode?.globalKey &&
+        _pendingEpisodeLibraryFocus != null) {
+      final pending = _pendingEpisodeLibraryFocus;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_canUseDetail || _pendingEpisodeLibraryFocus != pending ||
+            !_playButtonFocusNode.hasFocus || _libraryMenuFocusNode.context == null) return;
+        _pendingEpisodeLibraryFocus = null;
+        _libraryMenuFocusNode.requestFocus();
+      });
+    }
     final playShape = hasLibraryMenu || showVersionSplit
         ? RoundedRectangleBorder(
             borderRadius: BorderRadiusDirectional.horizontal(start: splitOuterRadius, end: splitInnerRadius),
@@ -341,6 +355,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     final libraryAction = hasLibraryMenu
         ? FocusableAction(
             debugLabel: 'detail_play_library',
+            focusNode: _libraryMenuFocusNode,
             spacingBefore: splitGap,
             onPressed: chooseLibrary,
             builder: (_, state) => splitButton(state, libraryMenu: true),
