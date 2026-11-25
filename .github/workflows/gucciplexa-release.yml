@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: gucciplexa-packages-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   FLUTTER_VERSION: '3.47.1'
@@ -20,9 +20,13 @@ env:
 jobs:
   version:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     outputs:
       number: ${{ steps.read.outputs.number }}
       source: ${{ steps.read.outputs.source }}
+      reuse: ${{ steps.recovery.outputs.run_id }}
     steps:
       - id: select
         name: Select original release source
@@ -50,13 +54,30 @@ jobs:
           echo "number=$version" >> "$GITHUB_OUTPUT"
           echo "source=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
+      - id: recovery
+        name: Reuse verified v0.0.1 artifacts from the previous run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE: ${{ steps.read.outputs.source }}
+        run: |
+          [[ "$GITHUB_REF" == refs/heads/release-build/v0.0.1 ]] || exit 0
+          [[ "$SOURCE" == 8ae6cd09a904914b1bd52f127e460c52e26f7bcf ]] || exit 0
+          run=45663521993
+          if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/artifacts?per_page=100" --jq '.artifacts[] | select(.expired == false) | .name' > "$RUNNER_TEMP/recovery-artifacts"; then
+            for name in release-android release-firestick release-ios release-windows; do
+              grep -Fxq "$name" "$RUNNER_TEMP/recovery-artifacts" || exit 0
+            done
+            echo "run_id=$run" >> "$GITHUB_OUTPUT"
+          fi
+
   android:
     needs: version
+    if: needs.version.outputs.reuse == ''
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        variant: [android, firestick]
+        variant: [android]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -111,13 +132,107 @@ jobs:
           if-no-files-found: error
           compression-level: 0
 
-  apple:
+  firestick:
     needs: version
+    if: needs.version.outputs.reuse == ''
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [firestick]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.version.outputs.source }}
+          persist-credentials: false
+      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - name: Check release signing is configured
+        env:
+          HAS_KEY: ${{ secrets.GUCCIPLEXA_ANDROID_KEYSTORE != '' && secrets.GUCCIPLEXA_ANDROID_PASSWORD != '' }}
+        run: |
+          if [[ "$HAS_KEY" != true ]]; then
+            echo "::error::Set both GucciPlexa Android release secrets. See deploy/downloads/README.md."
+            exit 1
+          fi
+      - name: Reserve space for both NDKs and Gradle on the hosted runner
+        run: |
+          if (( $(df --output=avail -B1 / | tail -1) < 24000000000 )); then
+            sudo rm -rf /usr/share/dotnet /usr/local/.ghcup /opt/ghc
+          fi
+      - name: Install Android build tools
+        run: >-
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-36' 'build-tools;36.1.0' 'cmake;4.1.2' 'cmake;3.22.1' 'ndk;29.0.14206865' 'ndk;28.2.13676358'
+      - run: flutter pub get --enforce-lockfile --no-example
+      - name: Build phone APKs
+        if: matrix.variant == 'android'
+        run: flutter build apk --release --split-per-abi --no-pub
+      - name: Build dual-architecture Fire OS APK
+        if: matrix.variant == 'firestick'
+        run: AMAZON=1 flutter build apk --release --target-platform android-arm,android-arm64 --no-pub
+      - name: Sign and verify packages
+        env:
+          VARIANT: ${{ matrix.variant }}
+          STORE_BASE64: ${{ secrets.GUCCIPLEXA_ANDROID_KEYSTORE }}
+          GUCCIPLEXA_KEY_PASSWORD: ${{ secrets.GUCCIPLEXA_ANDROID_PASSWORD }}
+        run: |
+          umask 077
+          export GUCCIPLEXA_KEYSTORE="$RUNNER_TEMP/gucciplexa.p12"
+          trap 'rm -f "$GUCCIPLEXA_KEYSTORE"' EXIT
+          printf '%s' "$STORE_BASE64" | base64 --decode > "$GUCCIPLEXA_KEYSTORE"
+          bash scripts/release/package-android.sh "$VARIANT"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-${{ matrix.variant }}
+          path: build/distribution/*.apk
+          if-no-files-found: error
+          compression-level: 0
+
+  ios:
+    needs: version
+    if: needs.version.outputs.reuse == ''
     strategy:
       fail-fast: false
       matrix:
         include:
           - {platform: ios, runner: xcode-27, extension: ipa}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.version.outputs.source }}
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get --enforce-lockfile --no-example
+      - name: Build iPhone app for external signing
+        if: matrix.platform == 'ios'
+        run: flutter build ios --release --no-codesign --no-pub
+      - name: Build Mac app
+        if: matrix.platform == 'macos'
+        run: flutter build macos --release --no-pub
+      - run: bash scripts/release/package-apple.sh "${{ matrix.platform }}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-${{ matrix.platform }}
+          path: build/distribution/*.${{ matrix.extension }}
+          if-no-files-found: error
+          compression-level: 0
+
+  macos:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
           - {platform: macos, runner: macos-26, extension: dmg}
     runs-on: ${{ matrix.runner }}
     steps:
@@ -149,6 +264,7 @@ jobs:
       run:
         shell: pwsh
     needs: version
+    if: needs.version.outputs.reuse == ''
     strategy:
       fail-fast: false
       matrix:
@@ -210,27 +326,319 @@ jobs:
           if-no-files-found: error
           compression-level: 0
 
-  publish:
+  release_init:
     if: github.ref_type == 'tag' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-build/'))
-    concurrency:
-      group: gucciplexa-publish-${{ needs.version.outputs.number }}
-      cancel-in-progress: false
-    needs: [version, android, apple, installer]
+    needs: version
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          ref: ${{ needs.version.outputs.source }}
-          persist-credentials: false
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          pattern: release-*
-          merge-multiple: true
-          path: build/distribution
-      - name: Publish all packages for the existing tag
+      - name: Prepare release for independent asset uploads
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ needs.version.outputs.number }}
-        run: GITHUB_REF="refs/tags/v$RELEASE_VERSION" bash scripts/release/publish-gucciplexa.sh
+        run: |
+          set -euo pipefail
+          tag="v$RELEASE_VERSION"
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "GucciPlexa $RELEASE_VERSION" --notes 'Packages are published as each platform finishes. Android and Fire OS APKs are signed. The iPhone IPA requires external signing. The Mac disk image is ad hoc signed and the Windows installer is unsigned.'
+          fi
+
+  publish_android:
+    if: ${{ !cancelled() && needs.version.result == 'success' && needs.release_init.result == 'success' && (needs.android.result == 'success' || (needs.version.outputs.reuse != '' && needs.android.result == 'skipped')) }}
+    needs: [version, release_init, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download previously completed package
+        if: needs.version.outputs.reuse != ''
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: release-android
+          path: build/distribution
+          run-id: ${{ needs.version.outputs.reuse }}
+          github-token: ${{ github.token }}
+      - name: Download package from this run
+        if: needs.version.outputs.reuse == ''
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: release-android
+          path: build/distribution
+      - name: Publish android package independently
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.version.outputs.number }}
+        working-directory: build/distribution
+        run: |
+          set -euo pipefail
+          tag="v$RELEASE_VERSION"
+          repo="$GITHUB_REPOSITORY"
+          assets=(GucciPlexa-Android-arm64-v8a.apk GucciPlexa-Android-armeabi-v7a.apk GucciPlexa-Android-x86_64.apk)
+          for asset in "${assets[@]}"; do
+            test -s "$asset"
+          done
+          # Never replace a binary already attached to this version.
+          existing=$(gh release view "$tag" --repo "$repo" --json assets --jq '.assets[].name')
+          for asset in "${assets[@]}"; do
+            if ! grep -Fxq "$asset" <<< "$existing"; then
+              gh release upload "$tag" --repo "$repo" "$asset"
+            fi
+          done
+          # Derive checksums from the published assets, not a potentially different retry build.
+          manifest="SHA256SUMS-android.txt"
+          : > "$manifest"
+          for asset in "${assets[@]}"; do
+            digest=$(gh api --paginate "repos/$repo/releases/$(gh api --paginate "repos/$repo/releases?per_page=100" --jq ".[] | select(.tag_name == \"$tag\") | .id")/assets?per_page=100" --jq ".[] | select(.name == \"$asset\") | .digest")
+            [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+            printf '%s  %s\n' "${digest#sha256:}" "$asset" >> "$manifest"
+          done
+          if ! grep -Fxq "$manifest" <<< "$existing"; then
+            gh release upload "$tag" --repo "$repo" "$manifest"
+          fi
+          if [[ $(gh release view "$tag" --repo "$repo" --json isDraft --jq .isDraft) == true ]]; then
+            gh release edit "$tag" --repo "$repo" --draft=false
+          fi
+
+  publish_firestick:
+    if: ${{ !cancelled() && needs.version.result == 'success' && needs.release_init.result == 'success' && (needs.firestick.result == 'success' || (needs.version.outputs.reuse != '' && needs.firestick.result == 'skipped')) }}
+    needs: [version, release_init, firestick]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download previously completed package
+        if: needs.version.outputs.reuse != ''
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: release-firestick
+          path: build/distribution
+          run-id: ${{ needs.version.outputs.reuse }}
+          github-token: ${{ github.token }}
+      - name: Download package from this run
+        if: needs.version.outputs.reuse == ''
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: release-firestick
+          path: build/distribution
+      - name: Publish firestick package independently
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.version.outputs.number }}
+        working-directory: build/distribution
+        run: |
+          set -euo pipefail
+          tag="v$RELEASE_VERSION"
+          repo="$GITHUB_REPOSITORY"
+          assets=(GucciPlexa-Firestick.apk)
+          for asset in "${assets[@]}"; do
+            test -s "$asset"
+          done
+          # Never replace a binary already attached to this version.
+          existing=$(gh release view "$tag" --repo "$repo" --json assets --jq '.assets[].name')
+          for asset in "${assets[@]}"; do
+            if ! grep -Fxq "$asset" <<< "$existing"; then
+              gh release upload "$tag" --repo "$repo" "$asset"
+            fi
+          done
+          # Derive checksums from the published assets, not a potentially different retry build.
+          manifest="SHA256SUMS-firestick.txt"
+          : > "$manifest"
+          for asset in "${assets[@]}"; do
+            digest=$(gh api --paginate "repos/$repo/releases/$(gh api --paginate "repos/$repo/releases?per_page=100" --jq ".[] | select(.tag_name == \"$tag\") | .id")/assets?per_page=100" --jq ".[] | select(.name == \"$asset\") | .digest")
+            [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+            printf '%s  %s\n' "${digest#sha256:}" "$asset" >> "$manifest"
+          done
+          if ! grep -Fxq "$manifest" <<< "$existing"; then
+            gh release upload "$tag" --repo "$repo" "$manifest"
+          fi
+          if [[ $(gh release view "$tag" --repo "$repo" --json isDraft --jq .isDraft) == true ]]; then
+            gh release edit "$tag" --repo "$repo" --draft=false
+          fi
+
+  publish_ios:
+    if: ${{ !cancelled() && needs.version.result == 'success' && needs.release_init.result == 'success' && (needs.ios.result == 'success' || (needs.version.outputs.reuse != '' && needs.ios.result == 'skipped')) }}
+    needs: [version, release_init, ios]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download previously completed package
+        if: needs.version.outputs.reuse != ''
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: release-ios
+          path: build/distribution
+          run-id: ${{ needs.version.outputs.reuse }}
+          github-token: ${{ github.token }}
+      - name: Download package from this run
+        if: needs.version.outputs.reuse == ''
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: release-ios
+          path: build/distribution
+      - name: Publish ios package independently
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.version.outputs.number }}
+        working-directory: build/distribution
+        run: |
+          set -euo pipefail
+          tag="v$RELEASE_VERSION"
+          repo="$GITHUB_REPOSITORY"
+          assets=(GucciPlexa-iOS-unsigned.ipa)
+          for asset in "${assets[@]}"; do
+            test -s "$asset"
+          done
+          # Never replace a binary already attached to this version.
+          existing=$(gh release view "$tag" --repo "$repo" --json assets --jq '.assets[].name')
+          for asset in "${assets[@]}"; do
+            if ! grep -Fxq "$asset" <<< "$existing"; then
+              gh release upload "$tag" --repo "$repo" "$asset"
+            fi
+          done
+          # Derive checksums from the published assets, not a potentially different retry build.
+          manifest="SHA256SUMS-ios.txt"
+          : > "$manifest"
+          for asset in "${assets[@]}"; do
+            digest=$(gh api --paginate "repos/$repo/releases/$(gh api --paginate "repos/$repo/releases?per_page=100" --jq ".[] | select(.tag_name == \"$tag\") | .id")/assets?per_page=100" --jq ".[] | select(.name == \"$asset\") | .digest")
+            [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+            printf '%s  %s\n' "${digest#sha256:}" "$asset" >> "$manifest"
+          done
+          if ! grep -Fxq "$manifest" <<< "$existing"; then
+            gh release upload "$tag" --repo "$repo" "$manifest"
+          fi
+          if [[ $(gh release view "$tag" --repo "$repo" --json isDraft --jq .isDraft) == true ]]; then
+            gh release edit "$tag" --repo "$repo" --draft=false
+          fi
+
+  publish_macos:
+    if: ${{ needs.release_init.result == 'success' && needs.macos.result == 'success' }}
+    needs: [version, release_init, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download package from this run
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: release-macos
+          path: build/distribution
+      - name: Publish macos package independently
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.version.outputs.number }}
+        working-directory: build/distribution
+        run: |
+          set -euo pipefail
+          tag="v$RELEASE_VERSION"
+          repo="$GITHUB_REPOSITORY"
+          assets=(GucciPlexa-macOS.dmg)
+          for asset in "${assets[@]}"; do
+            test -s "$asset"
+          done
+          # Never replace a binary already attached to this version.
+          existing=$(gh release view "$tag" --repo "$repo" --json assets --jq '.assets[].name')
+          for asset in "${assets[@]}"; do
+            if ! grep -Fxq "$asset" <<< "$existing"; then
+              gh release upload "$tag" --repo "$repo" "$asset"
+            fi
+          done
+          # Derive checksums from the published assets, not a potentially different retry build.
+          manifest="SHA256SUMS-macos.txt"
+          : > "$manifest"
+          for asset in "${assets[@]}"; do
+            digest=$(gh api --paginate "repos/$repo/releases/$(gh api --paginate "repos/$repo/releases?per_page=100" --jq ".[] | select(.tag_name == \"$tag\") | .id")/assets?per_page=100" --jq ".[] | select(.name == \"$asset\") | .digest")
+            [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+            printf '%s  %s\n' "${digest#sha256:}" "$asset" >> "$manifest"
+          done
+          if ! grep -Fxq "$manifest" <<< "$existing"; then
+            gh release upload "$tag" --repo "$repo" "$manifest"
+          fi
+          if [[ $(gh release view "$tag" --repo "$repo" --json isDraft --jq .isDraft) == true ]]; then
+            gh release edit "$tag" --repo "$repo" --draft=false
+          fi
+
+  publish_windows:
+    if: ${{ !cancelled() && needs.version.result == 'success' && needs.release_init.result == 'success' && (needs.installer.result == 'success' || (needs.version.outputs.reuse != '' && needs.installer.result == 'skipped')) }}
+    needs: [version, release_init, installer]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download previously completed package
+        if: needs.version.outputs.reuse != ''
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: release-windows
+          path: build/distribution
+          run-id: ${{ needs.version.outputs.reuse }}
+          github-token: ${{ github.token }}
+      - name: Download package from this run
+        if: needs.version.outputs.reuse == ''
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: release-windows
+          path: build/distribution
+      - name: Publish windows package independently
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.version.outputs.number }}
+        working-directory: build/distribution
+        run: |
+          set -euo pipefail
+          tag="v$RELEASE_VERSION"
+          repo="$GITHUB_REPOSITORY"
+          assets=(GucciPlexa-Windows-Setup.exe)
+          for asset in "${assets[@]}"; do
+            test -s "$asset"
+          done
+          # Never replace a binary already attached to this version.
+          existing=$(gh release view "$tag" --repo "$repo" --json assets --jq '.assets[].name')
+          for asset in "${assets[@]}"; do
+            if ! grep -Fxq "$asset" <<< "$existing"; then
+              gh release upload "$tag" --repo "$repo" "$asset"
+            fi
+          done
+          # Derive checksums from the published assets, not a potentially different retry build.
+          manifest="SHA256SUMS-windows.txt"
+          : > "$manifest"
+          for asset in "${assets[@]}"; do
+            digest=$(gh api --paginate "repos/$repo/releases/$(gh api --paginate "repos/$repo/releases?per_page=100" --jq ".[] | select(.tag_name == \"$tag\") | .id")/assets?per_page=100" --jq ".[] | select(.name == \"$asset\") | .digest")
+            [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+            printf '%s  %s\n' "${digest#sha256:}" "$asset" >> "$manifest"
+          done
+          if ! grep -Fxq "$manifest" <<< "$existing"; then
+            gh release upload "$tag" --repo "$repo" "$manifest"
+          fi
+          if [[ $(gh release view "$tag" --repo "$repo" --json isDraft --jq .isDraft) == true ]]; then
+            gh release edit "$tag" --repo "$repo" --draft=false
+          fi
+
+  publish_checksums:
+    needs: [version, publish_android, publish_firestick, publish_ios, publish_macos, publish_windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish complete checksum manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.version.outputs.number }}
+        run: |
+          set -euo pipefail
+          tag="v$RELEASE_VERSION"
+          repo="$GITHUB_REPOSITORY"
+          if gh release view "$tag" --repo "$repo" --json assets --jq '.assets[].name' | grep -Fxq SHA256SUMS.txt; then
+            exit 0
+          fi
+          for platform in android firestick ios macos windows; do
+            gh release download "$tag" --repo "$repo" --pattern "SHA256SUMS-$platform.txt"
+          done
+          cat SHA256SUMS-{android,firestick,ios,macos,windows}.txt > SHA256SUMS.txt
+          gh release upload "$tag" --repo "$repo" SHA256SUMS.txt
