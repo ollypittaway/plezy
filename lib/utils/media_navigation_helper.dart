@@ -6,6 +6,7 @@ import '../media/ids.dart';
 import '../media/media_backend.dart';
 import '../media/media_item.dart';
 import '../media/media_item_merge.dart';
+import '../media/media_version.dart';
 import '../media/media_item_types.dart';
 import '../media/media_kind.dart';
 import '../media/media_playlist.dart';
@@ -23,6 +24,11 @@ import 'formatters.dart';
 import 'music_navigation.dart';
 import 'plex_library_section_utils.dart';
 import 'video_player_navigation.dart';
+
+int _non4kHeight(MediaItem item) {
+  final index = preferredNon4kVersionIndex(item.mediaVersions ?? const <MediaVersion>[]);
+  return index == null ? 0 : item.mediaVersions![index].resolutionHeight!;
+}
 
 /// Result of media navigation indicating what action was taken
 enum MediaNavigationResult {
@@ -220,7 +226,9 @@ Future<MediaNavigationResult> navigateToMediaItem(
   if (playDirectly && !isOffline) {
     final copies = context.read<DiscoverProvider?>()?.continueWatchingCopiesOf(mi) ?? const <MediaItem>[];
     if (copies.length > 1) {
-      final picked = await _pickContinueWatchingCopy(context, copies);
+      final hdCopies = copies.where((copy) => _non4kHeight(copy) > 0).toList()
+        ..sort((a, b) => _non4kHeight(b).compareTo(_non4kHeight(a)));
+      final picked = hdCopies.isNotEmpty ? hdCopies.first : await _pickContinueWatchingCopy(context, copies);
       if (picked == null || !context.mounted) return MediaNavigationResult.navigated;
       mi = picked;
     }
@@ -283,7 +291,7 @@ Future<MediaNavigationResult> navigateToMediaItem(
       if (mi.kind == MediaKind.episode && shouldOpenEpisodeDetails) {
         return navigateToMediaItemDetails(context, mi, onRefresh: onRefresh, isOffline: isOffline);
       }
-      final result = await navigateToVideoPlayer(context, metadata: mi, isOffline: isOffline);
+      final result = await navigateToVideoPlayer(context, metadata: mi, isOffline: isOffline, preferNon4k: playDirectly);
       if (result == true && context.mounted) {
         onRefresh?.call(mi);
       }
@@ -291,7 +299,7 @@ Future<MediaNavigationResult> navigateToMediaItem(
 
     case MediaKind.movie:
       if (playDirectly && !shouldOpenContinueWatchingDetails) {
-        final result = await navigateToVideoPlayer(context, metadata: mi, isOffline: isOffline);
+        final result = await navigateToVideoPlayer(context, metadata: mi, isOffline: isOffline, preferNon4k: playDirectly);
         if (result == true && context.mounted) {
           onRefresh?.call(mi);
         }

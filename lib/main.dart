@@ -2056,6 +2056,23 @@ class FormFactorScale extends StatelessWidget {
     if (PlatformDetector.isAppleTV()) {
       return _scaledSurface(child: child, scale: _appleTvScale, zeroInsets: true);
     }
+    if (PlatformDetector.isFireTV()) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final size = Size(constraints.maxWidth, constraints.maxHeight);
+          return ColoredBox(
+            color: Colors.black,
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: size.width * 0.05, vertical: size.height * 0.05),
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(size: Size(size.width * 0.9, size.height * 0.9)),
+                child: child,
+              ),
+            ),
+          );
+        },
+      );
+    }
     if (!PlatformDetector.isAutomotive()) return child;
 
     // Car system bars can sit on the left or right, are opaque, and may be
