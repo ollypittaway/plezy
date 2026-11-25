@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../i18n/strings.g.dart';
@@ -162,11 +161,11 @@ class DesktopNavigationBar extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                         child: Row(
                           children: [
-                            SvgPicture.asset(
-                              'assets/plezy.svg',
-                              width: 23,
+                            Image.asset(
+                              'assets/gucciplexa-mark.png',
+                              width: 26,
                               height: 26,
-                              colorFilter: ColorFilter.mode(colors.primary, BlendMode.srcIn),
+                              excludeFromSemantics: true,
                             ),
                             const SizedBox(width: 7),
                             Text(

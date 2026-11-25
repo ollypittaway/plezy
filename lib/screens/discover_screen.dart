@@ -1683,23 +1683,36 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
                             if (alignLeft) ...[
                               SizedBox(height: compact ? 12 : 20),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 4,
-                                crossAxisAlignment: WrapCrossAlignment.center,
-                                children: [
-                                  _buildSmartPlayButton(heroItem),
-                                  OutlinedButton(
-                                    onPressed: () =>
-                                        navigateToMediaItemDetails(context, heroItem, onRefresh: _discover.updateItem),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: colorScheme.onSurface,
-                                      backgroundColor: colorScheme.surface.withValues(alpha: 0.9),
-                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                                    ),
-                                    child: Text(t.mediaMenu.viewDetails),
+                              IntrinsicWidth(
+                                child: IntrinsicHeight(
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      Expanded(child: _buildSmartPlayButton(heroItem)),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          onPressed: () => navigateToMediaItemDetails(
+                                            context,
+                                            heroItem,
+                                            onRefresh: _discover.updateItem,
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: colorScheme.onSurface,
+                                            backgroundColor: colorScheme.surface.withValues(alpha: 0.9),
+                                            padding: EdgeInsets.symmetric(horizontal: isTv ? 34 : 24),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                            visualDensity: VisualDensity.standard,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                            textStyle: TextStyle(fontSize: isTv ? 18 : 14),
+                                          ),
+                                          child: Text(t.mediaMenu.viewDetails, textAlign: TextAlign.center),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
                             ],
                           ],
@@ -1755,6 +1768,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 ),
                 child: Row(
                   mainAxisSize: .min,
+                  mainAxisAlignment: .center,
                   children: [
                     AppIcon(Symbols.play_arrow_rounded, fill: 1, size: isTv ? 28 : 20, color: foregroundColor),
                     SizedBox(width: isTv ? 12 : 8),
@@ -1779,23 +1793,18 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                         ),
                       ),
                       SizedBox(width: isTv ? 12 : 8),
-                      Text(
-                        t.discover.minutesLeft(minutes: minutesLeft),
+                    ],
+                    Flexible(
+                      child: Text(
+                        hasProgress ? t.discover.minutesLeft(minutes: minutesLeft) : t.common.play,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           color: foregroundColor,
                           fontSize: isTv ? 18 : 14,
                           fontWeight: isTv ? FontWeight.w600 : FontWeight.w500,
                         ),
                       ),
-                    ] else
-                      Text(
-                        t.common.play,
-                        style: TextStyle(
-                          color: foregroundColor,
-                          fontSize: isTv ? 18 : 14,
-                          fontWeight: isTv ? FontWeight.w600 : FontWeight.w500,
-                        ),
-                      ),
+                    ),
                   ],
                 ),
               ),

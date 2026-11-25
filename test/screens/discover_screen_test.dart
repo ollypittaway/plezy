@@ -614,6 +614,8 @@ void main() {
           backend: MediaBackend.plex,
           kind: MediaKind.movie,
           title: 'Movie $i',
+          durationMs: const Duration(hours: 2, minutes: 53).inMilliseconds,
+          viewOffsetMs: i == 0 ? const Duration(minutes: 53).inMilliseconds : null,
           serverId: 'server_1',
           serverName: 'Server',
         ),
@@ -722,11 +724,24 @@ void main() {
     expect(find.text('86  AUDIENCE', findRichText: true), findsOneWidget);
     expect(find.text('2026  ·  2h 53min  ·  Adventure  ·  Action  ·  Fantasy'), findsOneWidget);
 
+    void expectMatchingHeroButtons(String playLabel) {
+      final play = find
+          .ancestor(of: find.text(playLabel).hitTestable(), matching: find.byType(AnimatedContainer))
+          .first;
+      final details = find.widgetWithText(OutlinedButton, t.mediaMenu.viewDetails).hitTestable();
+      final detailsFace = find.descendant(of: details, matching: find.byType(Material)).first;
+      expect(tester.getSize(detailsFace), tester.getSize(play));
+      expect(tester.getTopLeft(detailsFace).dy, tester.getTopLeft(play).dy);
+    }
+
+    expectMatchingHeroButtons(t.discover.minutesLeft(minutes: 120));
+
     final carousel = tester.widget<PageView>(find.byType(PageView)).controller!;
     await tester.tap(find.byTooltip('Next page'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(carousel.page, 1);
+    expectMatchingHeroButtons(t.common.play);
     expect(find.text('91  CRITICS', findRichText: true), findsNothing);
     await tester.tap(find.byTooltip('Previous page'));
     await tester.pump();

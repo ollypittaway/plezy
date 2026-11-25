@@ -33,9 +33,7 @@ class AboutScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         const SizedBox(height: 24),
-                        Image.asset('assets/plezy.png', width: 80, height: 80),
-                        const SizedBox(height: 16),
-                        Text(appName, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: .bold)),
+                        Image.asset('assets/gucciplexa.webp', width: 176, height: 176, semanticLabel: appName),
                         const SizedBox(height: 8),
                         Text(
                           // Blank while loading or when the platform can't report it; the line keeps its height.
