@@ -50,6 +50,7 @@ import 'package:plezy/utils/watch_state_notifier.dart';
 import 'package:plezy/utils/deletion_notifier.dart';
 import 'package:plezy/utils/library_content_notifier.dart';
 import 'package:plezy/utils/video_player_navigation.dart';
+import 'package:plezy/services/playback_bandwidth.dart';
 import 'package:plezy/widgets/collapsible_text.dart';
 import 'package:plezy/widgets/cycling_media_backdrop.dart';
 import 'package:plezy/widgets/episode_card.dart';
@@ -1799,6 +1800,7 @@ void main() {
       String? initialEpisodeId,
       NavigatorObserver? observer,
       ThemeData? theme,
+      PlaybackBandwidth? bandwidth,
     }) async {
       TvDetectionService.debugSetAppleTVOverride(false);
       await SettingsService.getInstance();
@@ -1839,6 +1841,7 @@ void main() {
         TranslationProvider(
           child: MultiProvider(
             providers: [
+              if (bandwidth != null) Provider<PlaybackBandwidth>.value(value: bandwidth),
               ChangeNotifierProvider<MultiServerProvider>.value(value: multiServerProvider),
               ChangeNotifierProvider<DownloadProvider>.value(value: downloadProvider),
               ChangeNotifierProvider<WatchStateStore>.value(value: watchStateOverlay),
@@ -2112,9 +2115,7 @@ void main() {
       expect(find.text('Director'), findsNothing);
     });
 
-    testWidgets('a movie card offers its libraries and Play in 4K launches the other library’s exact file', (
-      tester,
-    ) async {
+    testWidgets('cards open details directly and the selected library and 4K warning control playback', (tester) async {
       final hd = testMediaItem(
         id: 'hd',
         title: 'Christmas',
@@ -2130,7 +2131,7 @@ void main() {
         libraryTitle: 'UHD Movies',
         mediaVersions: const [
           MediaVersion(id: 'small-2', height: 1080),
-          MediaVersion(id: 'cinemascope', width: 3840, height: 1608),
+          MediaVersion(id: 'cinemascope', width: 3840, height: 1608, bitrate: 64000),
         ],
       );
       final client = _FakeMediaServerClient(
@@ -2143,26 +2144,40 @@ void main() {
         ],
       );
       final observer = _RecordingNavigatorObserver(popVideoPlayerImmediately: true);
-      await pumpPhoneDetail(tester, client, hd, observer: observer);
+      final bandwidth = PlaybackBandwidth();
+      addTearDown(bandwidth.dispose);
+      bandwidth.warmUp([hd], {client.serverId: client});
+      await pumpPhoneDetail(tester, client, hd, observer: observer, bandwidth: bandwidth);
       final context = tester.element(find.byType(MediaDetailScreen));
       unawaited(navigateToMediaItem(context, hd));
       await tester.pumpAndSettle();
-      expect(find.text(t.libraries.selectLibrary), findsOneWidget);
-      expect(find.textContaining('UHD Movies'), findsOneWidget);
-      Navigator.of(tester.element(find.text(t.libraries.selectLibrary))).pop();
+      await tester.pump(const Duration(milliseconds: 350));
       await tester.pumpAndSettle();
       expect(find.text(t.libraries.selectLibrary), findsNothing);
-      expect(observer.player, isNull);
-      unawaited(navigateToMediaItem(context, hd));
+      expect(find.text('Play from Movies'), findsOneWidget);
+      expect(find.textContaining('UHD Movies •'), findsNothing);
+      await tester.tap(find.byTooltip(t.libraries.selectLibrary));
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('UHD Movies • 4K'));
       await tester.pumpAndSettle();
-      expect(tester.widget<MediaDetailScreen>(find.byType(MediaDetailScreen)).metadata.id, uhd.id);
-      Navigator.of(tester.element(find.byType(MediaDetailScreen))).pop();
-      await tester.pumpAndSettle();
+      expect(observer.player, isNull);
       expect(tester.widget<MediaDetailScreen>(find.byType(MediaDetailScreen)).metadata.id, hd.id);
+      await tester.tap(find.text('Play from UHD Movies'));
+      await tester.pumpAndSettle();
+      expect(observer.player?.metadata.id, uhd.id);
+      expect(observer.player?.selectedMediaIndex, 0);
       await tester.tap(find.text(t.mediaMenu.playIn4k));
       await tester.pumpAndSettle();
+      expect(find.text(t.mediaMenu.bufferingTitle), findsOneWidget);
+      expect(find.textContaining('10.0 Mbps'), findsOneWidget);
+      await tester.tap(find.text(t.common.cancel));
+      await tester.pumpAndSettle();
+      expect(observer.player?.selectedMediaIndex, 0);
+      await tester.tap(find.text(t.mediaMenu.playIn4k));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(t.mediaMenu.playAnyway));
+      await tester.pumpAndSettle();
+      expect(client.speedSamples, 1);
       expect(observer.player?.metadata.id, uhd.id);
       expect(observer.player?.selectedMediaIndex, 1);
       expect(observer.player?.selectedMediaSourceId, 'cinemascope');
@@ -3446,7 +3461,18 @@ Map<String, dynamic> _previewItem(
   };
 }
 
-class _FakeMediaServerClient implements MediaServerClient {
+class _FakeMediaServerClient implements MediaServerClient, PlaybackSpeedClient {
+  int speedSamples = 0;
+  @override
+  final Object authenticationSessionId = Object();
+  @override
+  String get playbackEndpoint => 'https://media.example';
+  @override
+  Future<double?> samplePlaybackMbps(MediaItem item, AbortController abort) async {
+    speedSamples++;
+    return 10;
+  }
+
   final List<MediaItem> searchHits;
   final MediaItem show;
   final Map<String, List<MediaItem>> childrenByParent;

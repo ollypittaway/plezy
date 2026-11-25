@@ -32,7 +32,8 @@ import '../media/media_hub.dart';
 import '../media/media_item_merge.dart';
 import '../models/transcode_quality_preset.dart';
 import '../widgets/playback_copy_builder.dart';
-import '../utils/playback_library_picker.dart';
+import '../widgets/anchored_option_menus.dart';
+import '../providers/libraries_provider.dart';
 import '../utils/provider_extensions.dart';
 import '../utils/plex_season_display.dart';
 import '../media/media_item.dart';
@@ -491,6 +492,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   // lazy paging (the list is shrink-wrapped, so it can't self-detect near-end).
   final GlobalKey _episodeTailKey = GlobalKey();
 
+  final _libraryMenuKey = GlobalKey();
   late final FocusNode _playButtonFocusNode;
   late final FocusNode _ratingChipFocusNode;
   late final FocusNode _backButtonFocusNode;
@@ -2963,7 +2965,13 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
               : null,
           localPosterPath: localPosterPath,
           onTap: () async {
-            await _playFromLibrary(context, episode, onRefresh: () => unawaited(_refreshItemInPlace(episode)));
+            await navigateToVideoPlayerWithRefresh(
+              context,
+              metadata: episode,
+              isOffline: widget.isOffline,
+              onRefresh: () => unawaited(_refreshItemInPlace(episode)),
+              isLaunchCurrent: () => _canUseDetail,
+            );
           },
           onRefresh: widget.isOffline ? null : _refreshItemInPlace,
           onListRefresh: widget.isOffline ? null : _refreshCurrentEpisodes,
@@ -3311,26 +3319,6 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     });
   }
 
-  Future<void> _playFromLibrary(
-    BuildContext context,
-    MediaItem item, {
-    required VoidCallback onRefresh,
-    bool choose = true,
-  }) async {
-    if (!widget.isOffline && choose) {
-      final choice = await choosePlaybackLibrary(context, item);
-      if (choice == null || !context.mounted || !_canUseDetail) return;
-      item = choice.item;
-    }
-    await navigateToVideoPlayerWithRefresh(
-      context,
-      metadata: item,
-      isOffline: widget.isOffline,
-      onRefresh: onRefresh,
-      isLaunchCurrent: () => _canUseDetail,
-    );
-  }
-
   Future<void> _playFirstEpisode() async {
     if (!_canUseDetail) return;
     // Loading seasons and resolving the first episode cost network round
@@ -3405,11 +3393,12 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       );
       if (mounted && _canUseDetail) {
         appLogger.d('Playing first episode: ${episodeWithServerId.title}');
-        await _playFromLibrary(
+        await navigateToVideoPlayerWithRefresh(
           context,
-          episodeWithServerId,
+          metadata: episodeWithServerId,
+          isOffline: widget.isOffline,
           onRefresh: _refreshWatchState,
-          choose: widget.initialPlaybackCopies == null,
+          isLaunchCurrent: () => _canUseDetail,
         );
       }
     } catch (e) {
@@ -4509,7 +4498,13 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   Future<bool> _handleTvDetailRailItemActivated(MediaHub hub, MediaItem item) async {
     if (_isTvDetailEpisodeHub(hub) && item.isEpisode) {
-      await _playFromLibrary(context, item, onRefresh: () => unawaited(_refreshItemInPlace(item)));
+      await navigateToVideoPlayerWithRefresh(
+        context,
+        metadata: item,
+        isOffline: widget.isOffline,
+        onRefresh: () => unawaited(_refreshItemInPlace(item)),
+        isLaunchCurrent: () => _canUseDetail,
+      );
       return true;
     }
     if (hub.id != _tvDetailActorsHubId) return false;

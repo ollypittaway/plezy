@@ -2113,6 +2113,18 @@ class Translations$mediaMenu$en {
 
 	/// en: 'Play in 4K'
 	String get playIn4k => 'Play in 4K';
+
+	/// en: 'Play from ${library}'
+	String playFromLibrary({required Object library}) => 'Play from ${library}';
+
+	/// en: '4K playback may buffer'
+	String get bufferingTitle => '4K playback may buffer';
+
+	/// en: 'Your connection to this server measured ${speed} Mbps. This file averages ${bitrate} Mbps, and some scenes may need more. Continue with this file or go back to choose another library.'
+	String bufferingMessage({required Object speed, required Object bitrate}) => 'Your connection to this server measured ${speed} Mbps. This file averages ${bitrate} Mbps, and some scenes may need more. Continue with this file or go back to choose another library.';
+
+	/// en: 'Play anyway'
+	String get playAnyway => 'Play anyway';
 }
 
 // Path: rateSheet
@@ -8845,6 +8857,10 @@ extension on Translations {
 			'mediaMenu.playFromBeginning' => 'Play from Beginning',
 			'mediaMenu.playVersion' => 'Play Version...',
 			'mediaMenu.playIn4k' => 'Play in 4K',
+			'mediaMenu.playFromLibrary' => ({required Object library}) => 'Play from ${library}',
+			'mediaMenu.bufferingTitle' => '4K playback may buffer',
+			'mediaMenu.bufferingMessage' => ({required Object speed, required Object bitrate}) => 'Your connection to this server measured ${speed} Mbps. This file averages ${bitrate} Mbps, and some scenes may need more. Continue with this file or go back to choose another library.',
+			'mediaMenu.playAnyway' => 'Play anyway',
 			'rateSheet.title' => 'Rate',
 			'rateSheet.server' => 'Server',
 			'rateSheet.favorite' => 'Favorite',
@@ -9147,12 +9163,12 @@ extension on Translations {
 			'profiles.incorrectPinTryAgain' => 'Incorrect PIN. Please try again.',
 			'profiles.sourceProfileMissingParentAccount' => 'Source profile is missing its parent account.',
 			'profiles.failedToLoadHomeUsers' => 'Could not load your Plex Home users. Check your connection and try again.',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.failedToVerifyPin' => 'Failed to verify PIN.',
 			'profiles.newProfile' => 'New profile',
 			'profiles.profileNameHint' => 'e.g. Guests, Kids, Family Room',
 			'profiles.pinProtectionOptional' => 'PIN protection (optional)',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.pinExplain' => '4-digit PIN required to switch profiles.',
 			'profiles.continueButton' => 'Continue',
 			'profiles.pinsDontMatch' => 'PINs don\'t match',
@@ -9661,12 +9677,12 @@ extension on Translations {
 			'liveTv.recordingInProgress' => 'Recording now',
 			'liveTv.recordingsCount' => ({required Object count}) => '${count} scheduled',
 			'liveTv.editRule' => 'Edit rule',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.editRuleAction' => 'Edit',
 			'liveTv.recordingRuleUpdated' => 'Recording rule updated',
 			'liveTv.guideReloadRequested' => 'Guide refresh requested',
 			'liveTv.guideReloadFailed' => 'Couldn\'t refresh the guide',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.rulesProcessRequested' => 'Rule re-evaluation requested',
 			'liveTv.rulesProcessFailed' => 'Couldn\'t re-evaluate recording rules',
 			'liveTv.recordShow' => 'Record show',
@@ -10175,12 +10191,12 @@ extension on Translations {
 			'performanceOverlay.maxLuma' => 'Max Luma',
 			'performanceOverlay.minLuma' => 'Min Luma',
 			'performanceOverlay.maxCll' => 'MaxCLL',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.maxFall' => 'MaxFALL',
 			'performanceOverlay.cacheUsed' => 'Cache Used',
 			'performanceOverlay.cacheLimit' => 'Cache Limit',
 			'performanceOverlay.speed' => 'Speed',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.player' => 'Player',
 			'performanceOverlay.playMethod' => 'Play Method',
 			'performanceOverlay.memory' => 'Memory',

@@ -1554,7 +1554,7 @@ bool _hasClickableTitle(MediaItem mi) {
 }
 
 void _navigateToFocusedDetail(BuildContext context, MediaItem item, {bool isOffline = false}) {
-  navigateToMediaItemDetails(context, item, isOffline: isOffline, chooseLibrary: true);
+  navigateToMediaItemDetails(context, item, isOffline: isOffline);
 }
 
 /// Text widget that shows hover underline + pointer cursor only in pointer mode.

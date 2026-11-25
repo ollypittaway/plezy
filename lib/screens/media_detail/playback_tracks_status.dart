@@ -49,7 +49,7 @@ extension _MediaDetailPlaybackTracksStatus on _MediaDetailScreenState {
     if (!_canUseDetail) return;
     final key = target.globalKey;
     if (_playbackSources.containsKey(key) || _playbackProbeRequests.containsKey(key)) return;
-    final client = widget.isOffline ? null : _getMediaClientForMetadata(context);
+    final client = widget.isOffline ? null : context.tryGetMediaClientForServer(serverIdOrNull(target.serverId));
     if (!widget.isOffline && client == null) return;
     final downloads = widget.isOffline ? context.read<DownloadProvider>() : null;
     _playbackProbeTimer?.cancel();

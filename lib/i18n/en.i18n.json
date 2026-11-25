@@ -764,7 +764,11 @@
     "rate": "Rate",
     "playFromBeginning": "Play from Beginning",
     "playVersion": "Play Version...",
-    "playIn4k": "Play in 4K"
+    "playIn4k": "Play in 4K",
+    "playFromLibrary": "Play from ${library}",
+    "bufferingTitle": "4K playback may buffer",
+    "bufferingMessage": "Your connection to this server measured ${speed} Mbps. This file averages ${bitrate} Mbps, and some scenes may need more. Continue with this file or go back to choose another library.",
+    "playAnyway": "Play anyway"
   },
   "rateSheet": {
     "title": "Rate",

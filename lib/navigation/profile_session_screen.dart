@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../services/playback_bandwidth.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
@@ -189,6 +190,10 @@ class _ProfileSessionScreenState extends State<ProfileSessionScreen> {
                   return provider;
                 },
               ),
+              Provider<PlaybackBandwidth>(
+                create: (_) => PlaybackBandwidth(),
+                dispose: (_, service) => service.dispose(),
+              ),
               ChangeNotifierProvider(
                 create: (context) {
                   final provider = TrackersProvider(httpClientFactory: widget.trackerHttpClientFactory);
@@ -275,6 +280,7 @@ class _ProfileSessionScreenState extends State<ProfileSessionScreen> {
                     // matches; the proxy reuses `previous`, so the reference
                     // stays valid for as long as this provider does.
                     watchStateStore: context.read<WatchStateStore>(),
+                    bandwidth: context.read<PlaybackBandwidth>(),
                     isProfileBinding: () => activeProfile.isBinding,
                     // Defers push-triggered hub refetches while the player is
                     // up — same playback-quiet policy as the resume gate.

@@ -119,6 +119,11 @@ class HubFetchDiagnostics {
   }
 }
 
+abstract interface class PlaybackSpeedClient {
+  String get playbackEndpoint;
+  Future<double?> samplePlaybackMbps(MediaItem item, AbortController abort);
+}
+
 abstract class MediaServerClient {
   ServerId get serverId;
   String? get serverName;

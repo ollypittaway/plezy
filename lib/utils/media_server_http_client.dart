@@ -372,6 +372,7 @@ class MediaServerHttpClient {
     Duration? timeout,
     AbortController? abort,
     Future<void> Function()? onError,
+    bool followRedirects = true,
     required Future<T> Function(http.StreamedResponse streamed, _RequestScope scope) consume,
   }) async {
     if (_closing) {
@@ -384,6 +385,7 @@ class MediaServerHttpClient {
     final requestAbort = AbortController();
     _activeAborts.add(requestAbort);
     final request = http.AbortableRequest(method, uri, abortTrigger: _abortTrigger(requestAbort, abort));
+    request.followRedirects = followRedirects;
     request.headers.addAll({...defaultHeaders, ...?headers});
     _setBody(request, body);
 
@@ -425,6 +427,52 @@ class MediaServerHttpClient {
 
   void _abortActiveRequests() {
     for (final abort in _activeAborts.toList()) {
+      abort.abort();
+    }
+  }
+
+  /// Time a bounded sample from the playback endpoint. Discard the bytes
+  /// as they arrive. A slow connection can still yield a partial estimate.
+  Future<double?> sampleDownloadMbps(String path, AbortController parent) async {
+    const limit = 4 * 1024 * 1024;
+    const budget = Duration(seconds: 5);
+    final abort = AbortController();
+    if (parent.isAborted) return null;
+    unawaited(parent.trigger.then((_) => abort.abort()));
+    final elapsed = Stopwatch();
+    var received = 0;
+    double? rate() =>
+        received >= 16384 && elapsed.elapsedMicroseconds > 0 ? received * 8 / elapsed.elapsedMicroseconds : null;
+    var expired = false;
+    final timer = Timer(budget, () {
+      expired = true;
+      abort.abort();
+    });
+    try {
+      return await _perform<double?>(
+        'GET',
+        path,
+        headers: {'Range': 'bytes=0-${limit - 1}', 'Accept-Encoding': 'identity', 'Cache-Control': 'no-cache'},
+        abort: abort,
+        followRedirects: false,
+        timeout: budget,
+        consume: (response, scope) async {
+          if (response.statusCode != 206 || response.headers['content-range']?.startsWith('bytes 0-') != true) {
+            await response.stream.listen(null).cancel();
+            return null;
+          }
+          elapsed.start();
+          await for (final chunk in response.stream) {
+            received += chunk.length;
+            if (received >= limit) break;
+          }
+          return rate();
+        },
+      );
+    } catch (_) {
+      return expired && !parent.isAborted ? rate() : null;
+    } finally {
+      timer.cancel();
       abort.abort();
     }
   }

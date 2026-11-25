@@ -16,7 +16,13 @@ import '../utils/media_server_http_client.dart';
 class PlaybackCopyBuilder extends StatefulWidget {
   final MediaItem? target;
   final List<MediaItem>? initialCopies;
-  final Widget Function(FourKPlayback?) builder;
+  final Widget Function(
+    MediaItem? selected,
+    List<MediaItem> copies,
+    ValueChanged<MediaItem> select,
+    FourKPlayback? fourK,
+  )
+  builder;
 
   const PlaybackCopyBuilder({super.key, required this.target, this.initialCopies, required this.builder});
 
@@ -30,6 +36,7 @@ class _PlaybackCopyBuilderState extends State<PlaybackCopyBuilder> {
   AbortController? _request;
   Timer? _debounce;
   List<MediaItem> _matches = const [];
+  MediaItem? _preferred;
 
   @override
   Widget build(BuildContext context) {
@@ -55,10 +62,29 @@ class _PlaybackCopyBuilderState extends State<PlaybackCopyBuilder> {
         }
       }
     }
-    final available = [?target, ..._matches].where(
-      (item) => clients.containsKey(item.serverId) && hidden?.hiddenLibraryKeys.contains(item.libraryGlobalKey) != true,
+    final available = mergeLibraryCopies([?target], _matches)
+        .where(
+          (item) =>
+              clients.containsKey(item.serverId) && hidden?.hiddenLibraryKeys.contains(item.libraryGlobalKey) != true,
+        )
+        .where(
+          (item) => item.mediaVersions?.isNotEmpty != true || item.mediaVersions!.any((version) => version.isPlayable),
+        )
+        .toList();
+    final preferred = _preferred;
+    final selected =
+        available.where((item) => item.globalKey == preferred?.globalKey).firstOrNull ??
+        available
+            .where((item) => item.libraryGlobalKey != null && item.libraryGlobalKey == preferred?.libraryGlobalKey)
+            .firstOrNull ??
+        available.where((item) => item.globalKey == target?.globalKey).firstOrNull ??
+        available.firstOrNull;
+    return widget.builder(
+      selected,
+      available,
+      (item) => setState(() => _preferred = item),
+      findFourKPlayback([?selected, ...available]),
     );
-    return widget.builder(findFourKPlayback(available));
   }
 
   Future<void> _load(MultiServerProvider servers, MediaItem target, AbortController request) async {

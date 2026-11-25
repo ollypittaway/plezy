@@ -11,6 +11,7 @@ import '../media/media_server_client.dart';
 import '../mixins/disposable_change_notifier_mixin.dart';
 import '../mixins/event_aware.dart';
 import '../services/settings_service.dart';
+import '../services/playback_bandwidth.dart';
 import '../services/data_aggregation_service.dart';
 import '../services/system_shelf_service.dart';
 import '../utils/app_logger.dart';
@@ -93,6 +94,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
     required this.profileId,
     required this.isProfileBinding,
     WatchStateStore? watchStateStore,
+    this.bandwidth,
     DateTime Function()? now,
     bool Function()? isRefreshBlocked,
     this.libraryEventDebounce = const Duration(seconds: 3),
@@ -143,6 +145,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   }
 
   final MultiServerProvider _multiServer;
+  final PlaybackBandwidth? bandwidth;
   final HiddenLibrariesProvider _hiddenLibraries;
   final LibrariesProvider _libraries;
 
@@ -975,12 +978,14 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
 
   void _replaceOnDeck(List<MediaItem> onDeck, {required bool hasMore}) {
     _onDeck = onDeck;
+    bandwidth?.warmUp(onDeck, _multiServer.serverManager.visibleOnlineClients);
     _hasMoreContinueWatching = hasMore;
     ++_commitRevision;
   }
 
   void _replaceHubs(List<MediaHub> hubs) {
     _hubs = hubs;
+    bandwidth?.warmUp(hubs.expand((hub) => hub.items), _multiServer.serverManager.visibleOnlineClients);
     _displayHubs = groupHomeHubs(hubs);
     ++_commitRevision;
   }

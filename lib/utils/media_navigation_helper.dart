@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../i18n/strings.g.dart';
 import '../media/catalog_item_ref.dart';
 import '../media/media_backend.dart';
@@ -8,7 +7,6 @@ import '../media/media_item.dart';
 import '../media/media_item_types.dart';
 import '../media/media_kind.dart';
 import '../media/media_playlist.dart';
-import '../providers/discover_provider.dart';
 import '../screens/actor_media_screen.dart';
 import '../screens/collection_detail_screen.dart';
 import '../screens/main_screen.dart';
@@ -17,7 +15,6 @@ import '../screens/playlist/playlist_detail_screen.dart';
 import '../services/settings_service.dart';
 import '../utils/global_key_utils.dart';
 import 'catalog_navigation_helper.dart';
-import 'playback_library_picker.dart';
 import 'music_navigation.dart';
 import 'plex_library_section_utils.dart';
 import 'video_player_navigation.dart';
@@ -152,8 +149,7 @@ bool shouldOpenEpisodeDetailsForActivation({
 ///
 /// Set [playDirectly] to true for Continue Watching / Next Up / On Deck
 /// activation; those surfaces use the Continue Watching action setting instead
-/// of the normal Episode Action setting. A Continue Watching row that merged
-/// copies from several libraries or servers first asks which one to open.
+/// of the normal Episode Action setting.
 ///
 /// Returns a [MediaNavigationResult] indicating what action was taken:
 /// - [MediaNavigationResult.navigated]: Navigation completed, item refresh handled
@@ -177,7 +173,7 @@ Future<MediaNavigationResult> navigateToMediaItem(
   if (item is! MediaItem) {
     return MediaNavigationResult.unsupported;
   }
-  MediaItem mi = item;
+  final mi = item;
 
   // Catalog stand-ins (Explore tab) have no server id — every server-backed
   // route below would break on them. Route to the catalog flow instead.
@@ -212,15 +208,6 @@ Future<MediaNavigationResult> navigateToMediaItem(
     return MediaNavigationResult.unsupported;
   }
 
-  List<MediaItem>? resolvedCopies;
-  if (!isOffline && mi.isVideoContent) {
-    final known = playDirectly ? context.read<DiscoverProvider?>()?.continueWatchingCopiesOf(mi) : null;
-    final choice = await choosePlaybackLibrary(context, mi, known: known ?? const []);
-    if (choice == null || !context.mounted) return MediaNavigationResult.navigated;
-    mi = choice.item;
-    resolvedCopies = choice.matches;
-  }
-
   switch (mi.kind) {
     case MediaKind.collection:
       final result = await Navigator.push<bool>(
@@ -252,13 +239,7 @@ Future<MediaNavigationResult> navigateToMediaItem(
     case MediaKind.clip:
     case MediaKind.episode:
       if (mi.kind == MediaKind.episode && shouldOpenEpisodeDetails) {
-        return navigateToMediaItemDetails(
-          context,
-          mi,
-          onRefresh: onRefresh,
-          isOffline: isOffline,
-          resolvedCopies: resolvedCopies,
-        );
+        return navigateToMediaItemDetails(context, mi, onRefresh: onRefresh, isOffline: isOffline);
       }
       final result = await navigateToVideoPlayer(context, metadata: mi, isOffline: isOffline);
       if (result == true && context.mounted) {
@@ -274,31 +255,13 @@ Future<MediaNavigationResult> navigateToMediaItem(
         }
         return MediaNavigationResult.navigated;
       }
-      return navigateToMediaItemDetails(
-        context,
-        mi,
-        isOffline: isOffline,
-        onRefresh: onRefresh,
-        resolvedCopies: resolvedCopies,
-      );
+      return navigateToMediaItemDetails(context, mi, isOffline: isOffline, onRefresh: onRefresh);
 
     case MediaKind.season:
-      return navigateToMediaItemDetails(
-        context,
-        mi,
-        isOffline: isOffline,
-        onRefresh: onRefresh,
-        resolvedCopies: resolvedCopies,
-      );
+      return navigateToMediaItemDetails(context, mi, isOffline: isOffline, onRefresh: onRefresh);
 
     default:
-      return navigateToMediaItemDetails(
-        context,
-        mi,
-        isOffline: isOffline,
-        onRefresh: onRefresh,
-        resolvedCopies: resolvedCopies,
-      );
+      return navigateToMediaItemDetails(context, mi, isOffline: isOffline, onRefresh: onRefresh);
   }
 }
 
@@ -309,7 +272,6 @@ Future<MediaNavigationResult> navigateToMediaItemDetails(
   void Function(MediaItem source)? onRefresh,
   MediaItem? metadataOverride,
   List<MediaItem>? resolvedCopies,
-  bool chooseLibrary = false,
 }) async {
   // Catalog stand-ins (Explore tab) must never reach MediaDetailScreen — it
   // hard-requires a server id. Guarded here (not only in navigateToMediaItem)
@@ -319,14 +281,6 @@ Future<MediaNavigationResult> navigateToMediaItemDetails(
     if (catalogItem == null) return MediaNavigationResult.unsupported;
     await navigateToCatalogItem(context, catalogItem);
     return MediaNavigationResult.navigated;
-  }
-
-  if (chooseLibrary && !isOffline && mi.isVideoContent) {
-    final choice = await choosePlaybackLibrary(context, mi);
-    if (choice == null || !context.mounted) return MediaNavigationResult.navigated;
-    if (choice.item.globalKey != mi.globalKey) metadataOverride = null;
-    mi = choice.item;
-    resolvedCopies = choice.matches;
   }
 
   final target = mediaDetailNavigationTargetFor(mi, metadataOverride: metadataOverride);

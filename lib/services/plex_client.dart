@@ -402,7 +402,29 @@ class PlexClient
         _PlexCollectionMethods,
         _PlexPlayQueueMethods,
         _PlexMetadataEditMethods
-    implements MediaServerClient, ScopedMediaServerClient, GracefullyCloseable, MediaDeletionPermissionClient {
+    implements
+        MediaServerClient,
+        PlaybackSpeedClient,
+        ScopedMediaServerClient,
+        GracefullyCloseable,
+        MediaDeletionPermissionClient {
+  @override
+  String get playbackEndpoint => _http.baseUrl;
+
+  @override
+  Future<double?> samplePlaybackMbps(MediaItem item, AbortController abort) async {
+    String? partPath(MediaItem? metadata) => metadata?.mediaVersions
+        ?.expand((v) => v.parts)
+        .where((part) => part.isPlayable)
+        .map((part) => part.streamPath)
+        .nonNulls
+        .where((path) => path.startsWith('/library/parts/'))
+        .firstOrNull;
+    final path = partPath(item) ?? partPath(await fetchItem(item.id));
+    if (abort.isAborted || path == null) return null;
+    return _http.sampleDownloadMbps(path, abort);
+  }
+
   @override
   PlexConfig config;
 
