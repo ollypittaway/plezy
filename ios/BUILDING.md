@@ -22,6 +22,8 @@ For setup on a new Mac, see the [Flutter SDK archive](https://docs.flutter.dev/i
 
 In Xcode’s toolbar, choose the **Runner** scheme and an iPhone simulator. Press **⌘R**. The simulator installs GucciPlexa without an Apple Developer account.
 
+If Xcode reports `Module 'universal_gamepad' not found`, close the standalone `Runner.xcodeproj` window and open `ios/Runner.xcworkspace`. If the workspace was already open and shows **No Scheme**, close and reopen it after closing the project. The Project navigator (**⌘1**) should list both **Runner** and **Pods**. Build again with **⌘B**.
+
 ## Install on your iPhone
 
 1. Connect the iPhone to your Mac, unlock it and trust the Mac. On iOS 16 or later, enable **Settings → Privacy & Security → Developer Mode** if prompted.
@@ -31,6 +33,12 @@ In Xcode’s toolbar, choose the **Runner** scheme and an iPhone simulator. Pres
 5. Choose your connected iPhone in Xcode’s toolbar and press **⌘R**. Look for **GucciPlexa** on its Home Screen.
 
 Apple documents pairing, signing and Developer Mode in [Running your app on a device](https://developer.apple.com/documentation/xcode/running-your-app-on-simulated-or-physical-devices).
+
+## Export an IPA for AppHost
+
+AppHost creates the installation link for an IPA you have already signed. To share GucciPlexa with registered iPhones, sign in to Xcode with your Apple Developer Program team and register each phone’s UDID. In `ios/Runner.xcworkspace`, select **Runner → Signing & Capabilities**, enable **Automatically manage signing**, and select that team for the Release configuration. The app ID is `com.gucciplexa.app`. [AppHost](https://appho.st/) · [Apple’s ad hoc provisioning guide](https://developer.apple.com/help/account/provisioning-profiles/create-an-ad-hoc-provisioning-profile)
+
+From the project root, run `flutter build ipa --release --export-method ad-hoc`. After Flutter reports a successful IPA export, upload the freshly exported file from `build/ios/ipa/` to AppHost. Its package inspector should list the intended device UDIDs and the provisioning profile’s expiration date.
 
 ## Build a release
 

@@ -19,7 +19,7 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 class AppIconSwitcherTest {
   private companion object {
-    const val PACKAGE = "com.edde746.plezy"
+    val PACKAGE = BuildConfig.APPLICATION_ID
   }
 
   private lateinit var packageManager: PackageManager
@@ -49,10 +49,10 @@ class AppIconSwitcherTest {
         packageName = PACKAGE
         applicationInfo = application
         activities = arrayOf(
-          activity("$PACKAGE.PlezyActivity", enabled = true, target = null),
-          activity("$PACKAGE.MainActivity", enabled = true, target = "$PACKAGE.PlezyActivity"),
-          activity("$PACKAGE.appicon.midnight", enabled = false, target = "$PACKAGE.PlezyActivity"),
-          activity("$PACKAGE.appicon.ember", enabled = false, target = "$PACKAGE.PlezyActivity")
+          activity(PlezyActivity::class.java.name, enabled = true, target = null),
+          activity("$PACKAGE.MainActivity", enabled = true, target = PlezyActivity::class.java.name),
+          activity("$PACKAGE.appicon.midnight", enabled = false, target = PlezyActivity::class.java.name),
+          activity("$PACKAGE.appicon.ember", enabled = false, target = PlezyActivity::class.java.name)
         )
       }
     )

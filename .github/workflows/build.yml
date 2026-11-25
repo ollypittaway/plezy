@@ -118,6 +118,14 @@ jobs:
       - name: Build APKs
         run: flutter build apk --release --split-per-abi ${{ env.RELEASE_DART_DEFINES }} --dart-define=SENTRY_DIST=github-android-apk --obfuscate --split-debug-info=debug-info/android-apk --extra-gen-snapshot-options=--save-obfuscation-map=debug-info/android-apk/obfuscation.map.json
 
+      - name: Check APKs are under 100 MB
+        run: |
+          for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
+            bytes=$(wc -c < "$apk")
+            echo "$apk is $bytes bytes"
+            if (( bytes >= 100000000 )); then exit 1; fi
+          done
+
       - name: Upload symbols to bugs.plezy.app
         if: github.repository == 'edde746/plezy'
         env:

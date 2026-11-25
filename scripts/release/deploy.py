@@ -133,6 +133,7 @@ CHANNEL_SPECS = {
 AMAZON_API_BASE = "https://developer.amazon.com/api/appstore/v1/applications"
 AMAZON_AUTH_URL = "https://api.amazon.com/auth/o2/token"
 ASC_API_BASE = "https://api.appstoreconnect.apple.com/v1"
+ANDROID_APPLICATION_ID = "com.gucciplexa.app"
 APPLE_BUNDLE_IDS = {"IOS": "com.gucciplexa.app", "TV_OS": "com.edde746.plezy"}
 MSSTORE_API_BASE = "https://manage.devcenter.microsoft.com/v1.0/my/applications"
 
@@ -511,9 +512,9 @@ def phase_preflight(ctx: Context) -> None:
         if not (env.get("SUPPLY_JSON_KEY_DATA") or env.get("SUPPLY_JSON_KEY")):
             raise DeployError("play: set SUPPLY_JSON_KEY_DATA or SUPPLY_JSON_KEY in .env")
         require_env(env, ["SUPPLY_PACKAGE_NAME"], "play")
-        if env["SUPPLY_PACKAGE_NAME"] != "com.edde746.plezy":
+        if env["SUPPLY_PACKAGE_NAME"] != ANDROID_APPLICATION_ID:
             raise DeployError(
-                "play: SUPPLY_PACKAGE_NAME must be com.edde746.plezy; "
+                f"play: SUPPLY_PACKAGE_NAME must be {ANDROID_APPLICATION_ID}; "
                 f"got {env['SUPPLY_PACKAGE_NAME']!r}"
             )
     if "amazon" in pending:
@@ -527,9 +528,9 @@ def phase_preflight(ctx: Context) -> None:
             ],
             "amazon",
         )
-        if env["AMAZON_APPSTORE_PACKAGE_NAME"] != "com.edde746.plezy3":
+        if env["AMAZON_APPSTORE_PACKAGE_NAME"] != ANDROID_APPLICATION_ID:
             raise DeployError(
-                "amazon: AMAZON_APPSTORE_PACKAGE_NAME must be com.edde746.plezy3; "
+                f"amazon: AMAZON_APPSTORE_PACKAGE_NAME must be {ANDROID_APPLICATION_ID}; "
                 f"got {env['AMAZON_APPSTORE_PACKAGE_NAME']!r}"
             )
         if not env["AMAZON_APPSTORE_APP_ID"].startswith("amzn1.devportal.mobileapp."):

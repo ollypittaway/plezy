@@ -250,6 +250,12 @@ scripts/codegen.sh
 flutter run
 ```
 
+### Building smaller Android APKs
+
+In Android Studio’s terminal, run `flutter build apk --release --split-per-abi` from the project root. Flutter writes one APK per processor architecture to `build/app/outputs/flutter-apk/`. Most current Android phones use `app-arm64-v8a-release.apk`.
+
+For a single Fire TV APK that supports both 32-bit and 64-bit ARM devices, run `AMAZON=1 flutter build apk --release --target-platform android-arm,android-arm64` on macOS or Linux. Its output is `build/app/outputs/flutter-apk/app-release.apk`.
+
 <details>
 <summary>Code generation</summary>
 

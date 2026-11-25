@@ -342,7 +342,7 @@ def _adaptive_icon_xml(icon: str) -> str:
 
 def _alias_xml(icon: str) -> str:
     return f"""        <activity-alias
-            android:name=".appicon.{icon}"
+            android:name="${{applicationId}}.appicon.{icon}"
             android:enabled="false"
             android:exported="true"
             android:icon="@mipmap/ic_launcher_{icon}"

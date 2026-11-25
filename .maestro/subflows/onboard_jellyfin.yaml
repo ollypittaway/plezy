@@ -1,4 +1,4 @@
-appId: com.edde746.plezy
+appId: com.gucciplexa.app
 ---
 - retry:
     maxRetries: 1
