@@ -274,7 +274,7 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
 
                           if (!shouldBlur && episode.summary != null && episode.summary!.isNotEmpty) ...[
                             const SizedBox(height: 4),
-                            if (PlatformDetector.isTV())
+                            if (PlatformDetector.usesTvPresentation())
                               Text(
                                 episode.summary!,
                                 style: Theme.of(

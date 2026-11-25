@@ -571,7 +571,7 @@ class _HubDetailScreenState extends State<HubDetailScreen>
                       final viewMode = svc.read(SettingsService.viewMode);
                       final episodePosterMode = svc.read(SettingsService.episodePosterMode);
                       final libraryDensity = svc.read(SettingsService.libraryDensity);
-                      final fullCardLayout = PlatformDetector.isTV() && svc.read(SettingsService.tvFullCardLayout);
+                      final fullCardLayout = PlatformDetector.usesTvPresentation() && svc.read(SettingsService.tvFullCardLayout);
 
                       final hasEpisodes = _filteredItems.any((item) => item.usesWideAspectRatio(episodePosterMode));
                       final hasNonEpisodes = _filteredItems.any((item) => !item.usesWideAspectRatio(episodePosterMode));

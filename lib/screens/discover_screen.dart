@@ -257,7 +257,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   void _focusTopBoundary() {
     if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
-    if (PlatformDetector.isTV()) {
+    if (PlatformDetector.usesTvPresentation()) {
       _focusTopActions();
     } else if (_isHeroSectionVisible) {
       _heroFocusNode.requestFocus();
@@ -268,7 +268,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   void _focusContentFromAppBar() {
-    if (PlatformDetector.isTV()) {
+    if (PlatformDetector.usesTvPresentation()) {
       // Without a rail, Down reaches Retry on error and is a no-op on an empty
       // Home; arming a claim here would later snap focus off the toolbar.
       if (_tvBrowseHubs.isNotEmpty) {
@@ -291,7 +291,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   void _focusTvBrowseRailWhenReady({bool immediate = false, bool initial = false}) {
-    if (!PlatformDetector.isTV()) return;
+    if (!PlatformDetector.usesTvPresentation()) return;
     if (!_isTabVisible || !(ModalRoute.of(context)?.isCurrent ?? false)) {
       _pendingTvBrowseRailFocus = false;
       return;
@@ -465,7 +465,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       _heroController.jumpToPage(0);
     }
     // Focus hero when fresh content lands, but only if no modal route is on top
-    if (isNewLoad && !PlatformDetector.isTV() && _onDeck.isNotEmpty && (ModalRoute.of(context)?.isCurrent ?? false)) {
+    if (isNewLoad && !PlatformDetector.usesTvPresentation() && _onDeck.isNotEmpty && (ModalRoute.of(context)?.isCurrent ?? false)) {
       _heroFocusNode.requestFocus();
     }
 
@@ -475,10 +475,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     // leaves the D-pad nothing to focus (#3117).
     if (!_initialLoadComplete) {
       final hasContent = _onDeck.isNotEmpty || _hubs.isNotEmpty;
-      if (PlatformDetector.isTV() && (hasContent || (!_isLoading && !_areHubsLoading))) {
+      if (PlatformDetector.usesTvPresentation() && (hasContent || (!_isLoading && !_areHubsLoading))) {
         _initialLoadComplete = true;
         _focusTvBrowseRailWhenReady(initial: true);
-      } else if (!PlatformDetector.isTV() && _onDeck.isNotEmpty) {
+      } else if (!PlatformDetector.usesTvPresentation() && _onDeck.isNotEmpty) {
         _initialLoadComplete = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) return;
@@ -491,7 +491,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   void _onHeroFocusChanged() {
-    if (!PlatformDetector.isTV()) return;
+    if (!PlatformDetector.usesTvPresentation()) return;
 
     if (_heroFocusNode.hasFocus) {
       _heroFocusPausedAutoScroll = true;
@@ -579,7 +579,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   void _startAutoScroll() {
     _autoScrollTimer?.cancel();
-    if (PlatformDetector.isTV()) return;
+    if (PlatformDetector.usesTvPresentation()) return;
     if (_isAutoScrollPaused) return;
 
     _startIndicatorProgress();
@@ -659,7 +659,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   @override
   void focusActiveTabIfReady() {
-    if (PlatformDetector.isTV()) {
+    if (PlatformDetector.usesTvPresentation()) {
       _focusTvBrowseRailWhenReady();
       return;
     }
@@ -991,7 +991,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           child: Row(
             children: [
               const Spacer(),
-              if (PlatformDetector.isTV()) ...[
+              if (PlatformDetector.usesTvPresentation()) ...[
                 SystemClock(
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(color: foregroundColor, fontWeight: .w500),
                 ),
@@ -1016,7 +1016,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         SettingsService.episodePosterMode,
       ],
       builder: (context) {
-        if (PlatformDetector.isTV()) return _buildTvContent(context);
+        if (PlatformDetector.usesTvPresentation()) return _buildTvContent(context);
         return NotificationListener<OverscrollIndicatorNotification>(
           onNotification: (event) {
             if (event.depth == 0 && event.leading) event.disallowIndicator();
@@ -1253,7 +1253,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   Widget _buildHeroSection() {
     final statusBarHeight = MediaQuery.paddingOf(context).top;
     final useSideNav = PlatformDetector.shouldUseSideNavigation(context);
-    final isTv = PlatformDetector.isTV();
+    final isTv = PlatformDetector.usesTvPresentation();
     final viewportHeight = MediaQuery.sizeOf(context).height;
     final isLandscape = MediaQuery.orientationOf(context) == Orientation.landscape;
     // Mobile keeps its fixed hero, except where that would swamp the screen.
@@ -1422,7 +1422,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   /// per-page artwork, so a swipe crossfades between backdrops rather than
   /// sliding two images past each other with a hard seam (#2660).
   Widget _buildHeroBackdrop(double heroHeight) {
-    final isTv = PlatformDetector.isTV();
+    final isTv = PlatformDetector.usesTvPresentation();
     return IgnorePointer(
       child: Stack(
         fit: StackFit.expand,
@@ -1530,7 +1530,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final showName = heroItem.grandparentTitle ?? heroItem.displayTitle;
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isLargeScreen = ScreenBreakpoints.isWideTabletOrLarger(screenWidth);
-    final isTv = PlatformDetector.isTV();
+    final isTv = PlatformDetector.usesTvPresentation();
     final alignLeft = isTv || isLargeScreen;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -1742,7 +1742,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   }
 
   Widget _buildHeroActions(MediaItem item, {required bool showDetails, required bool lookupReady}) {
-    final isTv = PlatformDetector.isTV();
+    final isTv = PlatformDetector.usesTvPresentation();
     final colorScheme = Theme.of(context).colorScheme;
     final style = OutlinedButton.styleFrom(
       foregroundColor: colorScheme.onSurface,
@@ -1840,7 +1840,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         // patch bridges the gap so "minutes left" never lags.
         final heroItem = context.withFreshWatchState(rawHeroItem);
         final hasProgress = heroItem.hasActiveProgress;
-        final isTv = PlatformDetector.isTV();
+        final isTv = PlatformDetector.usesTvPresentation();
 
         final minutesLeft = hasProgress ? ((heroItem.durationMs! - heroItem.viewOffsetMs!) / 60_000).round() : 0;
 

@@ -2140,8 +2140,8 @@ class _MainScreenState extends State<MainScreen>
         builder: (context, alwaysExpanded, _) {
           final useTopBar =
               !alwaysExpanded &&
-              PlatformDetector.isDesktopOS() &&
-              !PlatformDetector.isTV() &&
+              PlatformDetector.usesDesktopPresentation() &&
+              !PlatformDetector.usesTvPresentation() &&
               ScreenBreakpoints.isWideTabletOrLarger(MediaQuery.sizeOf(context).width);
           final targetContentOffset = useTopBar ? 0.0 : _sideNavigationWidth(context, alwaysExpanded: alwaysExpanded);
           final reservedContentOffset = useTopBar

@@ -330,7 +330,7 @@ PageRoute<bool> mediaDetailRoute({
     initialSeasonId: initialSeasonId,
     initialEpisodeId: initialEpisodeId,
   );
-  if (!PlatformDetector.isTV()) return MaterialPageRoute<bool>(builder: (_) => page);
+  if (!PlatformDetector.usesTvPresentation()) return MaterialPageRoute<bool>(builder: (_) => page);
 
   return PageRouteBuilder<bool>(
     // Opaque so the covered route stops painting/building once the fade
@@ -986,7 +986,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   void _trackTvDetailRouteSettled(ModalRoute<dynamic>? route) {
     if (_tvDetailRouteSettled) return;
-    final animation = PlatformDetector.isTV() ? route?.animation : null;
+    final animation = PlatformDetector.usesTvPresentation() ? route?.animation : null;
     if (identical(animation, _tvDetailRouteAnimation)) return;
     _tvDetailRouteAnimation?.removeStatusListener(_onTvDetailRouteStatus);
     _tvDetailRouteAnimation = null;
@@ -1209,7 +1209,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   /// If progressPercent is null or 0, shows indeterminate spinner
   Widget _buildRadialProgress(double? progressPercent) {
     final colorScheme = Theme.of(context).colorScheme;
-    final size = PlatformDetector.isTV() ? 26.0 : 20.0;
+    final size = PlatformDetector.usesTvPresentation() ? 26.0 : 20.0;
     return SizedBox(
       width: size,
       height: size,
@@ -1238,7 +1238,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   /// Build a metadata chip with optional leading icon or widget
   Widget _buildMetadataChip(String text, {IconData? icon, Widget? leading}) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isTv = PlatformDetector.isTV();
+    final isTv = PlatformDetector.usesTvPresentation();
     final textWidget = Text(
       text,
       style: TextStyle(color: colorScheme.onSecondaryContainer, fontSize: isTv ? 16 : 13, fontWeight: .w600),
@@ -1913,7 +1913,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
         // when focused (strict on-demand — no whole-show pre-warm). Once the
         // on-deck season is loaded, synthesize on-deck if the backend omitted it.
         final fetchOnDeckSeason = _fetchSeasonEpisodes(onDeckSeasonIndex).then((_) => _ensureFallbackOnDeckEpisode());
-        if (PlatformDetector.isTV()) {
+        if (PlatformDetector.usesTvPresentation()) {
           await fetchOnDeckSeason;
         } else {
           unawaited(fetchOnDeckSeason);
@@ -2125,7 +2125,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   /// seasons so horizontal season rail changes feel instant without reverting to
   /// whole-show or whole-season eager loading.
   Future<void> _prefetchAdjacentSeasonEpisodePages(int centerIndex) async {
-    if (!PlatformDetector.isTV() || widget.isOffline || _showEpisodesDirectly || _seasons.isEmpty) return;
+    if (!PlatformDetector.usesTvPresentation() || widget.isOffline || _showEpisodesDirectly || _seasons.isEmpty) return;
     for (final index in [centerIndex - 1, centerIndex + 1]) {
       if (index < 0 || index >= _seasons.length) continue;
       unawaited(_prefetchSeasonEpisodeFirstPage(index));
@@ -2374,7 +2374,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     if (metadata.isShow && !_showEpisodesDirectly && _seasons.isNotEmpty && _seasonTabFocusNodes.isNotEmpty) {
       _seasonTabFocusNodes[_selectedSeasonIndex].requestFocus();
       _scrollSectionIntoView(_seasonsSectionKey);
-    } else if (!PlatformDetector.isTV() && metadata.summary != null && metadata.summary!.isNotEmpty) {
+    } else if (!PlatformDetector.usesTvPresentation() && metadata.summary != null && metadata.summary!.isNotEmpty) {
       _overviewFocusNode.requestFocus();
       _scrollSectionIntoView(_overviewSectionKey);
     } else {
@@ -2431,7 +2431,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   }
 
   void _scheduleInitialMobileDetailFocus(MediaItem metadata) {
-    if (_initialDetailFocusApplied || PlatformDetector.isTV() || !_hasInitialDetailFocusTarget) return;
+    if (_initialDetailFocusApplied || PlatformDetector.usesTvPresentation() || !_hasInitialDetailFocusTarget) return;
 
     if (widget.initialEpisodeId != null) {
       if (_episodesContainInitialTarget) {
@@ -2511,7 +2511,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
 
   /// Focus the first available section above the primary action row.
   void _focusAboveActionRow() {
-    if (PlatformDetector.isTV()) {
+    if (PlatformDetector.usesTvPresentation()) {
       // The hero information block sits directly above the action row and is
       // the D-pad path to the full details sheet (#2042).
       _tvDetailInfoFocusNode.requestFocus();
@@ -2524,7 +2524,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   void _focusBelowActionRow() {
     final metadata = _metadata;
 
-    if (PlatformDetector.isTV()) {
+    if (PlatformDetector.usesTvPresentation()) {
       _tvDetailRailKey.currentState?.requestFocus();
       return;
     }
@@ -2607,7 +2607,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   }
 
   Widget _buildSeasonTabsContent(BuildContext context, bool showPosters) {
-    final showSeasonPosters = showPosters && !PlatformDetector.isTV();
+    final showSeasonPosters = showPosters && !PlatformDetector.usesTvPresentation();
 
     return HorizontalScrollWithArrows(
       controller: _seasonTabsScrollController,
@@ -2721,7 +2721,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                           }
                         : null,
                     onNavigateDown: () {
-                      if (PlatformDetector.isTV()) {
+                      if (PlatformDetector.usesTvPresentation()) {
                         _tvDetailRailKey.currentState?.requestFocus();
                         return;
                       }
@@ -2954,7 +2954,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
               ? () {
                   if (!_showEpisodesDirectly) {
                     _focusSelectedSeasonTab();
-                  } else if (!PlatformDetector.isTV() && _metadata.summary?.isNotEmpty == true) {
+                  } else if (!PlatformDetector.usesTvPresentation() && _metadata.summary?.isNotEmpty == true) {
                     _overviewFocusNode.requestFocus();
                     _scrollSectionIntoView(_overviewSectionKey);
                   } else {
@@ -3443,7 +3443,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     final metadata = _fresh(_metadata);
     final isShow = metadata.isShow;
     final isMobile = PlatformDetector.isMobile(context);
-    final isTv = PlatformDetector.isTV();
+    final isTv = PlatformDetector.usesTvPresentation();
     final theme = Theme.of(context);
     final sectionTitleStyle = theme.textTheme.titleLarge?.copyWith(fontWeight: .bold, fontSize: isTv ? 28 : null);
 
@@ -4601,7 +4601,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   /// accumulate for the screen's lifetime — irrelevant for a 3-season show,
   /// tens of MB of retained heap for a 30-season one.
   void _pruneDistantSeasonPages(int seasonIndex) {
-    if (!DevicePerformance.isLowEndHardware || !PlatformDetector.isTV()) return;
+    if (!DevicePerformance.isLowEndHardware || !PlatformDetector.usesTvPresentation()) return;
     final keep = <String>{
       for (var i = seasonIndex - 1; i <= seasonIndex + 1; i++)
         if (i >= 0 && i < _seasons.length) _seasons[i].id,

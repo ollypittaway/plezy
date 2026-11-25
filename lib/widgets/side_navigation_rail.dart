@@ -169,7 +169,7 @@ class NavigationRailItem extends StatelessWidget {
   Color? _indicatorColorForLayout(MonoTokens t, {required bool focused, required bool collapsedLayout}) {
     // The collapsed TV rail is a transparent overlay strip; a persistent
     // active pill over artwork is noise there, so it shows focus only.
-    final showSelected = isSelected && !suppressSelectedBackground && !(collapsedLayout && PlatformDetector.isTV());
+    final showSelected = isSelected && !suppressSelectedBackground && !(collapsedLayout && PlatformDetector.usesTvPresentation());
     if (focused) return t.accent.withValues(alpha: showSelected ? selectedFocusAlpha : focusAlpha);
     if (showSelected) return t.accent.withValues(alpha: 0.14);
     return null;
@@ -458,7 +458,7 @@ class SideNavigationRailState extends State<SideNavigationRail> with MountedSetS
   static Duration get expandDuration => DevicePerformance.reducedDuration(const Duration(milliseconds: 250));
   static const Curve expandCurve = Curves.easeInOutCubicEmphasized;
 
-  static double collapsedWidthForContext(BuildContext _) => PlatformDetector.isTV() ? tvCollapsedWidth : collapsedWidth;
+  static double collapsedWidthForContext(BuildContext _) => PlatformDetector.usesTvPresentation() ? tvCollapsedWidth : collapsedWidth;
 
   /// Edge padding around the item column; collapsed rails center their items
   /// (72px in the 80px desktop strip, 40px in the 48px TV strip).
@@ -889,7 +889,7 @@ class SideNavigationRailState extends State<SideNavigationRail> with MountedSetS
     // way back into the now-playing screen there; desktop already has the
     // mini-player for that.
     final musicService = context.watch<MusicPlaybackService?>();
-    final nowPlayingTrack = widget.isOfflineMode || !PlatformDetector.isTV() ? null : musicService?.currentTrack;
+    final nowPlayingTrack = widget.isOfflineMode || !PlatformDetector.usesTvPresentation() ? null : musicService?.currentTrack;
 
     // Listen to fullscreen + the groupLibrariesByServer / showExploreTab
     // settings so the rail rebuilds when they are toggled in Appearance, and to
@@ -968,7 +968,7 @@ class SideNavigationRailState extends State<SideNavigationRail> with MountedSetS
                     // platform (#2079).
                     Positioned.fill(
                       child: AnimatedOpacity(
-                        opacity: PlatformDetector.isTV() && !_isFloatingPanel ? 0.0 : 1.0,
+                        opacity: PlatformDetector.usesTvPresentation() && !_isFloatingPanel ? 0.0 : 1.0,
                         // Shares the width morph's duration/curve: a shorter
                         // fade strands a fully grown, fully transparent panel
                         // over the content part-way through the collapse.

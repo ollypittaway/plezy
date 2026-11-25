@@ -228,6 +228,11 @@ class PlatformDetector {
 
   static bool isFireTV() => TvDetectionService.tvDetectionReasonsSync().contains('fire_tv');
 
+  // Fire TV uses desktop presentation while retaining TV hardware/input policy.
+  static bool usesTvPresentation() => isTV() && !isFireTV();
+
+  static bool usesDesktopPresentation() => isDesktopOS() || isFireTV();
+
   static bool isAppleTV() {
     return TvDetectionService.isAppleTVSync();
   }

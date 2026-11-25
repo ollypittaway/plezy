@@ -153,7 +153,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
       : ScreenBreakpoints.isWideTabletOrLarger(MediaQuery.sizeOf(context).width)
       ? 36.0
       : 12.0;
-  double get _leadingPadding => _leadingPaddingFor(PlatformDetector.isTV());
+  double get _leadingPadding => _leadingPaddingFor(PlatformDetector.usesTvPresentation());
   String get _focusMemoryKey {
     final serverId = widget.hub.serverId;
     return serverId == null ? widget.hub.id : '$serverId:${widget.hub.id}';
@@ -496,7 +496,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
   Widget build(BuildContext context) {
     final hasFocus = _hubFocusNode.hasFocus;
     final isKeyboardMode = InputModeTracker.isKeyboardMode(context);
-    final isTv = PlatformDetector.isTV();
+    final isTv = PlatformDetector.usesTvPresentation();
     final leadingPadding = _leadingPaddingFor(isTv);
     return Padding(
       padding: .only(
