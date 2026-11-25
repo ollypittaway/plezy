@@ -81,3 +81,6 @@ server/Caddyfile
 /ios/Runner/GoogleService-Info.plist
 /server/notifications/__pycache__/
 /server/notifications/data/
+
+# Private release signing identity and its local backup files.
+.gucciplexa-signing/

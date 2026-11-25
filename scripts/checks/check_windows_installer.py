@@ -17,7 +17,7 @@ DEFAULT_SCRIPT = ROOT / "windows/build-installer.ps1"
 if len(sys.argv) > 2:
     raise SystemExit(f"Usage: {Path(sys.argv[0]).name} [build-installer-path]")
 SCRIPT = Path(sys.argv[1]).resolve() if len(sys.argv) == 2 else DEFAULT_SCRIPT
-APP_GUID = "4213385e-f7be-4f2b-95f9-54082a28bb8f"
+APP_GUID = "d818bbec-6e82-4344-a98c-403e478a3e13"
 text = SCRIPT.read_text(encoding="utf-8")
 errors: list[str] = []
 

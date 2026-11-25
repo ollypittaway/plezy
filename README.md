@@ -250,6 +250,8 @@ scripts/codegen.sh
 flutter run
 ```
 
+For GucciPlexa’s five-platform GitHub release and Coolify downloads, see the [release setup](deploy/downloads/README.md).
+
 ### Building smaller Android APKs
 
 In Android Studio’s terminal, run `flutter build apk --release --split-per-abi` from the project root. Flutter writes one APK per processor architecture to `build/app/outputs/flutter-apk/`. Most current Android phones use `app-arm64-v8a-release.apk`.

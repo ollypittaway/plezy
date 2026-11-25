@@ -1,0 +1,199 @@
+name: GucciPlexa packages
+run-name: GucciPlexa packages · ${{ github.ref_name }}
+
+on:
+  push:
+    tags: ['v[0-9]*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gucciplexa-packages-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: '3.47.1'
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      number: ${{ steps.read.outputs.number }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {persist-credentials: false}
+      - id: read
+        run: |
+          version=$(python3 scripts/pubspec_version.py --version-name pubspec.yaml)
+          if [[ "$GITHUB_REF_TYPE" == tag && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "::error::Expected tag v$version for this checkout"
+            exit 1
+          fi
+          echo "number=$version" >> "$GITHUB_OUTPUT"
+
+  android:
+    needs: version
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [android, firestick]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {persist-credentials: false}
+      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - name: Check release signing is configured
+        env:
+          HAS_KEY: ${{ secrets.GUCCIPLEXA_ANDROID_KEYSTORE != '' && secrets.GUCCIPLEXA_ANDROID_PASSWORD != '' }}
+        run: |
+          if [[ "$HAS_KEY" != true ]]; then
+            echo "::error::Set both GucciPlexa Android release secrets. See deploy/downloads/README.md."
+            exit 1
+          fi
+      - name: Install Android build tools
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.1.0' 'cmake;4.1.2' 'cmake;3.22.1' 'ndk;29.0.14206865' 'ndk;28.2.13676358'
+      - run: flutter pub get --enforce-lockfile --no-example
+      - name: Build phone APKs
+        if: matrix.variant == 'android'
+        run: flutter build apk --release --split-per-abi --no-pub
+      - name: Build dual-architecture Fire OS APK
+        if: matrix.variant == 'firestick'
+        run: AMAZON=1 flutter build apk --release --target-platform android-arm,android-arm64 --no-pub
+      - name: Sign and verify packages
+        env:
+          VARIANT: ${{ matrix.variant }}
+          STORE_BASE64: ${{ secrets.GUCCIPLEXA_ANDROID_KEYSTORE }}
+          GUCCIPLEXA_KEY_PASSWORD: ${{ secrets.GUCCIPLEXA_ANDROID_PASSWORD }}
+        run: |
+          umask 077
+          export GUCCIPLEXA_KEYSTORE="$RUNNER_TEMP/gucciplexa.p12"
+          trap 'rm -f "$GUCCIPLEXA_KEYSTORE"' EXIT
+          printf '%s' "$STORE_BASE64" | base64 --decode > "$GUCCIPLEXA_KEYSTORE"
+          bash scripts/release/package-android.sh "$VARIANT"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-${{ matrix.variant }}
+          path: build/distribution/*.apk
+          if-no-files-found: error
+          compression-level: 0
+
+  apple:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {platform: ios, runner: xcode-27, extension: ipa}
+          - {platform: macos, runner: macos-26, extension: dmg}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {persist-credentials: false}
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get --enforce-lockfile --no-example
+      - name: Build iPhone app for external signing
+        if: matrix.platform == 'ios'
+        run: flutter build ios --release --no-codesign --no-pub
+      - name: Build Mac app
+        if: matrix.platform == 'macos'
+        run: flutter build macos --release --no-pub
+      - run: bash scripts/release/package-apple.sh "${{ matrix.platform }}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-${{ matrix.platform }}
+          path: build/distribution/*.${{ matrix.extension }}
+          if-no-files-found: error
+          compression-level: 0
+
+  windows:
+    defaults:
+      run:
+        shell: pwsh
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {arch: x64, runner: windows-latest}
+          - {arch: arm64, runner: windows-11-arm}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {persist-credentials: false}
+      - if: matrix.arch == 'x64'
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - if: matrix.arch == 'arm64'
+        uses: ./.github/actions/setup-flutter-git
+      - run: flutter pub get --enforce-lockfile --no-example
+      - run: flutter precache --windows
+      - run: .\windows\tool\install-patched-engine.ps1
+      - run: flutter build windows --release --no-pub
+      - name: Verify Windows bundle
+        shell: pwsh
+        run: |
+          $bundle = "build/windows/${{ matrix.arch }}/runner/Release"
+          foreach ($file in 'plezy.exe','flutter_windows.dll','libmpv-2.dll','data/app.so','sqlite3.dll','vcruntime140.dll') {
+            if (!(Test-Path "$bundle/$file" -PathType Leaf)) { throw "Missing $file in $bundle" }
+          }
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: windows-bundle-${{ matrix.arch }}
+          path: build/windows/${{ matrix.arch }}/runner/Release/
+          if-no-files-found: error
+
+  installer:
+    needs: [version, windows]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {persist-credentials: false}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: windows-bundle-*
+          path: bundles
+      - name: Build Windows installer for x64 and ARM64
+        env:
+          RELEASE_VERSION: ${{ needs.version.outputs.number }}
+        run: |
+          .\windows\build-installer.ps1 -X64BuildDir bundles/windows-bundle-x64 -Arm64BuildDir bundles/windows-bundle-arm64 -Version $env:RELEASE_VERSION
+          Move-Item plezy-windows-installer.exe GucciPlexa-Windows-Setup.exe
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-windows
+          path: GucciPlexa-Windows-Setup.exe
+          if-no-files-found: error
+          compression-level: 0
+
+  publish:
+    if: github.ref_type == 'tag'
+    needs: [version, android, apple, installer]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: {persist-credentials: false}
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: build/distribution
+      - name: Publish all packages for the existing tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/release/publish-gucciplexa.sh

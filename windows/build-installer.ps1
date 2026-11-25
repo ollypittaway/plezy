@@ -22,7 +22,7 @@ function New-InnoSetupScript {
 
     # Uninstall registry keys are named "{AppId}_is1", so the installer and the
     # elevation code below have to agree on this GUID.
-    $AppGuid = '4213385e-f7be-4f2b-95f9-54082a28bb8f'
+    $AppGuid = 'd818bbec-6e82-4344-a98c-403e478a3e13'
 
     if ($HasX64 -and $HasArm64) {
         $ArchAllowed = 'x64compatible arm64'
@@ -41,7 +41,7 @@ Source: "staging\arm64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
     return @"
 #define Name "GucciPlexa"
 #define Version "$Version"
-#define Publisher "edde746"
+#define Publisher "GucciPlexa"
 #define ExeName "plezy.exe"
 
 [Setup]
@@ -68,7 +68,7 @@ ArchitecturesInstallIn64BitMode=$ArchAllowed
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [CustomMessages]
-ElevationRequired=GucciPlexa is installed in %1, which requires administrator privileges to update.%n%nRe-run this installer using "Run as administrator", or download the latest installer from https://github.com/edde746/plezy/releases/latest
+ElevationRequired=GucciPlexa is installed in %1, which requires administrator privileges to update.%n%nRe-run this installer using "Run as administrator", or download the latest installer from https://windows.pittaway.dev
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
