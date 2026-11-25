@@ -133,6 +133,7 @@ CHANNEL_SPECS = {
 AMAZON_API_BASE = "https://developer.amazon.com/api/appstore/v1/applications"
 AMAZON_AUTH_URL = "https://api.amazon.com/auth/o2/token"
 ASC_API_BASE = "https://api.appstoreconnect.apple.com/v1"
+APPLE_BUNDLE_IDS = {"IOS": "com.gucciplexa.app", "TV_OS": "com.edde746.plezy"}
 MSSTORE_API_BASE = "https://manage.devcenter.microsoft.com/v1.0/my/applications"
 
 RELEASE_ASSET_NAMES = frozenset(
@@ -141,7 +142,7 @@ RELEASE_ASSET_NAMES = frozenset(
         "plezy-android-arm64-v8a.tar.gz",
         "plezy-android-armeabi-v7a.tar.gz",
         "plezy-android-x86_64.tar.gz",
-        "plezy-ios.ipa",
+        "GucciPlexa-ios.ipa",
         "plezy-linux-arm64.AppImage",
         "plezy-linux-arm64.AppImage.zsync",
         "plezy-linux-arm64.deb",
@@ -544,9 +545,11 @@ def phase_preflight(ctx: Context) -> None:
             "app store connect",
         )
         require_env(env, ["DELIVER_APP_IDENTIFIER"], "app store connect")
-        if env["DELIVER_APP_IDENTIFIER"] != "com.edde746.plezy":
+        apple_phases = set(ctx.phases) | set(ctx.state.done)
+        expected_id = APPLE_BUNDLE_IDS["IOS" if "ios" in apple_phases else "TV_OS"]
+        if env["DELIVER_APP_IDENTIFIER"] != expected_id:
             raise DeployError(
-                "app store connect: DELIVER_APP_IDENTIFIER must be com.edde746.plezy; "
+                f"app store connect: DELIVER_APP_IDENTIFIER must be {expected_id}; "
                 f"got {env['DELIVER_APP_IDENTIFIER']!r}"
             )
         key_path = Path(env["ASC_KEY_PATH"]).expanduser()
@@ -1246,9 +1249,9 @@ def phase_ios(ctx: Context) -> None:
     ])
     run(
         [str(SCRIPTS_DIR / "upload-symbols.sh"), "ios"],
-        env={"SENTRY_DIST": "app-store", "BUGS_APPLE_ARCHIVE": "build/ios/archive/Plezy.xcarchive"},
+        env={"SENTRY_DIST": "app-store", "BUGS_APPLE_ARCHIVE": "build/ios/archive/GucciPlexa.xcarchive"},
     )
-    _upload_ipa(ctx, ROOT / "build/ios/ipa/Plezy.ipa", "ios")
+    _upload_ipa(ctx, ROOT / "build/ios/ipa/GucciPlexa.ipa", "ios")
 
 
 def phase_tvos(ctx: Context) -> None:
@@ -1325,8 +1328,8 @@ class AscClient:
             )
         return response
 
-    def app_id(self) -> str:
-        bundle_id = self.env["DELIVER_APP_IDENTIFIER"]
+    def app_id(self, platform: str) -> str:
+        bundle_id = APPLE_BUNDLE_IDS[platform]
         data = self.request("GET", f"/apps?filter[bundleId]={bundle_id}").json()["data"]
         if not data:
             raise DeployError(f"asc: no app found for bundle id {bundle_id}")
@@ -1335,7 +1338,7 @@ class AscClient:
 
 def _asc_has_uploaded_build(ctx: Context, platform: str) -> bool:
     client = AscClient(ctx.env)
-    app_id = client.app_id()
+    app_id = client.app_id(platform)
     builds = client.request(
         "GET",
         f"/builds?filter[app]={app_id}&filter[version]={ctx.build_number}"
@@ -1465,8 +1468,8 @@ def phase_asc(ctx: Context) -> None:
 
     whats_new = notes_path("appstore").read_text(encoding="utf-8").strip()
     client = AscClient(ctx.env)
-    app_id = client.app_id()
     for platform in platforms:
+        app_id = client.app_id(platform)
         build_id = _asc_wait_for_build(client, app_id, ctx.build_number, platform)
         version_id = _asc_ensure_version(client, app_id, ctx.version, platform)
         _asc_set_whats_new(client, version_id, whats_new)

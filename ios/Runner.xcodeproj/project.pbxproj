@@ -77,7 +77,7 @@
 		92F969587D0E464D999910F4 /* MpvPipController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MpvPipController.swift; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
-		97C146EE1CF9000F007C117D /* Plezy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Plezy.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		97C146EE1CF9000F007C117D /* GucciPlexa.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GucciPlexa.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		97C146FB1CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -193,7 +193,7 @@
 		97C146EF1CF9000F007C117D /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				97C146EE1CF9000F007C117D /* Plezy.app */,
+				97C146EE1CF9000F007C117D /* GucciPlexa.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
 			);
 			name = Products;
@@ -264,7 +264,7 @@
 			);
 			name = Runner;
 			productName = Runner;
-			productReference = 97C146EE1CF9000F007C117D /* Plezy.app */;
+			productReference = 97C146EE1CF9000F007C117D /* GucciPlexa.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -548,10 +548,9 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = G88U5B5783;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Plezy;
+				INFOPLIST_KEY_CFBundleDisplayName = GucciPlexa;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -560,8 +559,8 @@
 				);
 				MARKETING_VERSION = 1.0.0;
 				CODE_SIGN_ENTITLEMENTS = Runner/Push.entitlements;
-				PRODUCT_BUNDLE_IDENTIFIER = com.edde746.plezy;
-				PRODUCT_NAME = Plezy;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gucciplexa.app;
+				PRODUCT_NAME = GucciPlexa;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -577,12 +576,12 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.flutterApplication1.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gucciplexa.app.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Plezy.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Plezy";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GucciPlexa.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GucciPlexa";
 			};
 			name = Debug;
 		};
@@ -595,10 +594,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.flutterApplication1.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gucciplexa.app.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Plezy.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Plezy";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GucciPlexa.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GucciPlexa";
 			};
 			name = Release;
 		};
@@ -611,10 +610,10 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.example.flutterApplication1.RunnerTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gucciplexa.app.RunnerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Plezy.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Plezy";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GucciPlexa.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/GucciPlexa";
 			};
 			name = Profile;
 		};
@@ -737,10 +736,9 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = G88U5B5783;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Plezy;
+				INFOPLIST_KEY_CFBundleDisplayName = GucciPlexa;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -749,8 +747,8 @@
 				);
 				MARKETING_VERSION = 1.0.0;
 				CODE_SIGN_ENTITLEMENTS = Runner/Push.entitlements;
-				PRODUCT_BUNDLE_IDENTIFIER = com.edde746.plezy;
-				PRODUCT_NAME = Plezy;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gucciplexa.app;
+				PRODUCT_NAME = GucciPlexa;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -767,10 +765,9 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CLANG_ENABLE_MODULES = YES;
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = G88U5B5783;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Plezy;
+				INFOPLIST_KEY_CFBundleDisplayName = GucciPlexa;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.5;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -779,8 +776,8 @@
 				);
 				MARKETING_VERSION = 1.0.0;
 				CODE_SIGN_ENTITLEMENTS = Runner/Push.entitlements;
-				PRODUCT_BUNDLE_IDENTIFIER = com.edde746.plezy;
-				PRODUCT_NAME = Plezy;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gucciplexa.app;
+				PRODUCT_NAME = GucciPlexa;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
