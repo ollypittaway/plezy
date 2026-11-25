@@ -2134,12 +2134,21 @@ void main() {
           MediaVersion(id: 'cinemascope', width: 3840, height: 1608, bitrate: 64000),
         ],
       );
+      final kids = hd.copyWith(id: 'kids', libraryId: '3', libraryTitle: 'Kids Movies');
+      final uhdOnly = uhd.copyWith(
+        id: 'remux',
+        libraryTitle: 'Z Remux',
+        libraryId: '4',
+        mediaVersions: [uhd.mediaVersions!.last],
+      );
       final client = _FakeMediaServerClient(
         show: hd,
         childrenByParent: const {},
         searchHits: [
           hd,
           uhd,
+          kids,
+          uhdOnly,
           uhd.copyWith(id: 'other-film', year: 2021),
         ],
       );
@@ -2158,13 +2167,15 @@ void main() {
       expect(find.textContaining('UHD Movies •'), findsNothing);
       await tester.tap(find.byTooltip(t.libraries.selectLibrary));
       await tester.pumpAndSettle();
-      await tester.tap(find.textContaining('UHD Movies • 4K'));
+      expect(find.textContaining('UHD Movies'), findsNothing);
+      expect(find.textContaining('Remux'), findsNothing);
+      await tester.tap(find.textContaining('Kids Movies •'));
       await tester.pumpAndSettle();
       expect(observer.player, isNull);
       expect(tester.widget<MediaDetailScreen>(find.byType(MediaDetailScreen)).metadata.id, hd.id);
-      await tester.tap(find.text('Play from UHD Movies'));
+      await tester.tap(find.text('Play from Kids Movies'));
       await tester.pumpAndSettle();
-      expect(observer.player?.metadata.id, uhd.id);
+      expect(observer.player?.metadata.id, kids.id);
       expect(observer.player?.selectedMediaIndex, 0);
       await tester.tap(find.text(t.mediaMenu.playIn4k));
       await tester.pumpAndSettle();
@@ -2195,6 +2206,19 @@ void main() {
       await pumpPhoneDetail(tester, _FakeMediaServerClient(show: hd, childrenByParent: const {}), hd);
       final button = tester.widget<FilledButton>(find.widgetWithText(FilledButton, t.mediaMenu.playIn4k));
       expect(button.onPressed, isNull);
+    });
+
+    testWidgets('a movie found only in 4K stays playable without a library dropdown', (tester) async {
+      final movie = testMediaItem(
+        id: 'uhd-only',
+        title: 'UHD only',
+        libraryTitle: '4K Movies',
+        serverId: 'server_1',
+        mediaVersions: const [MediaVersion(id: 'source', videoResolution: '4k')],
+      );
+      await pumpPhoneDetail(tester, _FakeMediaServerClient(show: movie, childrenByParent: const {}), movie);
+      expect(find.byTooltip(t.libraries.selectLibrary), findsNothing);
+      expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, t.mediaMenu.playIn4k)).onPressed, isNotNull);
     });
 
     testWidgets('movie with multiple versions gets a split segment that plays the picked version', (tester) async {

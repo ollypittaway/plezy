@@ -563,6 +563,7 @@ class PlexVideoControls extends StatefulWidget {
   final Player player;
   final VideoVolumeController volumeController;
   final MediaItem metadata;
+  final Widget? formatInfo;
   final VoidCallback? onNext;
   final VoidCallback? onPrevious;
   final List<MediaVersion> availableVersions;
@@ -703,6 +704,7 @@ class PlexVideoControls extends StatefulWidget {
     required this.player,
     required this.volumeController,
     required this.metadata,
+    this.formatInfo,
     required this.toastController,
     this.initialChapters,
     this.initialMarkers,
@@ -1355,6 +1357,7 @@ class _PlexVideoControlsState extends State<PlexVideoControls>
                                                     return MobileVideoControls(
                                                       player: widget.player,
                                                       metadata: widget.metadata,
+                                                      formatInfo: widget.formatInfo,
                                                       chapters: _chapters,
                                                       chaptersLoaded: _chaptersLoaded,
                                                       showChapterMarkersOnTimeline: _showChapterMarkersOnTimeline,

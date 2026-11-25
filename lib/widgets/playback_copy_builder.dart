@@ -8,6 +8,7 @@ import '../media/media_item.dart';
 import '../media/media_item_merge.dart';
 import '../media/media_server_client.dart';
 import '../providers/hidden_libraries_provider.dart';
+import '../providers/libraries_provider.dart';
 import '../providers/multi_server_provider.dart';
 import '../utils/media_server_http_client.dart';
 
@@ -31,6 +32,7 @@ class PlaybackCopyBuilder extends StatefulWidget {
 }
 
 class _PlaybackCopyBuilderState extends State<PlaybackCopyBuilder> {
+  static final _fourKLibrary = RegExp(r'\b(?:4[\s-]?k|uhd|ultra[\s-]?hd|2160p)\b', caseSensitive: false);
   String? _key;
   Map<String, MediaServerClient> _clients = const {};
   AbortController? _request;
@@ -71,17 +73,28 @@ class _PlaybackCopyBuilderState extends State<PlaybackCopyBuilder> {
           (item) => item.mediaVersions?.isNotEmpty != true || item.mediaVersions!.any((version) => version.isPlayable),
         )
         .toList();
+    final libraries = context.watch<LibrariesProvider?>()?.libraries;
+    final menuCopies = available.where((item) {
+      final library =
+          item.libraryTitle ??
+          libraries?.where((library) => library.globalKey == item.libraryGlobalKey).firstOrNull?.title;
+      if (library != null && _fourKLibrary.hasMatch(library)) return false;
+      final versions = item.mediaVersions?.where((version) => version.isPlayable);
+      return versions == null || versions.isEmpty || versions.any((version) => !version.is4K);
+    }).toList();
     final preferred = _preferred;
     final selected =
-        available.where((item) => item.globalKey == preferred?.globalKey).firstOrNull ??
-        available
+        menuCopies.where((item) => item.globalKey == preferred?.globalKey).firstOrNull ??
+        menuCopies
             .where((item) => item.libraryGlobalKey != null && item.libraryGlobalKey == preferred?.libraryGlobalKey)
             .firstOrNull ??
+        menuCopies.where((item) => item.globalKey == target?.globalKey).firstOrNull ??
+        menuCopies.firstOrNull ??
         available.where((item) => item.globalKey == target?.globalKey).firstOrNull ??
         available.firstOrNull;
     return widget.builder(
       selected,
-      available,
+      menuCopies,
       (item) => setState(() => _preferred = item),
       findFourKPlayback([?selected, ...available]),
     );

@@ -210,7 +210,7 @@ void main() {
     final uhd = source(1, '4K Movies', more: false);
     final movies = source(2, 'Movies');
     harness.client.hubItems[kids.id] = [items[0], items[3]];
-    harness.client.hubItems[movies.id] = [items[2], items[3], items[5]];
+    harness.client.hubItems[movies.id] = [items[2], items[3].copyWith(id: 'other-library-copy'), items[5]];
     final hub = groupHomeHubs([kids, uhd, movies]).single;
     await tester.pumpWidget(harness.wrap(HubDetailScreen(hub: hub)));
     await tester.pumpAndSettle();

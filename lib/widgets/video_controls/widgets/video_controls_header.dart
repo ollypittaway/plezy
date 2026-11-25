@@ -25,6 +25,7 @@ enum VideoHeaderStyle {
 class VideoControlsHeader extends StatelessWidget {
   final MediaItem metadata;
   final VideoHeaderStyle style;
+  final Widget? formatInfo;
 
   /// Optional trailing widget (e.g., track/chapter controls)
   final Widget? trailing;
@@ -43,6 +44,7 @@ class VideoControlsHeader extends StatelessWidget {
     super.key,
     required this.metadata,
     this.style = VideoHeaderStyle.multiLine,
+    this.formatInfo,
     this.trailing,
     this.onBack,
     this.onCancelAutoHide,
@@ -58,9 +60,14 @@ class VideoControlsHeader extends StatelessWidget {
         AppBarBackButton(style: BackButtonStyle.video, onPressed: onBack ?? () => Navigator.of(context).pop(true)),
         const SizedBox(width: 16),
         Expanded(
-          child: style == VideoHeaderStyle.singleLine
-              ? _buildSingleLineTitle(itemTitle)
-              : _buildMultiLineTitle(itemTitle),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              style == VideoHeaderStyle.singleLine ? _buildSingleLineTitle(itemTitle) : _buildMultiLineTitle(itemTitle),
+              ?formatInfo,
+            ],
+          ),
         ),
         Selector<WatchTogetherProvider, bool>(
           selector: (_, p) => p.isInSession,

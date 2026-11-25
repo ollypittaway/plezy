@@ -155,7 +155,7 @@ class PerformanceStatsService {
       );
       final stats = PerformanceStats(
         playerType: 'mpv',
-        videoCodec: _formatVideoCodecName(statsMap['video-codec'] as String?),
+        videoCodec: CodecUtils.formatPlayerVideoCodec(statsMap['video-codec'] as String?),
         videoWidth: _parseInt(statsMap['video-params/w'] as String?),
         videoHeight: _parseInt(statsMap['video-params/h'] as String?),
         videoFps: _parseDouble(statsMap['container-fps'] as String?),
@@ -204,7 +204,7 @@ class PerformanceStatsService {
       final stats = PerformanceStats(
         playerType: 'exoplayer',
         // Video metrics
-        videoCodec: _formatVideoCodecName((statsMap['videoCodec'] ?? statsMap['videoMimeType']) as String?),
+        videoCodec: CodecUtils.formatPlayerVideoCodec((statsMap['videoCodec'] ?? statsMap['videoMimeType']) as String?),
         videoWidth: statsMap['videoWidth'] as int?,
         videoHeight: statsMap['videoHeight'] as int?,
         videoFps: (statsMap['videoFps'] as num?)?.toDouble(),
@@ -313,7 +313,7 @@ class PerformanceStatsService {
 
     final stats = PerformanceStats(
       playerType: 'mpv',
-      videoCodec: _formatVideoCodecName(results.first),
+      videoCodec: CodecUtils.formatPlayerVideoCodec(results.first),
       videoWidth: _parseInt(results[1]),
       videoHeight: _parseInt(results[2]),
       videoFps: _parseDouble(results[3]),
@@ -430,30 +430,6 @@ class PerformanceStatsService {
   double? _parseDouble(String? value) {
     if (value == null || value.isEmpty) return null;
     return double.tryParse(value);
-  }
-
-  /// Format a video codec name for display. Handles mpv's descriptive
-  /// strings ('hevc (Main 10)'), ExoPlayer's RFC 6381 codec IDs
-  /// ('hvc1.2.4.L153.B0', 'av01.0.08M.10'), and `video/...` MIME types
-  /// ('video/hevc') used as a fallback when the container carries no
-  /// codecs string.
-  String? _formatVideoCodecName(String? codec) {
-    if (codec == null || codec.isEmpty) return null;
-    final upper = codec.toUpperCase();
-    if (upper.contains('DVHE') || upper.contains('DVH1') || upper.contains('DOLBY-VISION')) {
-      return 'Dolby Vision';
-    }
-    if (upper.contains('HEVC') || upper.contains('H265') || upper.contains('HVC1') || upper.contains('HEV1')) {
-      return 'HEVC';
-    }
-    if (upper.contains('H264') || upper.contains('AVC')) return 'H.264';
-    if (upper.contains('AV1') || upper.contains('AV01')) return 'AV1';
-    if (upper.contains('VP9') || upper.contains('VP09')) return 'VP9';
-    if (upper.contains('VP8') || upper.contains('VP08')) return 'VP8';
-    if (upper.contains('MP4V')) return 'MPEG-4';
-    if (upper.contains('MPEG2')) return 'MPEG-2';
-    if (upper.startsWith('VIDEO/')) return codec.substring('video/'.length).toUpperCase();
-    return codec;
   }
 
   /// Format an audio codec name for display. Both mpv's ffmpeg names and

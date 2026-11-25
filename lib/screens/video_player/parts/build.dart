@@ -287,6 +287,27 @@ extension _VideoPlayerBuildMethods on VideoPlayerScreenState {
                         player: player!,
                         volumeController: _volumeController!,
                         metadata: _currentMetadata,
+                        formatInfo: ValueListenableBuilder<bool>(
+                          valueListenable: _firstFrame.uiReady,
+                          builder: (_, ready, _) {
+                            if (!ready) return const SizedBox.shrink();
+                            final versions = _availableVersions.isNotEmpty
+                                ? _availableVersions
+                                : _currentMetadata.mediaVersions;
+                            return PlaybackFormatLine(
+                              key: ValueKey((
+                                player,
+                                _currentMetadata.globalKey,
+                                _playbackSession?.context,
+                                _currentMediaInfo?.partIndex,
+                              )),
+                              player: player!,
+                              version: versions?.elementAtOrNull(_effectiveSelectedMediaIndex),
+                              source: _currentMediaInfo,
+                              isTranscoding: _isTranscoding,
+                            );
+                          },
+                        ),
                         onNext: onNext,
                         onPrevious: onPrevious,
                         availableVersions: _availableVersions,

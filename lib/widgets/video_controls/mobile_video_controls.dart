@@ -32,6 +32,7 @@ import 'widgets/video_timeline_bar.dart';
 class MobileVideoControls extends StatefulWidget {
   final Player player;
   final MediaItem metadata;
+  final Widget? formatInfo;
   final List<MediaChapter> chapters;
   final bool chaptersLoaded;
   final bool showChapterMarkersOnTimeline;
@@ -91,6 +92,7 @@ class MobileVideoControls extends StatefulWidget {
     super.key,
     required this.player,
     required this.metadata,
+    this.formatInfo,
     required this.chapters,
     required this.chaptersLoaded,
     this.showChapterMarkersOnTimeline = true,
@@ -324,6 +326,7 @@ class _MobileVideoControlsState extends State<MobileVideoControls> with SingleTi
         padding: const EdgeInsets.all(16),
         child: VideoControlsHeader(
           metadata: widget.metadata,
+          formatInfo: widget.formatInfo,
           style: VideoHeaderStyle.multiLine,
           onCancelAutoHide: widget.onCancelAutoHide,
           onStartAutoHide: widget.onStartAutoHide,
