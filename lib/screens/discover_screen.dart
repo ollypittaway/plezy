@@ -243,6 +243,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   void _focusTopActions() {
     if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
+    final topNavigation = MainScreenFocusScope.of(context, listen: false)?.focusTopNavigation;
+    if (topNavigation != null) {
+      topNavigation();
+      return;
+    }
     final actionBar = _actionBarKey.currentState;
     if (actionBar != null) {
       actionBar.requestFocusOnFirst();

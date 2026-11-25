@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../i18n/strings.g.dart';
+import '../focus/focusable_action_bar.dart';
 import '../media/media_library.dart';
 import '../navigation/navigation_tabs.dart';
 import '../utils/desktop_window_padding.dart';
@@ -22,6 +23,9 @@ class DesktopNavigationBar extends StatelessWidget {
     required this.onSelect,
     required this.onMenu,
     this.homeActions,
+    this.remoteNavigation = false,
+    this.remoteHomeFocusNode,
+    this.onNavigateDown,
   });
 
   final List<NavigationTab> tabs;
@@ -32,6 +36,9 @@ class DesktopNavigationBar extends StatelessWidget {
   final ValueChanged<NavigationTabId> onSelect;
   final VoidCallback onMenu;
   final Widget? homeActions;
+  final bool remoteNavigation;
+  final FocusNode? remoteHomeFocusNode;
+  final VoidCallback? onNavigateDown;
 
   static const _utilities = {NavigationTabId.search, NavigationTabId.downloads, NavigationTabId.settings};
 
@@ -64,8 +71,65 @@ class DesktopNavigationBar extends StatelessWidget {
       fontWeight: .w400,
       letterSpacing: -0.15,
     );
-    final primaryTabs = tabs.where((tab) => !_utilities.contains(tab.id));
+    final primaryTabs = tabs.where((tab) => !_utilities.contains(tab.id)).toList();
     if (primaryTabs.isEmpty) return const SizedBox.shrink();
+    if (remoteNavigation) {
+      final libraryMenuKey = GlobalKey<AppMenuButtonState<VoidCallback>>();
+      return Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DecoratedBox(
+            decoration: ShapeDecoration(
+              color: theme.scaffoldBackgroundColor.withValues(alpha: 0.68),
+              shape: StadiumBorder(side: BorderSide(color: colors.onSurface.withValues(alpha: 0.14))),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(3),
+              child: FocusableActionBar(
+                onNavigateLeft: primaryTabs.first.id == NavigationTabId.discover ? onMenu : null,
+                onNavigateDown: onNavigateDown,
+                actions: [
+                  for (final tab in primaryTabs)
+                    FocusableAction(
+                      debugLabel: 'desktop_remote_${tab.id.name}',
+                      focusNode: tab.id == primaryTabs.first.id ? remoteHomeFocusNode : null,
+                      onPressed: tab.id == NavigationTabId.libraries
+                          ? () { libraryMenuKey.currentState?.showButtonMenu(); }
+                          : () => onSelect(tab.id),
+                      builder: (context, state) => Material(
+                        color: state.showFocus
+                            ? colors.inverseSurface
+                            : selected == tab.id ? colors.onSurface.withValues(alpha: 0.14) : Colors.transparent,
+                        shape: const StadiumBorder(),
+                        child: tab.id == NavigationTabId.libraries
+                            ? AppMenuButton<VoidCallback>(
+                                key: libraryMenuKey,
+                                tooltip: t.libraries.selectLibrary,
+                                entriesBuilder: _libraryEntries,
+                                onSelected: (select) => select(),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                    Text(tab.getLabel(), style: state.showFocus ? style.copyWith(color: colors.onInverseSurface) : style),
+                                    const SizedBox(width: 4),
+                                    AppIcon(Symbols.expand_more_rounded, size: 16, color: state.showFocus ? colors.onInverseSurface : colors.onSurface),
+                                  ]),
+                                ),
+                              )
+                            : Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                child: Text(tab.getLabel(), style: state.showFocus ? style.copyWith(color: colors.onInverseSurface) : style),
+                              ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Align(
       alignment: AlignmentDirectional.centerStart,
@@ -155,6 +219,7 @@ class DesktopNavigationBar extends StatelessWidget {
                   Tooltip(
                     message: t.settings.navigation,
                     child: InkWell(
+                      canRequestFocus: !remoteNavigation,
                       onTap: onMenu,
                       customBorder: const StadiumBorder(),
                       child: Padding(

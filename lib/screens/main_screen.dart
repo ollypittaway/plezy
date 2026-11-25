@@ -467,6 +467,16 @@ class _MainScreenState extends State<MainScreen>
 
   // Focus management for sidebar/content switching
   final FocusScopeNode _sidebarFocusScope = FocusScopeNode(debugLabel: 'Sidebar');
+  final FocusNode _remoteHomeFocusNode = FocusNode(debugLabel: 'desktop_remote_home');
+
+  void _focusRemoteTopNavigation() {
+    if (_isSidebarFocused) setState(() => _isSidebarFocused = false);
+    _remoteHomeFocusNode.requestFocus();
+  }
+
+  void _focusRemotePageContent() {
+    _onScreen<FocusableTab>(_currentTab, (screen) => screen.focusActiveTabIfReady());
+  }
   final FocusScopeNode _contentFocusScope = FocusScopeNode(debugLabel: 'Content');
   bool _isSidebarFocused = false;
   // Hover/touch rail expansion is an M3E modal overlay: the rail draws over
@@ -1077,6 +1087,7 @@ class _MainScreenState extends State<MainScreen>
     _startupSettleTimeout?.cancel();
     _startupSettleTimeout = null;
     _sidebarFocusScope.dispose();
+    _remoteHomeFocusNode.dispose();
     _contentFocusScope.removeListener(_syncSidebarFocusWithContent);
     _contentFocusScope.dispose();
     _setTvosMenuPassthrough(false);
@@ -1625,7 +1636,7 @@ class _MainScreenState extends State<MainScreen>
 
     if (!_isSidebarFocused) {
       // Content focused → move to sidebar
-      return handleBackKeyAction(event, _focusSidebar);
+      return handleBackKeyAction(event, PlatformDetector.isFireTV() ? _focusRemoteTopNavigation : _focusSidebar);
     }
 
     return _handleMainBackKeyAction(event);
@@ -2127,6 +2138,9 @@ class _MainScreenState extends State<MainScreen>
             if (_isSidebarFocused) _focusContent(restorePreviousFocus: false);
           },
           onMenu: _isSidebarFocused ? _focusContent : _focusSidebar,
+          remoteNavigation: PlatformDetector.isFireTV(),
+          remoteHomeFocusNode: PlatformDetector.isFireTV() ? _remoteHomeFocusNode : null,
+          onNavigateDown: _focusRemotePageContent,
           homeActions: homeActions,
         );
       },
@@ -2184,7 +2198,8 @@ class _MainScreenState extends State<MainScreen>
                     reservedSideNavigationWidth: reservedContentOffset,
                   );
                   return MainScreenFocusScope(
-                    focusSidebar: _focusSidebar,
+                    focusSidebar: PlatformDetector.isFireTV() && useTopBar ? _focusRemoteTopNavigation : _focusSidebar,
+                    focusTopNavigation: PlatformDetector.isFireTV() && useTopBar ? _focusRemoteTopNavigation : null,
                     sideNavigationWidth: targetContentOffset,
                     reservedSideNavigationWidth: reservedContentOffset,
                     foregroundLeft: contentLayout.left,
@@ -2280,7 +2295,7 @@ class _MainScreenState extends State<MainScreen>
                                           _selectLibrary(key);
                                           _focusContent(restorePreviousFocus: false);
                                         },
-                                        onNavigateToContent: _focusContent,
+                                        onNavigateToContent: PlatformDetector.isFireTV() && useTopBar ? _focusRemoteTopNavigation : _focusContent,
                                         onFloatingPanelChanged: (floating) {
                                           if (_isSidebarFloatingPanel == floating) return;
                                           setState(() => _isSidebarFloatingPanel = floating);

@@ -21,6 +21,7 @@ enum MainScreenScopeAspect {
 
 class MainScreenFocusScope extends InheritedModel<MainScreenScopeAspect> {
   final VoidCallback focusSidebar;
+  final VoidCallback? focusTopNavigation;
   final double sideNavigationWidth;
   final double? reservedSideNavigationWidth;
   final double? foregroundLeft;
@@ -32,6 +33,7 @@ class MainScreenFocusScope extends InheritedModel<MainScreenScopeAspect> {
   const MainScreenFocusScope({
     super.key,
     required this.focusSidebar,
+    this.focusTopNavigation,
     required this.sideNavigationWidth,
     this.reservedSideNavigationWidth,
     this.foregroundLeft,
