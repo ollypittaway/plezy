@@ -1,0 +1,11 @@
+# Work on build-directory copies so Flutter can keep regenerating the inputs.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${plugin_rules}" "${plugin_registrant}")
+file(READ "${plugin_rules}" rules)
+file(READ "${plugin_registrant}" registrant)
+string(REPLACE "  firebase_core\n" "" rules "${rules}")
+string(REPLACE "#include <firebase_core/firebase_core_plugin_c_api.h>" "" registrant "${registrant}")
+string(REGEX REPLACE "  FirebaseCorePluginCApiRegisterWithRegistrar\\([^;]+;\n" "" registrant "${registrant}")
+set(plugin_rules "${CMAKE_CURRENT_BINARY_DIR}/arm64/generated_plugins.cmake")
+set(plugin_registrant "${CMAKE_CURRENT_BINARY_DIR}/arm64/generated_plugin_registrant.cc")
+file(CONFIGURE OUTPUT "${plugin_rules}" CONTENT "${rules}" @ONLY)
+file(CONFIGURE OUTPUT "${plugin_registrant}" CONTENT "${registrant}" @ONLY)

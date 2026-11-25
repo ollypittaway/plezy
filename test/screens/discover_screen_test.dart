@@ -750,6 +750,20 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));
 
+    final home = tester.widget<CustomScrollView>(find.byType(CustomScrollView)).controller!;
+    final heroCenter = tester.getCenter(find.byType(PageView));
+    final drag = await tester.startGesture(heroCenter);
+    await drag.moveBy(const Offset(0, 120));
+    await tester.pump();
+    expect(home.offset, home.position.minScrollExtent, reason: 'pulling down cannot expose space above the hero');
+    await drag.moveBy(const Offset(0, -160));
+    await tester.pump();
+    expect(home.offset, greaterThan(home.position.minScrollExtent), reason: 'the library rows remain scrollable');
+    await drag.moveBy(const Offset(0, 300));
+    await tester.pump();
+    expect(home.offset, home.position.minScrollExtent, reason: 'scrolling back stops exactly at the hero');
+    await drag.up();
+    await tester.pump();
     expect(find.byType(PageView), findsOneWidget);
     expect(find.byIcon(Symbols.pause_rounded), findsOneWidget, reason: 'hero indicators render in pointer mode');
 

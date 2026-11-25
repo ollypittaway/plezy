@@ -355,6 +355,22 @@ ResolveFrontendServer() {
   printf '%s\n' "$frontend_server"
 }
 
+# The custom tvOS engine builds its own kernel and native plugins below.
+# Ask the stock SDK only for Flutter resources. Its default bundle target is
+# Android, whose native hooks otherwise require the Android SDK on this Mac.
+BuildFlutterAssets() (
+  set -e
+  local mode="$1" staged="$OUTDIR/tvos-asset-staging"
+  cd "$FLUTTER_APPLICATION_PATH" || return 1
+  env -u FLUTTER_BUILD_NAME -u FLUTTER_BUILD_NUMBER \
+    "$FLUTTER_BIN" assemble --suppress-analytics --output="$staged" \
+      -dTargetPlatform=ios -dIosArchs=arm64 -dSdkRoot="$(xcrun --sdk iphoneos --show-sdk-path)" \
+      -dBuildMode="$mode" -dTargetFile=lib/main.dart -dTreeShakeIcons=false copy_flutter_bundle || return 1
+  rsync -a --delete-excluded --exclude=.last_build_id --exclude=native_assets/ --exclude=NativeAssetsManifest.json \
+    --exclude=kernel_blob.bin --exclude=vm_snapshot_data --exclude=isolate_snapshot_data \
+    "$staged/" "$OUTDIR/App.framework/flutter_assets/"
+)
+
 BuildAppDebug() {
   # Host tools (frontend_server, patched SDK, dartaotruntime) ship in
   # host_release for both debug and release consumers — the frontend_server
@@ -385,7 +401,7 @@ BuildAppDebug() {
 
   tvos_deployment_target="$TVOS_DEPLOYMENT_TARGET"
 
-  echo " └─Generate flutter_assets via flutter build bundle"
+  echo " └─Building Flutter assets (debug)"
   mkdir -p "$OUTDIR/App.framework/flutter_assets"
   # Resolve the flutter CLI: prefer FLUTTER_ROOT from Generated.xcconfig, else
   # fall back to the `flutter` on PATH.
@@ -403,24 +419,7 @@ BuildAppDebug() {
 
   DART_AOT_RUNTIME=$(ResolveDartAotRuntime "$HOST_TOOLS") || return 1
 
-  # flutter build bundle produces: AssetManifest, FontManifest, NOTICES,
-  # shaders, fonts, assets, packages, plus a kernel_blob.bin and
-  # isolate_snapshot_data compiled against the stock flutter engine. We
-  # overwrite kernel_blob.bin and both snapshot blobs below with versions
-  # from our tvOS engine so the tvOS VM can load them.
-  (
-    # Flutter 3.47's tool rejects FLUTTER_BUILD_NAME/NUMBER in the environment;
-    # they are consumed by this script's plist sync, not by `build bundle`.
-    cd "$FLUTTER_APPLICATION_PATH" && \
-    env -u FLUTTER_BUILD_NAME -u FLUTTER_BUILD_NUMBER \
-    "$FLUTTER_BIN" build bundle \
-      --asset-dir="$OUTDIR/App.framework/flutter_assets" \
-      --no-tree-shake-icons \
-      --suppress-analytics
-  ) || {
-    echo " └─ERROR: flutter build bundle failed"
-    return 1
-  }
+  BuildFlutterAssets debug || return 1
 
   echo " └─Compiling tvOS kernel via compatible frontend_server"
   FRONTEND_SERVER=$(ResolveFrontendServer "$HOST_TOOLS" "$DART_AOT_RUNTIME") || return 1
@@ -556,25 +555,9 @@ BuildAppRelease() {
 
   DART_AOT_RUNTIME=$(ResolveDartAotRuntime "$HOST_TOOLS") || return 1
 
-  echo " └─Generate flutter_assets via flutter build bundle (release)"
+  echo " └─Building Flutter assets (release)"
   mkdir -p "$OUTDIR/App.framework/flutter_assets"
-  (
-    # Flutter 3.47's tool rejects FLUTTER_BUILD_NAME/NUMBER in the environment;
-    # they are consumed by this script's plist sync, not by `build bundle`.
-    cd "$FLUTTER_APPLICATION_PATH" && \
-    env -u FLUTTER_BUILD_NAME -u FLUTTER_BUILD_NUMBER \
-    "$FLUTTER_BIN" build bundle \
-      --release \
-      --asset-dir="$OUTDIR/App.framework/flutter_assets" \
-      --no-tree-shake-icons \
-      --suppress-analytics
-  ) || {
-    echo " └─ERROR: flutter build bundle failed"
-    return 1
-  }
-  # AOT builds don't need kernel_blob.bin in flutter_assets — the compiled
-  # arm64 code lives in App.framework/App itself.
-  rm -f "$OUTDIR/App.framework/flutter_assets/kernel_blob.bin"
+  BuildFlutterAssets release || return 1
 
   echo " └─Compiling AOT kernel via local engine frontend_server"
   # The snapshot under dart-sdk/bin/snapshots/ is the actual AOT-compiled one;

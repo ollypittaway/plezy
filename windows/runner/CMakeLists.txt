@@ -9,7 +9,7 @@ add_executable(${BINARY_NAME} WIN32
   "mpv/display_mode_manager.cpp"
   "mpv/mpv_player.cpp"
   "mpv/mpv_plugin.cpp"
-  "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
+  "${plugin_registrant}"
   "Runner.rc"
   "runner.exe.manifest"
 )
@@ -35,7 +35,7 @@ target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app flutter
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib" "comctl32.lib" "dxgi.lib")
 target_link_libraries(${BINARY_NAME} PRIVATE "${MPV_LIB_DIR}/libmpv.dll.a")
 target_link_libraries(${BINARY_NAME} PRIVATE simdutf)
-target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
+target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}" "${FLUTTER_MANAGED_DIR}")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(${BINARY_NAME} PRIVATE "${MPV_INCLUDE_DIR}")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/../shared/cpp")

@@ -73,6 +73,23 @@ import '../providers/companion_remote_provider.dart';
 import '../widgets/companion_remote/remote_session_dialog.dart';
 import 'companion_remote/mobile_remote_screen.dart';
 
+/// Keep the hero flush with the top edge and leave flings and the bottom edge
+/// to the platform's normal scroll physics.
+class _HomeScrollPhysics extends ScrollPhysics {
+  const _HomeScrollPhysics({super.parent});
+
+  @override
+  _HomeScrollPhysics applyTo(ScrollPhysics? ancestor) => _HomeScrollPhysics(parent: buildParent(ancestor));
+
+  @override
+  double applyBoundaryConditions(ScrollMetrics position, double value) {
+    if (value < position.minScrollExtent && value < position.pixels) {
+      return value - math.min(position.pixels, position.minScrollExtent);
+    }
+    return super.applyBoundaryConditions(position, value);
+  }
+}
+
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({super.key});
 
@@ -998,17 +1015,22 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         SettingsService.libraryDensity,
         SettingsService.episodePosterMode,
       ],
-      builder: (context) => _buildContent(context),
+      builder: (context) {
+        if (PlatformDetector.isTV()) return _buildTvContent(context);
+        return NotificationListener<OverscrollIndicatorNotification>(
+          onNotification: (event) {
+            if (event.depth == 0 && event.leading) event.disallowIndicator();
+            return false;
+          },
+          child: _buildContent(context),
+        );
+      },
     );
   }
 
   Widget _buildContent(BuildContext context) {
     final svc = SettingsService.instance;
     final showHeroSection = svc.read(SettingsService.showHeroSection);
-
-    if (PlatformDetector.isTV()) {
-      return _buildTvContent(context);
-    }
 
     final showServerNameOnHubs = svc.read(SettingsService.showServerNameOnHubs);
     final hubsSpanMultipleServers = _discover.hubsSpanMultipleServers;
@@ -1022,6 +1044,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
         children: [
           CustomScrollView(
             controller: _scrollController,
+            physics: const _HomeScrollPhysics(),
             slivers: [
               // Hero Section (Continue Watching) - at top of screen
               Builder(
