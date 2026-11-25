@@ -328,6 +328,23 @@ Future<ResolvedMediaVersionPreference?> resolveSavedMediaVersionFor(MediaItem me
 ///
 /// Returns a Future that completes with a boolean indicating whether the content
 /// was watched, or null if navigation was cancelled.
+int? preferredNon4kVersionIndex(List<MediaVersion> versions) {
+  int? best;
+  for (var i = 0; i < versions.length; i++) {
+    final version = versions[i];
+    final height = version.resolutionHeight;
+    if (!version.isPlayable ||
+        height == null ||
+        height >= 2160 ||
+        (version.width ?? 0) >= 3840 ||
+        const {'4k', '8k', 'uhd'}.contains(version.videoResolution?.toLowerCase())) {
+      continue;
+    }
+    if (best == null || height > versions[best].resolutionHeight!) best = i;
+  }
+  return best;
+}
+
 Future<bool?> navigateToVideoPlayer(
   BuildContext context, {
   required MediaItem metadata,
@@ -340,6 +357,7 @@ Future<bool?> navigateToVideoPlayer(
   bool usePushReplacement = false,
   bool isOffline = false,
   bool resolveWatchState = true,
+  bool preferNon4k = false,
   WatchCopy? watchTogetherCopy,
   bool Function()? isLaunchCurrent,
   Duration? initialPosition,
@@ -370,6 +388,22 @@ Future<bool?> navigateToVideoPlayer(
   final mediaClient = serverId != null && (!isOffline || manager.isClientOnline(serverId))
       ? manager.getClient(serverId)
       : null;
+
+  if (preferNon4k &&
+      !isOffline &&
+      watchTogetherCopy == null &&
+      selectedMediaIndex == null &&
+      selectedMediaSourceId == null) {
+    final versions = mediaClient == null
+        ? metadata.mediaVersions ?? const <MediaVersion>[]
+        : await resolveMediaVersions(metadata, mediaClient);
+    if (!launchCurrent()) return null;
+    final index = preferredNon4kVersionIndex(versions);
+    if (index != null) {
+      selectedMediaIndex = index;
+      selectedMediaSourceId = versions[index].id;
+    }
+  }
 
   // Plain Play on a downloaded item must target the version actually on
   // disk, online too, so the player can open the local copy instead of

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/discover_provider.dart';
+import '../media/media_version.dart';
 import '../i18n/strings.g.dart';
 import '../media/catalog_item_ref.dart';
 import '../media/media_backend.dart';
@@ -173,7 +176,7 @@ Future<MediaNavigationResult> navigateToMediaItem(
   if (item is! MediaItem) {
     return MediaNavigationResult.unsupported;
   }
-  final mi = item;
+  MediaItem mi = item;
 
   // Catalog stand-ins (Explore tab) have no server id — every server-backed
   // route below would break on them. Route to the catalog flow instead.
@@ -182,6 +185,19 @@ Future<MediaNavigationResult> navigateToMediaItem(
     if (catalogItem == null) return MediaNavigationResult.unsupported;
     await navigateToCatalogItem(context, catalogItem);
     return MediaNavigationResult.navigated;
+  }
+
+  if (playDirectly && !isOffline) {
+    final copies = context.read<DiscoverProvider?>()?.continueWatchingCopiesOf(mi) ?? const <MediaItem>[];
+    var bestHeight = 0;
+    for (final copy in [mi, ...copies]) {
+      final versions = copy.mediaVersions ?? const <MediaVersion>[];
+      final index = preferredNon4kVersionIndex(versions);
+      if (index != null && versions[index].resolutionHeight! > bestHeight) {
+        bestHeight = versions[index].resolutionHeight!;
+        mi = copy;
+      }
+    }
   }
 
   final settings = SettingsService.instanceOrNull;
@@ -241,7 +257,7 @@ Future<MediaNavigationResult> navigateToMediaItem(
       if (mi.kind == MediaKind.episode && shouldOpenEpisodeDetails) {
         return navigateToMediaItemDetails(context, mi, onRefresh: onRefresh, isOffline: isOffline);
       }
-      final result = await navigateToVideoPlayer(context, metadata: mi, isOffline: isOffline);
+      final result = await navigateToVideoPlayer(context, metadata: mi, isOffline: isOffline, preferNon4k: playDirectly);
       if (result == true && context.mounted) {
         onRefresh?.call(mi);
       }
@@ -249,7 +265,7 @@ Future<MediaNavigationResult> navigateToMediaItem(
 
     case MediaKind.movie:
       if (playDirectly && !shouldOpenContinueWatchingDetails) {
-        final result = await navigateToVideoPlayer(context, metadata: mi, isOffline: isOffline);
+        final result = await navigateToVideoPlayer(context, metadata: mi, isOffline: isOffline, preferNon4k: playDirectly);
         if (result == true && context.mounted) {
           onRefresh?.call(mi);
         }

@@ -226,6 +226,8 @@ class PlatformDetector {
     return TvDetectionService.isTVDeviceSync();
   }
 
+  static bool isFireTV() => TvDetectionService.tvDetectionReasonsSync().contains('fire_tv');
+
   static bool isAppleTV() {
     return TvDetectionService.isAppleTVSync();
   }
