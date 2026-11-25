@@ -4,14 +4,14 @@ run-name: GucciPlexa packages · ${{ github.ref_name }}
 on:
   push:
     tags: ['v[0-9]*']
-    branches: ['release-build/v[0-9]*']
+    branches: ['tofa-redesign', 'release-build/v[0-9]*']
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: gucciplexa-packages-${{ github.ref }}
+  group: gucciplexa-packages
   cancel-in-progress: true
 
 env:
@@ -22,10 +22,24 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     outputs:
       number: ${{ steps.read.outputs.number }}
       source: ${{ steps.read.outputs.source }}
     steps:
+      - name: Cancel superseded release runs from legacy concurrency groups
+        if: github.ref == 'refs/heads/tofa-redesign'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ids=$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows/gucciplexa-release.yml/runs?per_page=100" --jq ".workflow_runs[] | select(.run_number < $GITHUB_RUN_NUMBER and (.status == \"queued\" or .status == \"in_progress\" or .status == \"waiting\" or .status == \"pending\" or .status == \"requested\")) | .id")
+          for id in $ids; do
+            gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$id/cancel" || {
+              status=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id" --jq .status)
+              [[ "$status" == completed ]] || exit 1
+            }
+          done
       - id: select
         name: Select original release source
         env:
@@ -49,7 +63,41 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ steps.select.outputs.ref }}
-          persist-credentials: false
+          persist-credentials: ${{ github.ref == 'refs/heads/tofa-redesign' }}
+      - name: Allocate automatic release version
+        if: github.ref == 'refs/heads/tofa-redesign'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Run 10 was v0.0.6+166. Run numbers are monotonic and unchanged on retry.
+          # Gaps are intentional when a build is cancelled or a legacy run is started.
+          patch=$((GITHUB_RUN_NUMBER - 4))
+          build=$((GITHUB_RUN_NUMBER + 156))
+          [[ "$patch" -ge 7 ]] || exit 1
+          version="0.0.$patch"
+          tag="v$version"
+          if lookup=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" 2>&1); then
+            # Reuse exactly the same versioned source on a retry, never replace a tag.
+            git fetch --no-tags origin "refs/tags/$tag"
+            git checkout --detach FETCH_HEAD
+            [[ $(git rev-parse HEAD^ 2>/dev/null) == "$GITHUB_SHA" ]] || { echo "::error::Release tag belongs to another source"; exit 1; }
+            [[ $(python3 scripts/pubspec_version.py pubspec.yaml) == "$version" ]] || exit 1
+            [[ $(python3 scripts/pubspec_version.py --build-number pubspec.yaml) == "$build" ]] || exit 1
+          elif [[ "$lookup" == *"HTTP 404"* ]]; then
+            sed -i -E "s/^version:.*/version: $version+$build/" pubspec.yaml
+            [[ $(python3 scripts/pubspec_version.py pubspec.yaml) == "$version" ]] || exit 1
+            [[ $(python3 scripts/pubspec_version.py --build-number pubspec.yaml) == "$build" ]] || exit 1
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add pubspec.yaml
+            git commit -m "Release $tag (run $GITHUB_RUN_NUMBER)"
+            # Push a new immutable tag, not a commit to the development branch.
+            git push origin "HEAD:refs/tags/$tag"
+          else
+            echo "::error::Unable to inspect release tag: $lookup"
+            exit 1
+          fi
       - id: read
         run: |
           version=$(python3 scripts/pubspec_version.py --version-name pubspec.yaml)
@@ -335,7 +383,7 @@ jobs:
           compression-level: 0
 
   release_init:
-    if: github.ref_type == 'tag' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-build/'))
+    if: github.ref == 'refs/heads/tofa-redesign' || github.ref_type == 'tag' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-build/'))
     needs: version
     runs-on: ubuntu-latest
     permissions:
