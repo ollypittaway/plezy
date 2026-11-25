@@ -90,7 +90,14 @@ void main() {
       serverId: 'server_1',
       serverName: 'Server',
     );
-    final hub = MediaHub(id: 'hub_1', title: 'Recommended', type: 'movie', items: [item], size: 1);
+    final hub = MediaHub(
+      id: 'hub_1',
+      title: 'Recommended',
+      collectionLibraryTitle: 'Kids Movies',
+      type: 'movie',
+      items: [item],
+      size: 1,
+    );
     final client = _FakeMediaServerClient(hubs: [hub]);
     final manager = MultiServerManager()..debugRegisterClientForTesting(client);
     final multiServerProvider = testMultiServerProvider(manager);
@@ -178,6 +185,8 @@ void main() {
 
     await tester.pumpAndSettle();
     expect(find.byType(TvBrowseRail), findsOneWidget);
+    expect(find.text('Recommended'), findsWidgets);
+    expect(find.text('Recommended · Kids Movies'), findsNothing);
 
     final scale = TvLayoutConstants.scaleForSize(const Size(1280, 720));
     final spotlightLeft = (24 * scale).clamp(18.0, 40.0).toDouble();

@@ -74,7 +74,7 @@ const _libraryB = MediaLibrary(
   kind: MediaKind.show,
   serverId: 'server',
 );
-// Shared libraries show only Browse and Playlists, so switching to one
+// Shared libraries show only Browse, so switching to one
 // rebuilds the tab set.
 const _sharedLibrary = MediaLibrary(
   id: 'shared',
@@ -134,6 +134,21 @@ void main() {
   });
 
   tearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
+
+  test('Browse is the last available tab for every library', () {
+    expect(visibleLibraryTabs(_libraryA), [
+      LibraryTabType.recommended,
+      LibraryTabType.collections,
+      LibraryTabType.genres,
+      LibraryTabType.browse,
+    ]);
+    expect(visibleLibraryTabs(_musicLibrary), [
+      LibraryTabType.recommended,
+      LibraryTabType.collections,
+      LibraryTabType.browse,
+    ]);
+    expect(visibleLibraryTabs(_sharedLibrary), [LibraryTabType.browse]);
+  });
 
   testWidgets('a sidebar selection at first mount survives initialization', (tester) async {
     final preferences = _GatedPreferences({'selected_library_key': _libraryA.globalKey});
@@ -207,7 +222,7 @@ void main() {
   testWidgets('stale saved tab cannot replace the current library tab', (tester) async {
     final preferences = _GatedPreferences({
       'selected_library_key': _libraryB.globalKey,
-      'library_tab_${_libraryA.globalKey}': LibraryTabType.playlists.name,
+      'library_tab_${_libraryA.globalKey}': 'playlists',
       'library_tab_${_libraryB.globalKey}': LibraryTabType.browse.name,
     });
     final harness = await _Harness.create(preferences);
@@ -215,7 +230,7 @@ void main() {
     final selected = <String>[];
 
     await harness.pump(tester, onLibrarySelected: selected.add);
-    expect(harness.controller(tester).index, 1);
+    expect(harness.controller(tester).index, LibraryTabType.browse.index);
 
     preferences.blockNextSelectedLibraryWrite(_libraryA.globalKey);
     final loadable = tester.state(find.byType(LibrariesScreen)) as LibraryLoadable;
@@ -225,28 +240,28 @@ void main() {
     loadable.loadLibraryByKey(_libraryB.globalKey);
     await tester.pumpAndSettle();
     expect(selected.last, _libraryB.globalKey);
-    expect(harness.controller(tester).index, 1);
+    expect(harness.controller(tester).index, LibraryTabType.browse.index);
 
     preferences.release();
     await tester.pumpAndSettle();
     expect(selected.last, _libraryB.globalKey);
-    expect(harness.controller(tester).index, 1);
+    expect(harness.controller(tester).index, LibraryTabType.browse.index);
   });
 
   testWidgets('a tab set change restores the destination library saved tab', (tester) async {
     final preferences = _GatedPreferences({
       'selected_library_key': _libraryA.globalKey,
-      'library_tab_${_libraryA.globalKey}': LibraryTabType.playlists.name,
+      'library_tab_${_libraryA.globalKey}': 'playlists',
       'library_tab_${_sharedLibrary.globalKey}': LibraryTabType.browse.name,
     });
     final harness = await _Harness.create(preferences, libraryOrder: const [_libraryA, _sharedLibrary]);
     addTearDown(harness.dispose);
 
     await harness.pump(tester);
-    expect(harness.controller(tester).index, LibraryTabType.playlists.index);
+    expect(harness.controller(tester).index, LibraryTabType.recommended.index);
+    expect(find.text(t.libraries.tabs.playlists), findsNothing);
 
-    // Playlists carries over to index 1 of the two shared tabs; that carry-over
-    // must not overwrite the Browse tab the shared library saved.
+    // A saved Playlists tab falls back to Recommended. The shared library has only Browse.
     (tester.state(find.byType(LibrariesScreen)) as LibraryLoadable).loadLibraryByKey(_sharedLibrary.globalKey);
     await tester.pumpAndSettle();
 
@@ -265,7 +280,7 @@ void main() {
     addTearDown(harness.dispose);
 
     await harness.pump(tester);
-    expect(harness.controller(tester).index, 1);
+    expect(harness.controller(tester).index, LibraryTabType.browse.index);
 
     final loadable = tester.state(find.byType(LibrariesScreen)) as LibraryLoadable;
     loadable.loadLibraryByKey(_libraryA.globalKey);
@@ -277,7 +292,7 @@ void main() {
   testWidgets('disposal rejects a pending saved-tab continuation', (tester) async {
     final preferences = _GatedPreferences({
       'selected_library_key': _libraryB.globalKey,
-      'library_tab_${_libraryA.globalKey}': LibraryTabType.playlists.name,
+      'library_tab_${_libraryA.globalKey}': 'playlists',
     });
     final harness = await _Harness.create(preferences);
     addTearDown(harness.dispose);

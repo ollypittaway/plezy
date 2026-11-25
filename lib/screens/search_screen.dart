@@ -25,6 +25,7 @@ import '../utils/app_logger.dart';
 import '../utils/platform_detector.dart';
 import '../utils/snackbar_helper.dart';
 import '../utils/media_server_http_client.dart';
+import '../utils/media_navigation_helper.dart';
 import '../utils/search_relevance.dart';
 import '../widgets/desktop_app_bar.dart';
 import '../widgets/loading_indicator_box.dart';
@@ -64,6 +65,7 @@ class _SearchScreenState extends State<SearchScreen>
   /// a chip shows everything the servers returned for it.
   _SearchFilter _selectedFilter = const _AllResults();
   List<MediaItem> _searchCandidates = const [];
+  Map<String, List<MediaItem>> _copies = const {};
   List<MediaPerson> _searchPeople = const [];
   List<MediaKind> _candidateKinds = const [];
   List<SearchHit>? _filteredResults;
@@ -139,6 +141,7 @@ class _SearchScreenState extends State<SearchScreen>
     try {
       final result = await multiServerProvider.aggregationService.searchAcrossServers(
         query,
+        libraryOrder: context.read<LibrariesProvider>().libraries,
         hiddenLibraryKeys: hiddenLibraries.hiddenLibraryKeys,
         abort: abort,
       );
@@ -194,6 +197,7 @@ class _SearchScreenState extends State<SearchScreen>
     // not run yet): the pre-rank pools the filter chips derive from. A selected
     // filter survives a refined query as long as it still has candidates;
     // otherwise it falls back to "All".
+    _copies = matched?.copies ?? const {};
     _searchCandidates =
         matched?.candidates ??
         [
@@ -313,6 +317,9 @@ class _SearchScreenState extends State<SearchScreen>
       // cannot resurrect the stale row.
       var replaced = _replaceHitByGlobalKey(searchResults, source.globalKey, merged);
       replaced = _replaceByGlobalKey(_searchCandidates, source.globalKey, merged) || replaced;
+      for (final copies in _copies.values) {
+        replaced = _replaceByGlobalKey(copies, source.globalKey, merged) || replaced;
+      }
       final filtered = _filteredResults;
       if (filtered != null) {
         replaced = _replaceHitByGlobalKey(filtered, source.globalKey, merged) || replaced;
@@ -420,6 +427,7 @@ class _SearchScreenState extends State<SearchScreen>
   void _resetFilter() {
     _selectedFilter = const _AllResults();
     _searchCandidates = const [];
+    _copies = const {};
     _searchPeople = const [];
     _candidateKinds = const [];
     _filteredResults = null;
@@ -504,6 +512,7 @@ class _SearchScreenState extends State<SearchScreen>
     final showServerName = multiServer.totalServerCount > 1;
     final showChips = _showFilterChips;
     final visible = _visibleResults;
+    final order = {for (final (index, lib) in libraries.libraries.indexed) lib.globalKey: index};
     return buildResultsSliver(
       childCount: visible.length,
       // Half the default top padding when the chip strip sits directly above:
@@ -512,11 +521,19 @@ class _SearchScreenState extends State<SearchScreen>
       (context, index) {
         final isFirst = index == 0;
         final onNavigateUp = isFirst ? (showChips ? _focusFilterChips : focusSearchInput) : null;
-        return switch (visible[index]) {
+        final hit = visible[index];
+        final copies = hit is MediaSearchHit ? _copies[hit.globalKey] : null;
+        final displayed = copies == null ? hit : MediaSearchHit(preferredLibraryCopy(copies, order));
+        return switch (displayed) {
           MediaSearchHit(:final item) => FocusableMediaCard(
             key: Key(item.globalKey),
             item: item,
             viewModeOverride: ViewMode.list,
+            onTap: copies != null
+                ? () => unawaited(
+                    navigateToMediaItemDetails(context, item, resolvedCopies: copies, onRefresh: updateItem),
+                  )
+                : null,
             disableScale: true,
             focusNode: isFirst ? firstResultFocusNode : null,
             onRefresh: updateItem,

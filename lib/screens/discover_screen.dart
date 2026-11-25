@@ -1036,6 +1036,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     child: HubSection(
                       key: _continueWatchingHubKey,
                       hub: continueWatchingHub,
+                      showLibraryInHeading: false,
                       focusMemory: _hubFocusMemory,
                       onRefresh: _discover.updateItem,
                       onRemoveFromContinueWatching: _discover.refreshContinueWatching,
@@ -1053,6 +1054,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     child: HubSection(
                       key: i < _orderedHubKeys.length ? _orderedHubKeys[i] : null,
                       hub: _hubs[i],
+                      showLibraryInHeading: false,
                       focusMemory: _hubFocusMemory,
                       showServerName: showServerNameOnHubs || hubsSpanMultipleServers,
                       onRefresh: _discover.updateItem,
@@ -1136,6 +1138,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     return _tvBrowseRailWidget = TvBrowseRail(
       key: _tvBrowseRailKey,
       hubs: browseHubs,
+      showLibraryInHeading: false,
       initialHubId: 'continue_watching',
       focusMemory: _hubFocusMemory,
       showServerName: showServerName,

@@ -57,6 +57,7 @@ class HubSection extends StatefulWidget {
   final bool isInContinueWatching;
   final bool usesContinueWatchingAction;
   final bool showServerName;
+  final bool showLibraryInHeading;
   final Future<List<MediaItem>> Function()? loadMoreItems;
 
   /// Provider-reported result count shown alongside the existing hub title.
@@ -108,6 +109,7 @@ class HubSection extends StatefulWidget {
     this.isInContinueWatching = false,
     bool? usesContinueWatchingAction,
     this.showServerName = false,
+    this.showLibraryInHeading = true,
     this.loadMoreItems,
     this.totalResults,
     this.onFocusedItemChanged,
@@ -523,7 +525,12 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
                   child: Row(
                     mainAxisSize: .min,
                     children: [
-                      Flexible(child: ShelfHeading(widget.hub.displayTitle, fontSize: isTv ? 26 : 24)),
+                      Flexible(
+                        child: ShelfHeading(
+                          widget.showLibraryInHeading ? widget.hub.displayTitle : widget.hub.title,
+                          fontSize: isTv ? 26 : 24,
+                        ),
+                      ),
                       if (widget.totalResults case final totalResults?) ...[
                         SizedBox(width: isTv ? 12 : 8),
                         Text(

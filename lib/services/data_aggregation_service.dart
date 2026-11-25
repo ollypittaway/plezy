@@ -4,6 +4,7 @@ import '../media/ids.dart';
 import '../media/media_hub.dart';
 import '../media/media_item.dart';
 import '../media/media_item_merge.dart';
+import '../media/media_title_groups.dart';
 import '../media/media_kind.dart';
 import '../media/media_library.dart';
 import '../media/media_person.dart';
@@ -71,6 +72,7 @@ typedef LibraryAggregationResult = ({
 /// own filter.
 typedef SearchAggregationResult = ({
   List<SearchHit> hits,
+  Map<String, List<MediaItem>> copies,
   List<MediaItem> candidates,
   List<MediaPerson> people,
   Set<String> succeededServerIds,
@@ -858,6 +860,7 @@ class DataAggregationService {
   Future<SearchAggregationResult> searchAcrossServers(
     String query, {
     int? limit,
+    List<MediaLibrary> libraryOrder = const [],
     Set<String>? hiddenLibraryKeys,
     AbortController? abort,
   }) async {
@@ -867,7 +870,7 @@ class DataAggregationService {
     final clients = _serverManager.visibleOnlineClients;
     if (clients.isEmpty) return _emptySearchResult;
 
-    final resultLimit = limit ?? defaultMediaSearchLimit;
+    final resultLimit = RangeError.checkNotNegative(limit ?? defaultMediaSearchLimit);
     final fetchLimit = resultLimit < defaultMediaSearchLimit ? defaultMediaSearchLimit : resultLimit;
 
     final fetched = await _fanOut<SearchHit>(
@@ -917,12 +920,35 @@ class DataAggregationService {
     // Before ranking, so hidden results cannot spend the `resultLimit` budget
     // and silently shrink what the user sees.
     final visible = _withoutHiddenLibraries(titles, hiddenLibraryKeys);
-    // Titles first: equal scores keep input order, so a tie goes to the title.
-    final hits = rankSearchHits(
-      [for (final item in visible) MediaSearchHit(item), for (final person in people) PersonSearchHit(person)],
-      query,
-      limit: resultLimit,
-    );
+    final order = {for (final (index, library) in libraryOrder.indexed) library.globalKey: index};
+    final representatives = <String, MediaItem>{};
+    final copies = <String, List<MediaItem>>{};
+    final candidates = <MediaItem>[];
+    for (final group in groupMediaCopiesByTitle(visible, requireReleaseYear: true)) {
+      final preferred = preferredLibraryCopy(group, order);
+      candidates.add(preferred);
+      if (group.length > 1) copies[preferred.globalKey] = group;
+      for (final item in group) {
+        representatives[item.globalKey] = preferred;
+      }
+    }
+    // The best matching alias earns the slot. The first library supplies its
+    // artwork and playback target. Apply the limit after collapsing copies.
+    final ranked = rankSearchHits([
+      for (final item in visible) MediaSearchHit(item),
+      for (final person in people) PersonSearchHit(person),
+    ], query);
+    final shown = <String>{};
+    final hits = <SearchHit>[];
+    for (final hit in ranked) {
+      if (hits.length >= resultLimit) break;
+      if (hit case MediaSearchHit(:final item)) {
+        final preferred = representatives[item.globalKey]!;
+        if (shown.add(preferred.globalKey)) hits.add(MediaSearchHit(preferred));
+      } else {
+        hits.add(hit);
+      }
+    }
 
     appLogger.i(
       'Search aggregation completed: ${hits.length} results '
@@ -932,7 +958,8 @@ class DataAggregationService {
 
     return (
       hits: hits,
-      candidates: visible,
+      copies: copies,
+      candidates: candidates,
       people: people,
       succeededServerIds: fetched.succeededServerIds,
       cancelledServerIds: fetched.cancelledServerIds,
@@ -941,6 +968,7 @@ class DataAggregationService {
   }
 
   static const SearchAggregationResult _emptySearchResult = (
+    copies: <String, List<MediaItem>>{},
     hits: <SearchHit>[],
     candidates: <MediaItem>[],
     people: <MediaPerson>[],

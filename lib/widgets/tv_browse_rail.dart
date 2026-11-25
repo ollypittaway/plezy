@@ -353,6 +353,7 @@ class TvBrowseRail extends StatefulWidget {
   /// the loaded hubs span more than one connected server so their origin stays
   /// clear, mirroring the mobile [HubSection] behavior.
   final bool showServerName;
+  final bool showLibraryInHeading;
   final ValueChanged<MediaItem>? onFocusedItemChanged;
   final void Function(MediaHub hub, MediaItem item)? onFocusedHubItemChanged;
   final void Function(MediaItem source)? onRefresh;
@@ -407,6 +408,7 @@ class TvBrowseRail extends StatefulWidget {
     required this.hubs,
     required this.focusMemory,
     this.showServerName = false,
+    this.showLibraryInHeading = true,
     this.onFocusedItemChanged,
     this.onFocusedHubItemChanged,
     this.onRefresh,
@@ -1507,6 +1509,8 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
     );
   }
 
+  String _heading(MediaHub hub) => widget.showLibraryInHeading ? hub.displayTitle : hub.title;
+
   String _semanticSelectionLabel(MediaHub hub, int itemIndex, TvRailTrailing trailing) {
     String selection;
     final item = _itemAtSlot(hub, itemIndex);
@@ -1527,7 +1531,7 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
       };
     }
 
-    return [hub.displayTitle, if (selection.isNotEmpty) selection].join(', ');
+    return [_heading(hub), if (selection.isNotEmpty) selection].join(', ');
   }
 
   Widget _buildHubHeader(BuildContext context, {required MediaHub hub, required bool isActive, required double scale}) {
@@ -1547,7 +1551,7 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
           child: Row(
             children: [
               Flexible(
-                child: ShelfHeading(hub.displayTitle, fontSize: 22 * scale, color: titleColor),
+                child: ShelfHeading(_heading(hub), fontSize: 22 * scale, color: titleColor),
               ),
               if (showServerName) ...[
                 SizedBox(width: 8 * scale),

@@ -54,14 +54,9 @@ class _PlaybackCopyBuilderState extends State<PlaybackCopyBuilder> {
       _clients = clients;
       _matches = const [];
       if (target != null && servers != null && clients.isNotEmpty) {
-        if (initial != null &&
-            initial.any((item) => item.globalKey == target.globalKey) &&
-            initial.every((item) => item.mediaVersions?.isNotEmpty == true)) {
-          _matches = initial;
-        } else {
-          final request = _request = AbortController();
-          _debounce = Timer(const Duration(milliseconds: 250), () => _load(servers, target, request));
-        }
+        if (initial != null && initial.any((item) => item.globalKey == target.globalKey)) _matches = initial;
+        final request = _request = AbortController();
+        _debounce = Timer(const Duration(milliseconds: 250), () => _load(servers, target, request));
       }
     }
     final available = mergeLibraryCopies([?target], _matches)
@@ -108,7 +103,7 @@ class _PlaybackCopyBuilderState extends State<PlaybackCopyBuilder> {
     if (request.isAborted) return;
     try {
       final matches = await servers.aggregationService.playbackCopies(target, abort: request);
-      if (mounted && !request.isAborted) setState(() => _matches = matches);
+      if (mounted && !request.isAborted) setState(() => _matches = mergeLibraryCopies(_matches, matches));
     } on MediaServerHttpException {
       if (!request.isAborted) rethrow;
     }

@@ -42,6 +42,7 @@ import 'services/native_window_service.dart';
 import 'services/fullscreen_state_manager.dart';
 import 'services/settings_service.dart';
 import 'services/agent_control_service.dart';
+import 'widgets/splash_logo.dart';
 import 'widgets/agent_control_scope.dart';
 import 'widgets/settings_builder.dart';
 import 'utils/iphone_duo.dart';
@@ -2531,7 +2532,7 @@ class _SetupScreenState extends State<SetupScreen> with MountedSetStateMixin {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.asset('assets/gucciplexa.webp', semanticLabel: t.app.title, width: 160, height: 160),
+                  const SplashLogo(size: 160),
                   _buildStatusText(context),
                   const SizedBox(height: 16),
                   Center(
@@ -2554,7 +2555,7 @@ class _SetupScreenState extends State<SetupScreen> with MountedSetStateMixin {
       color: Theme.of(context).scaffoldBackgroundColor,
       child: Stack(
         children: [
-          Center(child: Image.asset('assets/gucciplexa.webp', semanticLabel: t.app.title, width: 288, height: 288)),
+          const Center(child: SplashLogo(size: 288)),
           Positioned(left: 0, right: 0, bottom: height * 0.5 - 170, child: _buildStatusText(context)),
           Positioned(
             left: 0,

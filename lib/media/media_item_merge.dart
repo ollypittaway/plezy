@@ -1,6 +1,14 @@
 import 'ids.dart';
 import 'media_item.dart';
+import 'media_library.dart';
 import 'media_version.dart';
+
+/// The first matching library in the profile's order. Unlisted libraries
+/// use the app defaults, then the order the search server returned.
+MediaItem preferredLibraryCopy(List<MediaItem> copies, Map<String, int> order) {
+  int rank(MediaItem item) => order[item.libraryGlobalKey] ?? order.length + defaultLibraryRank(item.libraryTitle);
+  return copies.reduce((first, next) => rank(next) < rank(first) ? next : first);
+}
 
 typedef FourKPlayback = ({MediaItem item, MediaVersion version, int index});
 
