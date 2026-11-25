@@ -2065,6 +2065,41 @@ class FormFactorScale extends StatelessWidget {
     if (PlatformDetector.isAppleTV()) {
       return _scaledSurface(child: child, scale: _appleTvScale, zeroInsets: true);
     }
+    if (Platform.isAndroid && PlatformDetector.isTV()) {
+      // Give fixed-size controls a usable logical viewport on low-density
+      // Fire OS/Android TV surfaces. FittedBox preserves layout and hit tests
+      // while shrinking the virtual viewport to the real window.
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final outer = MediaQuery.of(context);
+          if (!constraints.hasBoundedWidth || !constraints.hasBoundedHeight ||
+              constraints.maxWidth <= 0 || constraints.maxHeight <= 0) return child;
+          final widthScale = constraints.maxWidth / 1280;
+          final heightScale = constraints.maxHeight / 720;
+          final scale = (widthScale < heightScale ? widthScale : heightScale).clamp(0.01, 1.0).toDouble();
+          if (scale == 1.0) return child;
+          final size = Size(constraints.maxWidth / scale, constraints.maxHeight / scale);
+          return FittedBox(
+            fit: BoxFit.contain,
+            child: SizedBox(
+              width: size.width,
+              height: size.height,
+              child: MediaQuery(
+                data: outer.copyWith(
+                  size: size,
+                  devicePixelRatio: outer.devicePixelRatio * scale,
+                  padding: outer.padding * (1 / scale),
+                  viewPadding: outer.viewPadding * (1 / scale),
+                  viewInsets: outer.viewInsets * (1 / scale),
+                  systemGestureInsets: outer.systemGestureInsets * (1 / scale),
+                ),
+                child: child,
+              ),
+            ),
+          );
+        },
+      );
+    }
     if (!PlatformDetector.isAutomotive()) return child;
 
     // Car system bars can sit on the left or right, are opaque, and may be

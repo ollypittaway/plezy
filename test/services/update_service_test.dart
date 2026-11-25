@@ -12,6 +12,19 @@ import 'package:plezy/services/update_service.dart';
 import '../test_helpers/prefs.dart';
 
 void main() {
+  test('Fire Stick updates require the exact repository asset and SHA-256 digest', () {
+    const version = '0.0.2';
+    final digest = List.filled(64, 'a').join();
+    final asset = {
+      'name': 'GucciPlexa-Firestick.apk',
+      'browser_download_url': 'https://github.com/ollypittaway/plezy/releases/download/v0.0.2/GucciPlexa-Firestick.apk',
+      'digest': 'sha256:$digest',
+    };
+    expect(UpdateService.firestickAssetForRelease({'assets': [asset]}, version)?['sha256'], digest);
+    expect(UpdateService.firestickAssetForRelease({'assets': []}, version), isNull);
+    expect(UpdateService.firestickAssetForRelease({'assets': [{...asset, 'digest': null}]}, version), isNull);
+    expect(UpdateService.firestickAssetForRelease({'assets': [{...asset, 'browser_download_url': 'https://example.com/update.apk'}]}, version), isNull);
+  });
   const lastCheckKey = 'update_last_check_time';
 
   setUp(resetSharedPreferencesForTest);

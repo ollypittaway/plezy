@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 import 'platform_detector.dart';
 
@@ -72,7 +75,16 @@ class TvLayoutConstants {
 
   static double scaleForHeight(double height) => (height / 1080).clamp(0.85, 1.35).toDouble();
 
-  static double scaleForSize(Size size) => scaleForHeight(size.height);
+  /// Android TV reports density-independent dimensions, often 960x540 or
+  /// 1280x720 even when HDMI output is 1080p or 4K. Fit both axes instead of
+  /// enforcing the full-HD layout's minimum scale.
+  static double androidTvScaleForSize(Size size) =>
+      math.min(size.width / 1920, size.height / 1080).clamp(0.35, 1.35).toDouble();
+
+  static double scaleForSize(Size size) =>
+      Platform.isAndroid && PlatformDetector.isTV()
+          ? androidTvScaleForSize(size)
+          : scaleForHeight(size.height);
 
   static double scaleOf(BuildContext context) => scaleForSize(MediaQuery.sizeOf(context));
 }

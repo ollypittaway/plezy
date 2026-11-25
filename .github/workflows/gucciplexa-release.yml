@@ -92,7 +92,7 @@ jobs:
         run: flutter build apk --release --split-per-abi --no-pub
       - name: Build dual-architecture Fire OS APK
         if: matrix.variant == 'firestick'
-        run: AMAZON=1 flutter build apk --release --target-platform android-arm,android-arm64 --no-pub
+        run: AMAZON=1 flutter build apk --release --target-platform android-arm,android-arm64 --no-pub --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=GUCCIPLEXA_FIRESTICK=true
       - name: Sign and verify packages
         env:
           VARIANT: ${{ matrix.variant }}
@@ -153,7 +153,7 @@ jobs:
         run: flutter build apk --release --split-per-abi --no-pub
       - name: Build dual-architecture Fire OS APK
         if: matrix.variant == 'firestick'
-        run: AMAZON=1 flutter build apk --release --target-platform android-arm,android-arm64 --no-pub
+        run: AMAZON=1 flutter build apk --release --target-platform android-arm,android-arm64 --no-pub --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=GUCCIPLEXA_FIRESTICK=true
       - name: Sign and verify packages
         env:
           VARIANT: ${{ matrix.variant }}
