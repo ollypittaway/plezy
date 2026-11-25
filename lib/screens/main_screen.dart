@@ -2218,7 +2218,7 @@ class _MainScreenState extends State<MainScreen>
                     child: Column(
                       children: [
                         if (useTopBar && _currentTab != NavigationTabId.discover &&
-                            !(PlatformDetector.isFireTV() && _currentTab == NavigationTabId.libraries)) _buildDesktopNavigationBar(),
+                            !(PlatformDetector.isFireTV() && (_currentTab == NavigationTabId.libraries || _currentTab == NavigationTabId.explore))) _buildDesktopNavigationBar(),
                         Expanded(
                           child: SideNavigationScope(
                             child: Stack(
@@ -2246,7 +2246,12 @@ class _MainScreenState extends State<MainScreen>
                                           value: useTopBar && PlatformDetector.isFireTV() && _currentTab == NavigationTabId.libraries
                                               ? (overlay) => _buildDesktopNavigationBar(overlayArtwork: overlay)
                                               : null,
-                                          child: _buildTickerAwareStack(),
+                                          child: Provider<ExploreShellHeaderBuilder?>.value(
+                                            value: useTopBar && PlatformDetector.isFireTV() && _currentTab == NavigationTabId.explore
+                                                ? () => _buildDesktopNavigationBar(overlayArtwork: true)
+                                                : null,
+                                            child: _buildTickerAwareStack(),
+                                          ),
                                         ),
                                       ),
                                     ),

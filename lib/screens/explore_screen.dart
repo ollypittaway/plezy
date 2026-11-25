@@ -9,6 +9,7 @@ import '../focus/hub_vertical_navigation.dart';
 import '../focus/locked_hub_controller.dart';
 import '../i18n/strings.g.dart';
 import '../media/ids.dart';
+import '../media/catalog_item_ref.dart';
 import '../media/media_hub.dart';
 import '../media/media_item.dart';
 import '../mixins/debounced_media_search.dart';
@@ -47,6 +48,8 @@ import 'libraries/state_messages.dart';
 /// toolbar's search action instead: a text field cannot share the spotlight
 /// scaffold with the bottom-pinned browse rail and the on-screen keyboard,
 /// so that path pushes [CatalogSearchScreen].
+typedef ExploreShellHeaderBuilder = Widget Function();
+
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
 
@@ -73,7 +76,10 @@ class ExploreScreenState extends State<ExploreScreen>
 
   final _tvBrowseRailKey = GlobalKey<TvBrowseRailState>();
   final _hubFocusMemory = HubFocusMemory();
-  final TvSpotlightController _spotlight = TvSpotlightController(settleDelay: const Duration(milliseconds: 190));
+  final TvSpotlightController _spotlight = TvSpotlightController(settleDelay: const Duration(milliseconds: 500), blankWhileMoving: true);
+  final Map<String, MediaItem> _spotlightDetails = {};
+  int _spotlightRequest = 0;
+  String? _requestedSpotlightKey;
 
   @override
   String get searchDebugLabel => 'ExploreSearch';
@@ -108,6 +114,9 @@ class ExploreScreenState extends State<ExploreScreen>
     final id = _sources.activeSource?.id;
     if (id == _activeSourceId) return;
     _activeSourceId = id;
+    _spotlightRequest++;
+    _requestedSpotlightKey = null;
+    _spotlightDetails.clear();
     if (!mounted) return;
     final query = searchController.text.trim();
     if (query.isEmpty) return;
@@ -170,7 +179,36 @@ class ExploreScreenState extends State<ExploreScreen>
     _orderedHubKeys.firstOrNull?.currentState?.requestFocusFromMemory();
   }
 
-  void _setSpotlightItem(MediaItem item) => _spotlight.select(item);
+  void _setSpotlightItem(MediaItem item) {
+    if (_requestedSpotlightKey == item.globalKey) return;
+    _requestedSpotlightKey = item.globalKey;
+    final request = ++_spotlightRequest;
+    _spotlight.select(item);
+    unawaited(_loadSpotlightDescription(item, request));
+  }
+
+  Future<void> _loadSpotlightDescription(MediaItem item, int request) async {
+    if (item.summary?.trim().isNotEmpty == true || _spotlightDetails.containsKey(item.globalKey)) return;
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (!mounted || request != _spotlightRequest) return;
+    final source = _explore.activeSource;
+    final catalog = item.catalogItem;
+    if (source == null || catalog == null) return;
+    try {
+      final detail = await source.fetchDetail(catalog, castLimit: 0, relatedLimit: 0);
+      if (!mounted || request != _spotlightRequest || source != _explore.activeSource) return;
+      final enriched = detail.item.toMediaItem();
+      if (_spotlightDetails.length >= 80) _spotlightDetails.remove(_spotlightDetails.keys.first);
+      setState(() => _spotlightDetails[item.globalKey] = enriched);
+    } catch (_) {
+      // A catalog detail failure must never interrupt browsing.
+    }
+  }
+
+  MediaItem? _resolveSpotlight(List<MediaHub> hubs) {
+    final item = _spotlight.resolve(hubs);
+    return item == null ? null : _spotlightDetails[item.globalKey] ?? item;
+  }
 
   List<ExploreRowHub>? _lastKeyedRows;
 
@@ -492,7 +530,8 @@ class ExploreScreenState extends State<ExploreScreen>
       hubs: tvHubs,
       spotlightListenable: _spotlight,
       lightweightTransitions: PlatformDetector.isFireTV(),
-      resolveSpotlight: () => _spotlight.resolve(tvHubs),
+      resolveSpotlight: () => _resolveSpotlight(tvHubs),
+      exploreLayout: true,
       resolveClient: (spotlight) => context.tryGetMediaClientForServer(serverIdOrNull(spotlight?.serverId)),
       foreground: Stack(
         fit: StackFit.expand,
@@ -537,7 +576,10 @@ class ExploreScreenState extends State<ExploreScreen>
                 widePosterScale: TvBrowseRailLayout.compactEpisodeThumbnailScale,
               ),
             ),
-          TvToolbarOverlay(child: _buildTvToolbar(sources)),
+          if (context.watch<ExploreShellHeaderBuilder?>() case final shell?) ...[
+            Positioned(top: 0, left: 0, right: 0, child: shell()),
+            Positioned(top: MediaQuery.paddingOf(context).top + 62, left: 0, right: 0, child: _buildTvToolbar(sources)),
+          ] else TvToolbarOverlay(child: _buildTvToolbar(sources)),
         ],
       ),
     );

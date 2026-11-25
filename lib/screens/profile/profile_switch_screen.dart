@@ -178,6 +178,45 @@ class _ProfileSwitchScreenState extends State<ProfileSwitchScreen> with MountedS
   }
 
   List<Widget> _buildSections(ActiveProfileProvider activeProvider, String? activeId) {
+    if (PlatformDetector.usesDesktopPresentation()) {
+      return [SliverPadding(
+        padding: const EdgeInsets.fromLTRB(32, 72, 32, 24),
+        sliver: SliverToBoxAdapter(child: Center(child: Wrap(
+          alignment: WrapAlignment.center, spacing: 28, runSpacing: 24,
+          children: [for (final (index, profile) in activeProvider.profiles.indexed)
+            SizedBox(width: 160, child: Column(mainAxisSize: MainAxisSize.min, children: [
+              FocusableWrapper(
+                focusNode: _profileFocusNode(profile),
+                autofocus: index == 0,
+                disableScale: false,
+                borderRadius: 100,
+                onSelect: _switching ? null : () => _switchTo(profile),
+                child: InkWell(
+                  canRequestFocus: false,
+                  borderRadius: BorderRadius.circular(100),
+                  onTap: _switching ? null : () => _switchTo(profile),
+                  child: Padding(padding: const EdgeInsets.all(6), child: ProfileAvatar(profile: profile, size: 116, avatarUrl: activeProvider.avatarUrlFor(profile.id))),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(profile.displayName, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
+              if (profile.id == activeId) Text(t.profiles.active, style: TextStyle(color: Theme.of(context).colorScheme.primary)),
+              if (!widget.requireSelection && !_switching) _ProfileActionsButton(
+                menuKey: _profileMenuKey(profile), focusNode: _profileMenuFocusNode(profile),
+                onNavigateLeft: () => _profileFocusNode(profile).requestFocus(),
+                onSelected: (action) { switch (action) {
+                  case _TileAction.manage: _manageProfile(profile); break;
+                  case _TileAction.showLink: _showProfileLink(profile); break;
+                  case _TileAction.delete: _deleteProfile(profile); break;
+                  case _TileAction.signOut: _signOutPlexAccount(profile); break;
+                } },
+                actions: [_TileAction.manage, _TileAction.showLink, if (profile.isLocal) _TileAction.delete, if (profile.isPlexHome && profile.parentConnectionId != null) _TileAction.signOut],
+              ),
+            ])),
+          ],
+        ))),
+      )];
+    }
     return [_profileList(activeProvider.profiles, activeProvider, activeId, autofocusFirst: true)];
   }
 

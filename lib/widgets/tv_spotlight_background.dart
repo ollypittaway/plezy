@@ -34,6 +34,7 @@ class TvSpotlightBackground extends StatelessWidget {
   final String? Function(String? artworkPath)? localArtworkPathResolver;
   final bool allowNetwork;
   final bool lightweightTransitions;
+  final bool exploreLayout;
 
   /// Optional caller-owned fact appended to the existing metadata line.
   final Widget? metadataTrailing;
@@ -51,6 +52,7 @@ class TvSpotlightBackground extends StatelessWidget {
     this.localArtworkPathResolver,
     this.allowNetwork = true,
     this.lightweightTransitions = false,
+    this.exploreLayout = false,
     this.metadataTrailing,
   });
 
@@ -81,6 +83,7 @@ class TvSpotlightBackground extends StatelessWidget {
           localArtworkPathResolver: localArtworkPathResolver == null ? null : (path) => localArtworkPathResolver!(path),
           allowNetwork: allowNetwork,
           active: !lightweightTransitions,
+          alignment: exploreLayout ? Alignment.topCenter : Alignment.center,
           lightweightFade: lightweightTransitions,
           fadeDuration: const Duration(milliseconds: 220),
           // Always request at full-screen size: the corner box only crops the
@@ -147,6 +150,7 @@ class TvSpotlightBackground extends StatelessWidget {
                           return Align(alignment: .bottomLeft, child: _buildInfo(context, media, constraints.maxWidth));
                         }
 
+                        if (exploreLayout) return Align(alignment: Alignment.bottomLeft, child: _buildInfo(context, media, constraints.maxWidth));
                         return Align(
                           alignment: .bottomLeft,
                           child: FittedBox(
@@ -226,7 +230,7 @@ class TvSpotlightBackground extends StatelessWidget {
           SizedBox(height: _sectionGap(scale)),
           Text(
             summary,
-            maxLines: lightweightTransitions ? 4 : compact ? 3 : 4,
+            maxLines: exploreLayout ? 5 : lightweightTransitions ? 4 : compact ? 3 : 4,
             overflow: .ellipsis,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: colorScheme.onSurface.withValues(alpha: 0.78),
@@ -401,7 +405,7 @@ class TvSpotlightBackground extends StatelessWidget {
       (compact ? TvLayoutConstants.compactHeroLogoWidth : TvLayoutConstants.heroLogoWidth) * scale;
 
   double _logoHeight(double scale) =>
-      (compact ? TvLayoutConstants.compactHeroLogoHeight : TvLayoutConstants.heroLogoHeight) * scale;
+      (compact ? TvLayoutConstants.compactHeroLogoHeight : TvLayoutConstants.heroLogoHeight) * scale * (exploreLayout ? 0.65 : 1.0);
 
   double _titleFontSize(double scale) => (compact ? 36 : 54) * scale;
 

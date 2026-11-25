@@ -134,7 +134,7 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
     final qualityLabels = [...buildMediaQualityLabels(episode), ?buildMediaSizeLabel(episode)];
     final desktop = PlatformDetector.usesDesktopPresentation();
     final palette = Theme.of(context).colorScheme;
-    final radius = desktop ? tokens(context).radiusLg : FocusTheme.defaultBorderRadius;
+    final radius = widget.tileLayout ? 8.0 : desktop ? tokens(context).radiusLg : FocusTheme.defaultBorderRadius;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: desktop ? 6 : 2),
@@ -177,14 +177,14 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
                 child: widget.tileLayout ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ClipRRect(borderRadius: BorderRadius.circular(10), child: AspectRatio(aspectRatio: 16 / 9, child: Stack(fit: StackFit.expand, children: [
+                    ClipRRect(borderRadius: BorderRadius.circular(6), child: AspectRatio(aspectRatio: 16 / 9, child: Stack(fit: StackFit.expand, children: [
                       if (shouldBlur) ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: 12, sigmaY: 12), child: _buildEpisodeThumbnail(episode)) else _buildEpisodeThumbnail(episode),
                       WatchedIndicator(item: episode, size: WatchedIndicatorSize.compact),
                     ]))),
                     const SizedBox(height: 8),
                     Text(formatSeasonEpisodeLabel(episode.parentIndex, episode.index) ?? '', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: palette.primary)),
                     Text(episode.displayTitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleSmall),
-                    if (!shouldBlur && episode.summary?.isNotEmpty == true) Expanded(child: Text(episode.summary!, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: tokens(context).textMuted))),
+                    if (!shouldBlur && episode.summary?.isNotEmpty == true) Expanded(child: Text(episode.summary!, maxLines: 5, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: tokens(context).textMuted, height: 1.3))),
                   ],
                 ) : Row(
                   crossAxisAlignment: .start,

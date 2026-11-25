@@ -16,17 +16,32 @@ import 'tv_browse_rail.dart';
 import 'tv_spotlight_background.dart';
 
 class TvSpotlightController extends ValueNotifier<MediaItem?> {
-  TvSpotlightController({Duration settleDelay = const Duration(milliseconds: 150)})
+  TvSpotlightController({Duration settleDelay = const Duration(milliseconds: 150), this.blankWhileMoving = false})
     : _settleDelay = settleDelay,
       _debouncer = Debouncer(settleDelay),
       super(null);
 
   final Duration _settleDelay;
   final Debouncer _debouncer;
+  final bool blankWhileMoving;
+  bool _moving = false;
+  bool get isMoving => _moving;
+  String? _pendingKey;
 
   void select(MediaItem item) {
+    if (blankWhileMoving && _pendingKey == item.globalKey) return;
+    _pendingKey = item.globalKey;
+    if (blankWhileMoving && !_moving && value?.globalKey != item.globalKey) {
+      _moving = true;
+      notifyListeners();
+    }
     void apply() {
-      if (value?.globalKey == item.globalKey) return;
+      final wasMoving = _moving;
+      _moving = false;
+      if (value?.globalKey == item.globalKey) {
+        if (wasMoving) notifyListeners();
+        return;
+      }
       value = item;
     }
 
@@ -71,6 +86,7 @@ class TvSpotlightScaffold extends StatelessWidget {
     required this.foreground,
     this.hideSpoilers,
     this.lightweightTransitions = false,
+    this.exploreLayout = false,
   });
 
   final List<MediaHub> hubs;
@@ -80,6 +96,7 @@ class TvSpotlightScaffold extends StatelessWidget {
   final Widget foreground;
   final bool? hideSpoilers;
   final bool lightweightTransitions;
+  final bool exploreLayout;
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +119,7 @@ class TvSpotlightScaffold extends StatelessWidget {
           );
     final spotlightTop = (size.height * 0.075).clamp(64.0 * scale, 120.0 * scale).toDouble();
     final minimumSpotlightBottom = railHeight + (8 * scale);
-    final baseSpotlightBottom = (size.height * 0.48).clamp(160.0, 820.0).toDouble();
+    final baseSpotlightBottom = (size.height * (exploreLayout ? 0.34 : 0.48)).clamp(120.0, 820.0).toDouble();
     final desiredSpotlightBottom = minimumSpotlightBottom > baseSpotlightBottom
         ? minimumSpotlightBottom
         : baseSpotlightBottom;
@@ -126,7 +143,9 @@ class TvSpotlightScaffold extends StatelessWidget {
                     valueListenable: spotlightListenable,
                     builder: (context, _, _) {
                       final spotlight = resolveSpotlight();
-                      return _CatalogSpotlightBackground(
+                      final moving = spotlightListenable is TvSpotlightController && (spotlightListenable as TvSpotlightController).isMoving;
+                      return Stack(fit: StackFit.expand, children: [
+                        _CatalogSpotlightBackground(
                         item: spotlight,
                         client: resolveClient(spotlight),
                         hideSpoilers: hideSpoilers ?? settings.read(SettingsService.hideSpoilers),
@@ -137,7 +156,14 @@ class TvSpotlightScaffold extends StatelessWidget {
                             ? (size.width * MediaQuery.devicePixelRatioOf(context)).ceil().clamp(1, 2560).toInt()
                             : (size.width * MediaQuery.devicePixelRatioOf(context)).ceil(),
                         lightweightTransitions: lightweightTransitions,
-                      );
+                        exploreLayout: exploreLayout,
+                      ),
+                        if (exploreLayout) IgnorePointer(child: AnimatedOpacity(
+                          opacity: moving ? 1 : 0,
+                          duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 150),
+                          child: const ColoredBox(color: Colors.black),
+                        )),
+                      ]);
                     },
                   ),
                   builder: (context, animatedBleed, child) =>
@@ -163,6 +189,7 @@ class _CatalogSpotlightBackground extends StatefulWidget {
     required this.contentLeft,
     required this.targetWidthPx,
     required this.lightweightTransitions,
+    required this.exploreLayout,
   });
 
   final MediaItem? item;
@@ -173,6 +200,7 @@ class _CatalogSpotlightBackground extends StatefulWidget {
   final double contentLeft;
   final int targetWidthPx;
   final bool lightweightTransitions;
+  final bool exploreLayout;
 
   @override
   State<_CatalogSpotlightBackground> createState() => _CatalogSpotlightBackgroundState();
@@ -266,6 +294,7 @@ class _CatalogSpotlightBackgroundState extends State<_CatalogSpotlightBackground
       contentLeft: widget.contentLeft,
       compact: true,
       lightweightTransitions: widget.lightweightTransitions,
+      exploreLayout: widget.exploreLayout,
       metadataTrailing: _buildNextEpisodeMetadata(context),
     );
     if (accentColor == null) return background;

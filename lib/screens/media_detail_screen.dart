@@ -3009,7 +3009,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         padding: EdgeInsets.zero,
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 330, mainAxisSpacing: 16, crossAxisSpacing: 16, childAspectRatio: 1.15),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 330, mainAxisSpacing: 16, crossAxisSpacing: 16, childAspectRatio: 0.88),
         itemCount: _episodes.length,
         itemBuilder: buildEpisode,
       ),
