@@ -808,7 +808,7 @@ void main() {
     expect(provider.hubs.map((hub) => hub.title), [title, 'Other shelf', otherCase.title]);
     final group = provider.hubs.first;
     expect(group.displayTitle, '$title · Kids Movies, 4K Movies, Movies');
-    expect(group.items.map((item) => item.id), ['kids', 'shared']);
+    expect(group.items.map((item) => item.id), ['hd', 'shared']);
     expect(group.sources, [kids, uhd, movies]);
     expect(provider.hubs.last, same(otherCase));
 
@@ -817,7 +817,11 @@ void main() {
     await libraries.updateLibraryOrder([library(3), library(2), library(1)]);
     await pumpEventQueue();
     expect(provider.hubs.first.sources, [movies, uhd, kids]);
-    expect(provider.hubs.first.items.first.id, 'shared');
+    expect(provider.hubs.first.items.map((item) => item.id), ['shared', 'hd']);
+    // Even when the standard copy is later in its shelf, the saved order wins.
+    await libraries.updateLibraryOrder([library(2), library(1), library(3)]);
+    await pumpEventQueue();
+    expect(provider.hubs.first.items.map((item) => item.id), ['uhd', 'shared']);
   });
 
   test('library order change re-sorts hubs without any refetch', () async {

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:provider/provider.dart';
+import '../providers/libraries_provider.dart';
 import '../media/grouped_home_hubs.dart';
 import '../media/catalog_item_ref.dart';
 import '../media/ids.dart';
@@ -204,7 +206,10 @@ class _HubDetailScreenState extends State<HubDetailScreen>
 
   void _applySort() {
     setState(() {
-      _filteredItems = List.from(_items);
+      final hub = widget.hub;
+      _filteredItems = hub.isCollectionShelf && hub.sources.isEmpty
+          ? interleaveHubItems([itemsInHubLibrary(hub, _items)], libraryOrder: _libraryOrder)
+          : List.from(_items);
 
       final selectedSort = _selectedSort;
       if (selectedSort != null) {
@@ -358,10 +363,12 @@ class _HubDetailScreenState extends State<HubDetailScreen>
     }
   }
 
+  Map<String, int> get _libraryOrder => context.read<LibrariesProvider?>()?.libraryOrder ?? const {};
+
   Future<List<MediaItem>> _loadGroupedItems() async {
     final lists = await Future.wait(
       widget.hub.sources.map((source) async {
-        if (!source.more) return source.items;
+        if (!source.more) return itemsInHubLibrary(source, source.items);
         final id = serverIdOrNull(source.serverId);
         final client = id == null ? null : context.tryGetMediaClientForServer(id);
         if (client == null) throw StateError('No media client available for ${source.id}');
@@ -380,10 +387,10 @@ class _HubDetailScreenState extends State<HubDetailScreen>
             items.addAll(page.items);
           }
         }
-        return _applySectionFilter(items, source);
+        return itemsInHubLibrary(source, _applySectionFilter(items, source));
       }),
     );
-    return interleaveHubItems(lists);
+    return mounted ? interleaveHubItems(lists, libraryOrder: _libraryOrder) : const [];
   }
 
   Future<ContinuationPage<MediaItem>> _fetchContinuationPage(int startIndex) async {

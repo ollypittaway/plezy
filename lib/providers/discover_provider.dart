@@ -986,7 +986,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   void _replaceHubs(List<MediaHub> hubs) {
     _hubs = hubs;
     bandwidth?.warmUp(hubs.expand((hub) => hub.items), _multiServer.serverManager.visibleOnlineClients);
-    _displayHubs = groupHomeHubs(hubs);
+    _displayHubs = groupHomeHubs(hubs, libraryOrder: _libraries.libraryOrder);
     ++_commitRevision;
   }
 
@@ -1111,7 +1111,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
     if (_hubs.isEmpty) return;
 
     final sortedHubs = List<MediaHub>.from(_hubs);
-    if (!sortMediaHubsByLibraryOrder(sortedHubs, _libraries.libraries)) return;
+    sortMediaHubsByLibraryOrder(sortedHubs, _libraries.libraries);
     _replaceHubs(sortedHubs);
     safeNotifyListeners();
   }

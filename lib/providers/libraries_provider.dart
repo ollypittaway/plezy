@@ -67,6 +67,8 @@ class LibrariesProvider extends ChangeNotifier with DisposableChangeNotifierMixi
   /// Unmodifiable list of all libraries (ordered)
   List<MediaLibrary> get libraries => List.unmodifiable(_libraries);
 
+  Map<String, int> get libraryOrder => {for (final (index, library) in _libraries.indexed) library.globalKey: index};
+
   bool get isLoading => _loadState == LibrariesLoadState.loading;
 
   /// Whether libraries have been loaded at least once

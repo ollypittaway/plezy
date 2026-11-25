@@ -8,6 +8,7 @@ import '../media/ids.dart';
 import '../focus/focusable_action_bar.dart';
 import '../media/library_query.dart';
 import '../media/collection_title.dart';
+import '../media/collection_items.dart';
 import '../providers/libraries_provider.dart';
 import '../media/media_item.dart';
 import '../mixins/deletion_aware.dart';
@@ -265,11 +266,11 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
   /// "10 items · 2007–2013 · PG-13". The year span is only shown once every
   /// item is loaded, so a partially fetched collection never reports a range
   /// narrower than the truth.
-  String _metaLine() {
-    final count = totalSize > 0 ? totalSize : (widget.collection.childCount ?? 0);
+  String _metaLine(CollectionItems rows) {
+    final count = totalSize > 0 ? rows.length : (widget.collection.childCount ?? 0);
     final parts = <String>[count == 1 ? t.playlists.oneItem : t.playlists.itemCount(count: count)];
     if (totalSize > 0 && loadedItems.length == totalSize) {
-      final years = loadedItems.values.map((i) => i.year).nonNulls.toList();
+      final years = rows.items.values.map((i) => i.year).nonNulls.toList();
       if (years.isNotEmpty) {
         final lo = years.reduce(math.min);
         final hi = years.reduce(math.max);
@@ -306,7 +307,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
     return collectionTitleWithLibrary(collection.displayTitle, name);
   }
 
-  Widget _buildInfo(BuildContext context, {required bool centered, required bool isTv}) {
+  Widget _buildInfo(BuildContext context, CollectionItems rows, {required bool centered, required bool isTv}) {
     final theme = Theme.of(context);
     final tk = tokens(context);
     final summary = widget.collection.summary;
@@ -322,7 +323,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
         ),
         const SizedBox(height: 4),
         Text(
-          _metaLine(),
+          _metaLine(rows),
           style: theme.textTheme.bodyMedium?.copyWith(color: tk.textMuted, fontSize: isTv ? 18 : null),
           textAlign: align,
         ),
@@ -343,7 +344,13 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
     );
   }
 
-  Widget _buildHeader(BuildContext context, {required bool compact, required bool isTv, required double inset}) {
+  Widget _buildHeader(
+    BuildContext context,
+    CollectionItems rows, {
+    required bool compact,
+    required bool isTv,
+    required double inset,
+  }) {
     final topInset = MediaQuery.paddingOf(context).top + kToolbarHeight;
     final actionBar = FocusableActionBar(
       key: actionBarKey,
@@ -360,7 +367,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
           children: [
             _buildArtwork(240),
             const SizedBox(height: 16),
-            _buildInfo(context, centered: true, isTv: isTv),
+            _buildInfo(context, rows, centered: true, isTv: isTv),
             const SizedBox(height: 16),
             actionBar,
           ],
@@ -380,7 +387,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfo(context, centered: false, isTv: isTv),
+                _buildInfo(context, rows, centered: false, isTv: isTv),
                 const SizedBox(height: 16),
                 actionBar,
               ],
@@ -523,21 +530,23 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
     final inset = isTv ? TvLayoutConstants.horizontalInset : 16.0;
     final artHeight = compact ? size.height * 0.62 : (isTv ? size.height * 0.7 : 460.0);
 
+    final libraryOrder = context.select<LibrariesProvider?, Map<String, int>>((p) => p?.libraryOrder ?? const {});
+    final rows = CollectionItems(loadedItems, totalSize, libraryOrder);
     return buildDetailScaffold(
       behind: [_buildBackdropLayer(context, size: size, height: artHeight)],
       slivers: [
         SliverToBoxAdapter(
-          child: _buildHeader(context, compact: compact, isTv: isTv, inset: inset),
+          child: _buildHeader(context, rows, compact: compact, isTv: isTv, inset: inset),
         ),
         ...buildStateSlivers(),
         if (hasItems)
           SliverPadding(
             padding: EdgeInsets.symmetric(horizontal: isTv ? inset - 8 : 8),
             sliver: buildSparseFocusableGrid(
-              totalItems: totalSize,
-              itemAt: (index) => loadedItems[index],
+              totalItems: rows.length,
+              itemAt: (index) => rows.items[index],
               onRefresh: updateItem,
-              onSkeletonVisible: (index) => ensureIndexLoaded(index, pageSize: _pageSize),
+              onSkeletonVisible: (index) => ensureIndexLoaded(rows.sourceIndex(index), pageSize: _pageSize),
               collectionId: widget.isOffline ? null : widget.collection.id,
               onListRefresh: loadItems,
               isOffline: widget.isOffline,

@@ -217,6 +217,7 @@ void main() {
 
     expect(harness.client.requestedHubIds, [kids.id, movies.id]);
     expect(find.text('Top Christmas Movies · Kids Movies, 4K Movies, Movies'), findsOneWidget);
+    expect((_cardFor(tester, 'Item 3').item as MediaItem).id, 'other-library-copy');
     for (final index in [0, 1, 2, 3, 5]) {
       expect(find.text('Item $index'), findsOneWidget);
     }
