@@ -35,7 +35,7 @@ The first version is `0.0.1+161`. The public version starts at 0.0.1 and the int
 git push --atomic origin tofa-redesign refs/tags/v0.0.1
 ```
 
-Open **Actions → GucciPlexa packages**. The release job waits for every platform, calculates SHA-256 checksums, uploads the complete asset set to a draft and makes it public. A failed upload can resume from that draft. A published release keeps its existing binaries on a retry. On a branch, a manual workflow run produces downloadable Actions artifacts. GitHub shows the manual dispatch button once the workflow is present on the default branch.
+Open **Actions → GucciPlexa packages**. Each platform publishes independently to the same release as soon as its package is ready. The first successful publisher makes the release public. Existing binaries are preserved on retries. Platform-specific SHA-256 manifests are uploaded alongside packages; SHA256SUMS.txt becomes available after all platforms publish. During a partial release, download URLs for unfinished platforms (and the combined checksum manifest) may return 404. On a branch, a manual workflow run produces downloadable Actions artifacts. GitHub shows the manual dispatch button once the workflow is present on the default branch.
 
 For subsequent releases, update both version components in `pubspec.yaml`, commit, and tag that commit with the public version prefixed by `v`. Push the branch and that tag. The existing Coolify routes pick up the new public release automatically.
 
