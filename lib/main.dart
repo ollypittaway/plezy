@@ -2074,20 +2074,12 @@ class FormFactorScale extends StatelessWidget {
           final outer = MediaQuery.of(context);
           if (!constraints.hasBoundedWidth || !constraints.hasBoundedHeight ||
               constraints.maxWidth <= 0 || constraints.maxHeight <= 0) return child;
-          final inset = PlatformDetector.isFireTV() ? 0.05 : 0.0;
-          final width = constraints.maxWidth * (1 - 2 * inset);
-          final height = constraints.maxHeight * (1 - 2 * inset);
-          final widthScale = width / 1280;
-          final heightScale = height / 720;
+          final widthScale = constraints.maxWidth / 1280;
+          final heightScale = constraints.maxHeight / 720;
           final scale = (widthScale < heightScale ? widthScale : heightScale).clamp(0.01, 1.0).toDouble();
-          if (scale == 1.0 && inset == 0) return child;
-          final size = Size(width / scale, height / scale);
-          return Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: constraints.maxWidth * inset,
-              vertical: constraints.maxHeight * inset,
-            ),
-            child: FittedBox(
+          if (scale == 1.0) return child;
+          final size = Size(constraints.maxWidth / scale, constraints.maxHeight / scale);
+          return FittedBox(
             fit: BoxFit.contain,
             child: SizedBox(
               width: size.width,
@@ -2103,7 +2095,6 @@ class FormFactorScale extends StatelessWidget {
                 ),
                 child: child,
               ),
-            ),
             ),
           );
         },
