@@ -74,7 +74,7 @@ jobs:
           # Gaps are intentional when a build is cancelled or a legacy run is started.
           patch=$((GITHUB_RUN_NUMBER - 4))
           build=$((GITHUB_RUN_NUMBER + 156))
-          [[ "$patch" -ge 7 ]] || exit 1
+          [[ "$patch" -ge 7 ]] || { echo "::error::Invalid automatic patch $patch"; exit 1; }
           version="0.0.$patch"
           tag="v$version"
           if lookup=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" 2>&1); then
@@ -82,11 +82,11 @@ jobs:
             git fetch --no-tags origin "refs/tags/$tag"
             git checkout --detach FETCH_HEAD
             [[ $(git rev-parse HEAD^ 2>/dev/null) == "$GITHUB_SHA" ]] || { echo "::error::Release tag belongs to another source"; exit 1; }
-            [[ $(python3 scripts/pubspec_version.py pubspec.yaml) == "$version" ]] || exit 1
+            [[ $(python3 scripts/pubspec_version.py --version-name pubspec.yaml) == "$version" ]] || exit 1
             [[ $(python3 scripts/pubspec_version.py --build-number pubspec.yaml) == "$build" ]] || exit 1
           elif [[ "$lookup" == *"HTTP 404"* ]]; then
             sed -i -E "s/^version:.*/version: $version+$build/" pubspec.yaml
-            [[ $(python3 scripts/pubspec_version.py pubspec.yaml) == "$version" ]] || exit 1
+            [[ $(python3 scripts/pubspec_version.py --version-name pubspec.yaml) == "$version" ]] || exit 1
             [[ $(python3 scripts/pubspec_version.py --build-number pubspec.yaml) == "$build" ]] || exit 1
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
