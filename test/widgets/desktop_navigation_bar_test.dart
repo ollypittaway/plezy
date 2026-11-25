@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_symbols_icons/symbols.dart';
 import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/media/media_backend.dart';
 import 'package:plezy/media/media_library.dart';
@@ -39,23 +40,35 @@ void main() {
     );
 
     await pump(offline: false);
-    expect(find.text(t.navigation.libraries), findsNothing);
+    expect(find.text('Film archive'), findsNothing);
+    expect(find.text('TV series'), findsNothing);
+    await tester.tap(find.text(t.navigation.libraries));
+    await tester.pumpAndSettle();
     expect(find.text('Film archive'), findsOneWidget);
     await tester.tap(find.text('TV series'));
+    await tester.pumpAndSettle();
     expect(librarySelections, [libraries.last.globalKey]);
-    await tester.tap(find.text(t.common.search));
+    expect(find.text('TV series'), findsNothing);
+    expect(find.text(t.common.search), findsNothing);
+    expect(find.bySemanticsLabel(t.common.search), findsOneWidget);
+    final search = find.widgetWithIcon(IconButton, Symbols.search_rounded);
+    final downloads = find.widgetWithIcon(IconButton, Symbols.download_rounded);
+    expect(tester.getSize(search), tester.getSize(downloads));
+    expect(tester.getSize(find.byIcon(Symbols.search_rounded)), tester.getSize(find.byIcon(Symbols.download_rounded)));
+    await tester.tap(find.byTooltip(t.common.search));
     await tester.tap(find.byTooltip(t.settings.navigation));
     expect(selections, [NavigationTabId.search]);
     expect(opened, isTrue);
 
     await pump(offline: true);
     expect(find.text('Film archive'), findsNothing);
-    expect(find.text(t.common.search), findsNothing);
+    expect(find.text(t.navigation.libraries), findsNothing);
+    expect(find.byTooltip(t.common.search), findsNothing);
     await tester.tap(find.byTooltip(t.navigation.downloads));
     expect(selections.last, NavigationTabId.downloads);
   });
 
-  testWidgets('overflow picker opens the correct library when server titles overlap', (tester) async {
+  testWidgets('libraries dropdown distinguishes matching names across servers', (tester) async {
     LocaleSettings.setLocaleSync(AppLocale.en);
     final libraries = [
       for (final server in ['North', 'South'])
@@ -83,7 +96,7 @@ void main() {
     expect(find.text('Archive 16'), findsNothing);
     await tester.tap(find.byTooltip(t.libraries.selectLibrary));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Films · South').last);
+    await tester.tap(find.text('Films · South'));
     await tester.pumpAndSettle();
     expect(selected, [libraries[1].globalKey]);
     expect(tester.takeException(), isNull);

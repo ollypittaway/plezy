@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -8,7 +6,6 @@ import '../i18n/strings.g.dart';
 import '../media/media_library.dart';
 import '../navigation/navigation_tabs.dart';
 import '../utils/desktop_window_padding.dart';
-import '../utils/text_measure_cache.dart';
 import 'app_icon.dart';
 import 'app_menu.dart';
 
@@ -38,69 +35,38 @@ class DesktopNavigationBar extends StatelessWidget {
   final Widget? homeActions;
 
   static const _utilities = {NavigationTabId.search, NavigationTabId.downloads, NavigationTabId.settings};
-  static const _labelPadding = 12.0;
 
-  Widget _destinations(BuildContext context, BoxConstraints constraints) {
+  List<AppMenuEntry<VoidCallback>> _libraryEntries(BuildContext context) {
+    if (libraries.isEmpty) {
+      return [AppMenuItem(label: t.common.viewAll, value: () => onSelect(NavigationTabId.libraries))];
+    }
+    final titleCounts = <String, int>{};
+    for (final library in libraries) {
+      titleCounts.update(library.title, (count) => count + 1, ifAbsent: () => 1);
+    }
+    return [
+      for (final library in libraries)
+        AppMenuItem(
+          label: titleCounts[library.title]! > 1
+              ? '${library.title} · ${library.serverName ?? library.serverId ?? library.id}'
+              : library.title,
+          selected: selected == NavigationTabId.libraries && selectedLibraryKey == library.globalKey,
+          value: () => onSelectLibrary(library.globalKey),
+        ),
+    ];
+  }
+
+  Widget _destinations(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final style = theme.textTheme.bodyMedium!.copyWith(fontSize: 14, fontWeight: .w400, letterSpacing: -0.15);
-    final scaler = MediaQuery.textScalerOf(context);
-    final direction = Directionality.of(context);
-    double buttonWidth(String label) =>
-        cachedSingleLineTextSize(
-          label,
-          style: style,
-          textScaler: scaler,
-          textDirection: direction,
-        ).width.ceilToDouble() +
-        _labelPadding * 2;
-
-    final primaryTabs = tabs.where((tab) => !_utilities.contains(tab.id)).toList();
-    if (primaryTabs.isEmpty) return const SizedBox.shrink();
-
-    Widget link(String label, bool active, VoidCallback onTap) => Semantics(
-      selected: active,
-      button: true,
-      child: Material(
-        color: active ? colors.onSurface.withValues(alpha: 0.14) : Colors.transparent,
-        shape: const StadiumBorder(),
-        child: InkWell(
-          customBorder: const StadiumBorder(),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: _labelPadding, vertical: 8),
-            child: Text(label, maxLines: 1, style: style.copyWith(color: colors.onSurface)),
-          ),
-        ),
-      ),
+    final style = theme.textTheme.bodyMedium!.copyWith(
+      color: colors.onSurface,
+      fontSize: 14,
+      fontWeight: .w400,
+      letterSpacing: -0.15,
     );
-
-    final titleCounts = <String, int>{};
-    for (final lib in libraries) {
-      titleCounts.update(lib.title, (count) => count + 1, ifAbsent: () => 1);
-    }
-    String libraryLabel(MediaLibrary lib) =>
-        titleCounts[lib.title]! > 1 ? '${lib.title} · ${lib.serverName ?? lib.serverId ?? lib.id}' : lib.title;
-
-    // Keep Home and other top-level destinations available before budgeting
-    // the remaining width for library names in the user's order.
-    final available =
-        constraints.maxWidth -
-        8 -
-        primaryTabs
-            .where((tab) => tab.id != NavigationTabId.libraries)
-            .fold(0.0, (width, tab) => width + buttonWidth(tab.getLabel()));
-    final libraryWidths = [for (final lib in libraries) buttonWidth(libraryLabel(lib))];
-    var directCount = libraries.length;
-    if (libraryWidths.fold(0.0, (sum, width) => sum + width) > available) {
-      var remaining = available - 40; // reserve the library picker button
-      directCount = 0;
-      for (final width in libraryWidths) {
-        if (width > remaining) break;
-        directCount++;
-        remaining -= width;
-      }
-    }
+    final primaryTabs = tabs.where((tab) => !_utilities.contains(tab.id));
+    if (primaryTabs.isEmpty) return const SizedBox.shrink();
 
     return Align(
       alignment: AlignmentDirectional.centerStart,
@@ -117,46 +83,40 @@ class DesktopNavigationBar extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 for (final tab in primaryTabs)
-                  if (tab.id != NavigationTabId.libraries || libraries.isEmpty)
-                    link(tab.getLabel(), tab.id == selected, () => onSelect(tab.id))
-                  else ...[
-                    for (final lib in libraries.take(directCount))
-                      link(
-                        libraryLabel(lib),
-                        selected == tab.id && selectedLibraryKey == lib.globalKey,
-                        () => onSelectLibrary(lib.globalKey),
-                      ),
-                    if (directCount < libraries.length)
-                      AppMenuButton<String>(
-                        tooltip: t.libraries.selectLibrary,
-                        entriesBuilder: (_) => [
-                          for (final lib in libraries)
-                            AppMenuItem(
-                              value: lib.globalKey,
-                              label: libraryLabel(lib),
-                              selected: selected == tab.id && selectedLibraryKey == lib.globalKey,
+                  Semantics(
+                    button: true,
+                    selected: selected == tab.id,
+                    child: Material(
+                      color: selected == tab.id ? colors.onSurface.withValues(alpha: 0.14) : Colors.transparent,
+                      shape: const StadiumBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: tab.id == NavigationTabId.libraries
+                          ? AppMenuButton<VoidCallback>(
+                              tooltip: t.libraries.selectLibrary,
+                              entriesBuilder: _libraryEntries,
+                              onSelected: (select) => select(),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(tab.getLabel(), maxLines: 1, style: style),
+                                    const SizedBox(width: 4),
+                                    const AppIcon(Symbols.expand_more_rounded, weight: 400, size: 16),
+                                  ],
+                                ),
+                              ),
+                            )
+                          : InkWell(
+                              customBorder: const StadiumBorder(),
+                              onTap: () => onSelect(tab.id),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                child: Text(tab.getLabel(), maxLines: 1, style: style),
+                              ),
                             ),
-                        ],
-                        onSelected: onSelectLibrary,
-                        child: Semantics(
-                          button: true,
-                          label: t.libraries.selectLibrary,
-                          selected:
-                              selected == tab.id &&
-                              libraries.skip(directCount).any((lib) => lib.globalKey == selectedLibraryKey),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (directCount == 0) Text(tab.getLabel(), style: style),
-                                const AppIcon(Symbols.expand_more_rounded, weight: 400, size: 20),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -223,44 +183,23 @@ class DesktopNavigationBar extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(child: LayoutBuilder(builder: _destinations)),
+                  Expanded(child: _destinations(context)),
                   for (final tab in tabs.where((tab) => _utilities.contains(tab.id)))
-                    if (tab.id == NavigationTabId.search && width >= 1180)
-                      Padding(
-                        padding: const EdgeInsetsDirectional.only(end: 8),
-                        child: Semantics(
-                          selected: tab.id == selected,
-                          child: OutlinedButton.icon(
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: Size(math.min(width * 0.14, 220), 36),
-                              alignment: AlignmentDirectional.centerStart,
-                              foregroundColor: colors.onSurface,
-                              backgroundColor: background.withValues(alpha: 0.58),
-                              side: BorderSide(color: colors.onSurface.withValues(alpha: 0.16)),
-                              shape: const StadiumBorder(),
-                              textStyle: theme.textTheme.bodyMedium?.copyWith(fontWeight: .w400),
-                            ),
-                            onPressed: () => onSelect(tab.id),
-                            icon: const AppIcon(Symbols.search_rounded, weight: 400, size: 18),
-                            label: Text(tab.getLabel()),
-                          ),
-                        ),
-                      )
-                    else
-                      Semantics(
-                        selected: tab.id == selected,
-                        child: IconButton(
-                          onPressed: () => onSelect(tab.id),
-                          tooltip: tab.getLabel(),
-                          icon: AppIcon(
-                            tab.icon,
-                            size: 20,
-                            fill: 0,
-                            weight: 400,
-                            color: tab.id == selected ? colors.primary : colors.onSurface,
-                          ),
+                    Semantics(
+                      label: tab.getLabel(),
+                      selected: tab.id == selected,
+                      child: IconButton(
+                        onPressed: () => onSelect(tab.id),
+                        tooltip: tab.getLabel(),
+                        icon: AppIcon(
+                          tab.icon,
+                          size: 20,
+                          fill: 0,
+                          weight: 400,
+                          color: tab.id == selected ? colors.primary : colors.onSurface,
                         ),
                       ),
+                    ),
                   if (homeActions != null) ...[const SizedBox(width: 6), homeActions!],
                 ],
               ),
