@@ -20,6 +20,7 @@ import '../../../utils/platform_detector.dart';
 import '../../../utils/provider_extensions.dart';
 import '../../../utils/watch_state_notifier.dart';
 import '../../../widgets/hub_section.dart';
+import '../../../widgets/skeleton_media_card.dart';
 import '../../../widgets/nested_tab_scrollbar.dart';
 import '../../../widgets/settings_builder.dart';
 import '../../../widgets/tv_browse_rail.dart';
@@ -186,6 +187,12 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<MediaHub, LibraryR
   @override
   Future<void> loadItems() => runLoadTransaction(_loadRecommendedHubs);
 
+  @override
+  Widget buildLoadingContent(BuildContext context) => Align(
+    alignment: Alignment.bottomCenter,
+    child: SizedBox(height: 220, child: Row(children: [for (var i = 0; i < 7; i++) const Expanded(child: SkeletonMediaCard())])),
+  );
+
   Future<List<MediaHub>> _loadRecommendedHubs() async {
     // Backend-aware fetch: Plex hits /hubs/sections, Jellyfin synthesises
     // Continue Watching + Next Up + Recently Added.
@@ -209,6 +216,17 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<MediaHub, LibraryR
       hubs.insert(0, cwHub);
     }
 
+    final generation = libraryLoadGeneration;
+    final key = widget.library.globalKey;
+    if (isLoading && isCurrentLibraryLoad(generation, key)) {
+      final visible = <MediaHub>[];
+      for (final hub in hubs) {
+        if (!isCurrentLibraryLoad(generation, key)) break;
+        visible.add(hub);
+        setState(() => items = List.of(visible));
+        await Future<void>.delayed(const Duration(milliseconds: 24));
+      }
+    }
     return hubs;
   }
 

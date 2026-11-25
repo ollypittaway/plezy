@@ -34,6 +34,7 @@ class EpisodeCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback? onRemoteSelect;
   final bool isSelected;
+  final bool tileLayout;
   final Future<void> Function(MediaItem source)? onRefresh;
   final Future<void> Function()? onListRefresh;
   final bool autofocus;
@@ -49,6 +50,7 @@ class EpisodeCard extends StatefulWidget {
     required this.onTap,
     this.onRemoteSelect,
     this.isSelected = false,
+    this.tileLayout = false,
     this.onRefresh,
     this.onListRefresh,
     this.autofocus = false,
@@ -172,7 +174,19 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
                   border: desktop ? Border.all(color: widget.isSelected ? palette.primary : palette.outlineVariant.withValues(alpha: 0.5)) : null,
                 ),
                 padding: desktop ? const EdgeInsets.all(12) : const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
+                child: widget.tileLayout ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(borderRadius: BorderRadius.circular(10), child: AspectRatio(aspectRatio: 16 / 9, child: Stack(fit: StackFit.expand, children: [
+                      if (shouldBlur) ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: 12, sigmaY: 12), child: _buildEpisodeThumbnail(episode)) else _buildEpisodeThumbnail(episode),
+                      WatchedIndicator(item: episode, size: WatchedIndicatorSize.compact),
+                    ]))),
+                    const SizedBox(height: 8),
+                    Text(formatSeasonEpisodeLabel(episode.parentIndex, episode.index) ?? '', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: palette.primary)),
+                    Text(episode.displayTitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleSmall),
+                    if (!shouldBlur && episode.summary?.isNotEmpty == true) Expanded(child: Text(episode.summary!, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: tokens(context).textMuted))),
+                  ],
+                ) : Row(
                   crossAxisAlignment: .start,
                   children: [
                     SizedBox(

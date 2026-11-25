@@ -31,6 +31,7 @@ class DesktopNavigationBar extends StatefulWidget {
     required this.onSelect,
     required this.onMenu,
     this.homeActions,
+    this.onOpenProfile,
     this.overlayArtwork = false,
     this.remoteNavigation = false,
     this.remoteHomeFocusNode,
@@ -45,6 +46,7 @@ class DesktopNavigationBar extends StatefulWidget {
   final ValueChanged<NavigationTabId> onSelect;
   final VoidCallback onMenu;
   final Widget? homeActions;
+  final VoidCallback? onOpenProfile;
   final bool overlayArtwork;
   final bool remoteNavigation;
   final FocusNode? remoteHomeFocusNode;
@@ -305,10 +307,12 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
                         primaryKey.currentState?.getFocusNode(count - 1)?.requestFocus();
                       },
                       onNavigateDown: onNavigateDown,
-                      onNavigateRight: homeActions == null ? null : _focusProfileActions,
+                      onNavigateRight: homeActions == null || remoteNavigation ? null : _focusProfileActions,
                       actions: [
                         for (final tab in utilityTabs)
                           FocusableAction(debugLabel: 'desktop_utility_${tab.id.name}', icon: tab.icon, iconSize: 20, iconFill: 0, tooltip: tab.getLabel(), onPressed: () => onSelect(tab.id)),
+                        if (widget.onOpenProfile != null)
+                          FocusableAction(debugLabel: 'desktop_profile', icon: Symbols.account_circle_rounded, iconSize: 28, tooltip: t.profiles.sectionTitle, onPressed: widget.onOpenProfile),
                       ],
                     ),
                   if (!remoteNavigation)
@@ -328,7 +332,7 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
                         ),
                       ),
                     ),
-                  if (homeActions != null) ...[
+                  if (homeActions != null && !remoteNavigation) ...[
                     const SizedBox(width: 6),
                     if (remoteNavigation)
                       DesktopRemoteHeaderBridge(

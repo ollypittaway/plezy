@@ -167,6 +167,7 @@ class ContentStateBuilder<T> extends StatelessWidget {
 
   /// Builder for the content when items are available
   final Widget Function(List<T> items) builder;
+  final WidgetBuilder? loadingBuilder;
 
   const ContentStateBuilder({
     super.key,
@@ -177,12 +178,13 @@ class ContentStateBuilder<T> extends StatelessWidget {
     required this.emptyMessage,
     required this.onRetry,
     required this.builder,
+    this.loadingBuilder,
   });
 
   @override
   Widget build(BuildContext context) {
     if (isLoading && items.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return loadingBuilder?.call(context) ?? const Center(child: CircularProgressIndicator());
     }
 
     if (errorMessage != null && items.isEmpty) {

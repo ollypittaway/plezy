@@ -134,7 +134,7 @@ class TvSpotlightScaffold extends StatelessWidget {
                         contentBottom: spotlightBottom,
                         contentLeft: spotlightLeft + foregroundLeft,
                         targetWidthPx: lightweightTransitions
-                            ? (size.width * MediaQuery.devicePixelRatioOf(context)).ceil().clamp(1, 1280).toInt()
+                            ? (size.width * MediaQuery.devicePixelRatioOf(context)).ceil().clamp(1, 2560).toInt()
                             : (size.width * MediaQuery.devicePixelRatioOf(context)).ceil(),
                         lightweightTransitions: lightweightTransitions,
                       );
@@ -214,11 +214,10 @@ class _CatalogSpotlightBackgroundState extends State<_CatalogSpotlightBackground
     }
 
     final bannerUrl = catalogItem.bannerUrl;
-    final backdrop = bannerUrl != null && bannerUrl.isNotEmpty
-        ? bannerUrl
-        : catalogItem.backdropFor(widget.targetWidthPx);
+    final backdrop = catalogItem.backdropFor(widget.targetWidthPx) ?? bannerUrl;
     final logoUrl = catalogItem.logoUrl;
     _renderItem = item.copyWith(
+      summary: catalogItem.overview ?? item.summary,
       artPath: backdrop ?? item.artPath,
       backdropPaths: backdrop == null ? item.backdropPaths : [backdrop],
       clearLogoPath: logoUrl != null && logoUrl.isNotEmpty ? logoUrl : null,

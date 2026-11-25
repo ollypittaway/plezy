@@ -86,8 +86,8 @@ class TvSpotlightBackground extends StatelessWidget {
           // Always request at full-screen size: the corner box only crops the
           // layout. A mode-dependent size would change the transcode URL and
           // cold-start every cached backdrop when the setting is toggled.
-          width: lightweightTransitions ? math.min(size.width, 1280.0 / MediaQuery.devicePixelRatioOf(context)) : size.width,
-          height: lightweightTransitions ? math.min(size.height, 720.0 / MediaQuery.devicePixelRatioOf(context)) : size.height,
+          width: lightweightTransitions ? math.min(size.width, 1920.0 / MediaQuery.devicePixelRatioOf(context)) : size.width,
+          height: lightweightTransitions ? math.min(size.height, 1080.0 / MediaQuery.devicePixelRatioOf(context)) : size.height,
           fallbackColor: media == null ? bgColor : Theme.of(context).colorScheme.surfaceContainerHighest,
         );
         return Stack(
@@ -117,7 +117,7 @@ class TvSpotlightBackground extends StatelessWidget {
             if (media != null && showInfo)
               Positioned(
                 left: contentLeft ?? TvLayoutConstants.horizontalInset,
-                right: MediaQuery.sizeOf(context).width * 0.43,
+                right: MediaQuery.sizeOf(context).width * (lightweightTransitions ? 0.35 : 0.43),
                 top: contentTop,
                 bottom: contentBottom,
                 // The info block still cross-fades via AnimatedSwitcher, but its
@@ -226,7 +226,7 @@ class TvSpotlightBackground extends StatelessWidget {
           SizedBox(height: _sectionGap(scale)),
           Text(
             summary,
-            maxLines: compact ? 3 : 4,
+            maxLines: lightweightTransitions ? 4 : compact ? 3 : 4,
             overflow: .ellipsis,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               color: colorScheme.onSurface.withValues(alpha: 0.78),

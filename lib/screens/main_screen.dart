@@ -1634,6 +1634,12 @@ class _MainScreenState extends State<MainScreen>
       return KeyEventResult.handled;
     }
 
+    if (PlatformDetector.isFireTV()) {
+      // The desktop-style shell has no persistent sidebar focus stage.
+      // Back at Home must reach the existing double-press exit handler.
+      return _handleMainBackKeyAction(event);
+    }
+
     if (!_isSidebarFocused) {
       // Content focused → move to sidebar
       return handleBackKeyAction(event, PlatformDetector.isFireTV() ? _focusRemoteTopNavigation : _focusSidebar);
@@ -2142,6 +2148,7 @@ class _MainScreenState extends State<MainScreen>
           remoteHomeFocusNode: PlatformDetector.isFireTV() ? _remoteHomeFocusNode : null,
           onNavigateDown: _focusRemotePageContent,
           homeActions: homeActions,
+          onOpenProfile: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileSwitchScreen())),
           overlayArtwork: overlayArtwork,
         );
       },

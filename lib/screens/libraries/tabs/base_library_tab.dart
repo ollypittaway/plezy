@@ -395,6 +395,8 @@ abstract class BaseLibraryTabState<T, W extends BaseLibraryTab<T>> extends State
   /// This is called by ContentStateBuilder when items are available
   Widget buildContent(List<T> items);
 
+  Widget buildLoadingContent(BuildContext context) => const Center(child: CircularProgressIndicator());
+
   /// Icon to display when there are no items (empty state)
   IconData get emptyIcon;
 
@@ -570,6 +572,7 @@ abstract class BaseLibraryTabState<T, W extends BaseLibraryTab<T>> extends State
         emptyIcon: emptyIcon,
         emptyMessage: emptyMessage,
         onRetry: loadItems,
+        loadingBuilder: buildLoadingContent,
         builder: (items) => RefreshIndicator(onRefresh: loadItems, child: buildContent(items)),
       ),
     );

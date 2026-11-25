@@ -205,11 +205,10 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     // In keyboard/d-pad mode, focused buttons get a prominent style.
     // overlayColor is set to transparent to prevent the Material focus
     // overlay from dimming the background color we set.
-    final focusBg = colorScheme.inverseSurface;
-    final focusFg = colorScheme.onInverseSurface;
-    final tonalBg = colorScheme.secondaryContainer;
+    final focusBg = colorScheme.primary;
+    final focusFg = colorScheme.onPrimary;
+    final tonalBg = Color.alphaBlend(colorScheme.primary.withValues(alpha: 0.18), colorScheme.surface);
     final idleBg = isTv ? tonalBg.withValues(alpha: 0.38) : tonalBg;
-    final tonalFg = colorScheme.onSecondaryContainer;
     final noOverlay = WidgetStateProperty.resolveWith((states) {
       if (states.contains(WidgetState.focused)) return Colors.transparent;
       return null; // default for other states
@@ -220,10 +219,11 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       EdgeInsetsGeometry? padding,
       bool showFocus = false,
       OutlinedBorder? shape,
+      bool primary = false,
     }) {
       if (!isKeyboardMode && !isTv) {
         if (padding != null) {
-          return FilledButton.styleFrom(padding: padding, shape: shape);
+          return FilledButton.styleFrom(padding: padding, shape: shape, backgroundColor: primary ? colorScheme.primary : tonalBg, foregroundColor: primary ? colorScheme.onPrimary : colorScheme.primary);
         }
         return IconButton.styleFrom(
           minimumSize: const Size(48, 48),
@@ -240,8 +240,8 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.compact,
         overlayColor: noOverlay,
-        backgroundColor: WidgetStatePropertyAll(showFocus ? focusBg : idleBg),
-        foregroundColor: WidgetStatePropertyAll(showFocus ? focusFg : foregroundColor ?? tonalFg),
+        backgroundColor: WidgetStatePropertyAll(showFocus || primary ? focusBg : idleBg),
+        foregroundColor: WidgetStatePropertyAll(showFocus || primary ? focusFg : foregroundColor ?? colorScheme.primary),
         shape: shape != null ? WidgetStatePropertyAll(shape) : null,
       );
     }
@@ -269,6 +269,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
               showFocus: state.showFocus,
               padding: .symmetric(horizontal: isTv ? 17 * tvScale : 16, vertical: isTv ? 9 * tvScale : 0),
               shape: playShape,
+              primary: true,
             ),
             child: playButtonLabel.isNotEmpty
                 ? Row(
@@ -314,6 +315,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
               style: actionButtonStyle(
                 showFocus: state.showFocus,
                 padding: .zero,
+                primary: true,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadiusDirectional.horizontal(start: splitInnerRadius, end: splitOuterRadius),
                 ),

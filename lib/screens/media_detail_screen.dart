@@ -2947,14 +2947,9 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
   Widget _buildEpisodesList() {
     final client = _getMediaClientForMetadata(context);
     final hasPinnedLastEpisode = _hasPinnedLastEpisodeInList;
-    return ListView.builder(
-      addAutomaticKeepAlives: false,
-      addSemanticIndexes: false,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: .zero,
-      itemCount: _episodes.length + (_episodeListHasMore || _episodeListLoadingMore || _episodeListPageError ? 1 : 0),
-      itemBuilder: (context, index) {
+    final desktop = PlatformDetector.usesDesktopPresentation();
+    final hasTail = _episodeListHasMore || _episodeListLoadingMore || _episodeListPageError;
+    Widget buildEpisode(BuildContext context, int index) {
         if (index == _episodes.length) {
           return _buildEpisodeListTail();
         }
@@ -2985,6 +2980,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
               : null,
           localPosterPath: localPosterPath,
           isSelected: _remoteSelectedEpisode?.globalKey == episode.globalKey,
+          tileLayout: desktop,
           onRemoteSelect: PlatformDetector.isFireTV() && !widget.isOffline
               ? () => _selectEpisodeForRemotePlayback(episode)
               : null,
@@ -3004,8 +3000,21 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
           onRefresh: widget.isOffline ? null : _refreshItemInPlace,
           onListRefresh: widget.isOffline ? null : _refreshCurrentEpisodes,
         );
-      },
-    );
+    }
+    if (!desktop) {
+      return ListView.builder(addAutomaticKeepAlives: false, addSemanticIndexes: false, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), padding: EdgeInsets.zero, itemCount: _episodes.length + (hasTail ? 1 : 0), itemBuilder: buildEpisode);
+    }
+    return Column(children: [
+      GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 330, mainAxisSpacing: 16, crossAxisSpacing: 16, childAspectRatio: 1.15),
+        itemCount: _episodes.length,
+        itemBuilder: buildEpisode,
+      ),
+      if (hasTail) _buildEpisodeListTail(),
+    ]);
   }
 
   bool _shouldUseLastEpisodeFocusNode({
