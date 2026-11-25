@@ -2118,7 +2118,7 @@ class _MainScreenState extends State<MainScreen>
     return CoveredRouteFocusBoundary(child: _buildContent(context, useSideNav));
   }
 
-  Widget _buildDesktopNavigationBar({Widget? homeActions}) {
+  Widget _buildDesktopNavigationBar({Widget? homeActions, bool overlayArtwork = false}) {
     return Consumer2<LibrariesProvider, HiddenLibrariesProvider>(
       builder: (context, libraries, hidden, _) {
         final hiddenKeys = hidden.hiddenLibraryKeys;
@@ -2142,6 +2142,7 @@ class _MainScreenState extends State<MainScreen>
           remoteHomeFocusNode: PlatformDetector.isFireTV() ? _remoteHomeFocusNode : null,
           onNavigateDown: _focusRemotePageContent,
           homeActions: homeActions,
+          overlayArtwork: overlayArtwork,
         );
       },
     );
@@ -2209,7 +2210,8 @@ class _MainScreenState extends State<MainScreen>
                     openSettings: _openSettings,
                     child: Column(
                       children: [
-                        if (useTopBar && _currentTab != NavigationTabId.discover) _buildDesktopNavigationBar(),
+                        if (useTopBar && _currentTab != NavigationTabId.discover &&
+                            !(PlatformDetector.isFireTV() && _currentTab == NavigationTabId.libraries)) _buildDesktopNavigationBar(),
                         Expanded(
                           child: SideNavigationScope(
                             child: Stack(
@@ -2233,7 +2235,12 @@ class _MainScreenState extends State<MainScreen>
                                         value: useTopBar && _currentTab == NavigationTabId.discover
                                             ? (actions) => _buildDesktopNavigationBar(homeActions: actions)
                                             : null,
-                                        child: _buildTickerAwareStack(),
+                                        child: Provider<LibraryShellHeaderBuilder?>.value(
+                                          value: useTopBar && PlatformDetector.isFireTV() && _currentTab == NavigationTabId.libraries
+                                              ? (overlay) => _buildDesktopNavigationBar(overlayArtwork: overlay)
+                                              : null,
+                                          child: _buildTickerAwareStack(),
+                                        ),
                                       ),
                                     ),
                                     // Duration/curve must stay in sync with

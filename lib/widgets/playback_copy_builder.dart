@@ -110,8 +110,9 @@ class _PlaybackCopyBuilderState extends State<PlaybackCopyBuilder> {
         menuCopies
             .where((item) => item.libraryGlobalKey != null && item.libraryGlobalKey == preferred?.libraryGlobalKey)
             .firstOrNull ??
-        available.where((item) => item.globalKey == target?.globalKey).firstOrNull ??
+        menuCopies.where((item) => item.globalKey == target?.globalKey).firstOrNull ??
         menuCopies.firstOrNull ??
+        available.where((item) => item.globalKey == target?.globalKey).firstOrNull ??
         available.firstOrNull;
     return widget.builder(
       selected,

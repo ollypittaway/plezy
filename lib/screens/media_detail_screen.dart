@@ -2984,10 +2984,15 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                 }
               : null,
           localPosterPath: localPosterPath,
+          isSelected: _remoteSelectedEpisode?.globalKey == episode.globalKey,
           onRemoteSelect: PlatformDetector.isFireTV() && !widget.isOffline
               ? () => _selectEpisodeForRemotePlayback(episode)
               : null,
           onTap: () async {
+            if (PlatformDetector.usesDesktopPresentation() && !widget.isOffline) {
+              _selectEpisodeForRemotePlayback(episode);
+              return;
+            }
             await navigateToVideoPlayerWithRefresh(
               context,
               metadata: episode,

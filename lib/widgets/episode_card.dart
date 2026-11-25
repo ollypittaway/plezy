@@ -33,6 +33,7 @@ class EpisodeCard extends StatefulWidget {
   final MediaServerClient? client;
   final VoidCallback onTap;
   final VoidCallback? onRemoteSelect;
+  final bool isSelected;
   final Future<void> Function(MediaItem source)? onRefresh;
   final Future<void> Function()? onListRefresh;
   final bool autofocus;
@@ -47,6 +48,7 @@ class EpisodeCard extends StatefulWidget {
     this.client,
     required this.onTap,
     this.onRemoteSelect,
+    this.isSelected = false,
     this.onRefresh,
     this.onListRefresh,
     this.autofocus = false,
@@ -128,9 +130,12 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
     final episode = _effectiveEpisode(context);
     final shouldBlur = hideSpoilers && episode.shouldHideSpoiler;
     final qualityLabels = [...buildMediaQualityLabels(episode), ?buildMediaSizeLabel(episode)];
+    final desktop = PlatformDetector.usesDesktopPresentation();
+    final palette = Theme.of(context).colorScheme;
+    final radius = desktop ? tokens(context).radiusLg : FocusTheme.defaultBorderRadius;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: EdgeInsets.symmetric(vertical: desktop ? 6 : 2),
       // MergeSemantics: one node per card instead of one per text/progress —
       // the per-frame semantics pass scales with node count (see MediaCard).
       // The card has a single action, so merging is safe.
@@ -143,6 +148,7 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
           onSelect: widget.onRemoteSelect ?? widget.onTap,
           onLongPress: showContextMenuFromTap,
           disableScale: true,
+          borderRadius: radius,
           child: MediaContextMenu(
             key: contextMenuKey,
             item: episode,
@@ -151,7 +157,7 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
             child: InkWell(
               key: Key(episode.id),
               mouseCursor: SystemMouseCursors.click,
-              borderRadius: BorderRadius.circular(FocusTheme.defaultBorderRadius),
+              borderRadius: BorderRadius.circular(radius),
               onTap: widget.onTap,
               canRequestFocus: false,
               onTapDown: storeTapPosition,
@@ -161,19 +167,20 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
               hoverColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.05),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(FocusTheme.defaultBorderRadius),
+                  color: desktop ? palette.surfaceContainerLow.withValues(alpha: 0.55) : palette.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(radius),
+                  border: desktop ? Border.all(color: widget.isSelected ? palette.primary : palette.outlineVariant.withValues(alpha: 0.5)) : null,
                 ),
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: desktop ? const EdgeInsets.all(12) : const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   crossAxisAlignment: .start,
                   children: [
                     SizedBox(
-                      width: 144,
+                      width: desktop ? (MediaQuery.sizeOf(context).width * 0.19).clamp(144.0, 240.0).toDouble() : 144,
                       child: Stack(
                         children: [
                           ClipRRect(
-                            borderRadius: const BorderRadius.all(Radius.circular(6)),
+                            borderRadius: BorderRadius.circular(desktop ? tokens(context).radiusMd : 6),
                             child: AspectRatio(
                               aspectRatio: 16 / 9,
                               child: shouldBlur
@@ -190,7 +197,7 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
                           Positioned.fill(
                             child: Container(
                               decoration: BoxDecoration(
-                                borderRadius: const BorderRadius.all(Radius.circular(6)),
+                                borderRadius: BorderRadius.circular(desktop ? tokens(context).radiusMd : 6),
                                 gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
@@ -204,8 +211,8 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
                                     color: Colors.black.withValues(alpha: 0.6),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const AppIcon(
-                                    Symbols.play_arrow_rounded,
+                                  child: AppIcon(
+                                    desktop && !widget.isOffline ? Symbols.chevron_right_rounded : Symbols.play_arrow_rounded,
                                     fill: 1,
                                     color: Colors.white,
                                     size: 20,
@@ -222,7 +229,7 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
                       ),
                     ),
 
-                    const SizedBox(width: 10),
+                    SizedBox(width: desktop ? 18 : 10),
 
                     Expanded(
                       child: Column(
@@ -257,14 +264,14 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
                               final index = episode.index;
                               // The prefix mirrors the server-provided episode
                               // number verbatim, including a genuine episode 0.
-                              final titleText = index != null ? '$index. ${episode.title!}' : episode.title!;
+                              final titleText = desktop ? episode.displayTitle : index != null ? '$index. ${episode.displayTitle}' : episode.displayTitle;
                               return Row(
                                 children: [
                                   if (downloadStatusIcon != null) ...[downloadStatusIcon, const SizedBox(width: 8)],
                                   Expanded(
                                     child: Text(
                                       titleText,
-                                      style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: .bold),
+                                      style: (desktop ? Theme.of(context).textTheme.titleMedium : Theme.of(context).textTheme.titleSmall)?.copyWith(fontWeight: .w600),
                                       maxLines: 2,
                                       overflow: .ellipsis,
                                     ),
@@ -274,9 +281,13 @@ class _EpisodeCardState extends State<EpisodeCard> with ContextMenuTapMixin<Epis
                             },
                           ),
 
+                          if (desktop && episode.index != null) ...[
+                            const SizedBox(height: 4),
+                            Text(formatSeasonEpisodeLabel(episode.parentIndex, episode.index) ?? '${episode.index}', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: tokens(context).textMuted)),
+                          ],
                           if (!shouldBlur && episode.summary != null && episode.summary!.isNotEmpty) ...[
                             const SizedBox(height: 4),
-                            if (PlatformDetector.usesTvPresentation())
+                            if (desktop || PlatformDetector.usesTvPresentation())
                               Text(
                                 episode.summary!,
                                 style: Theme.of(

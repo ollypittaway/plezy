@@ -335,7 +335,7 @@ int? preferredNon4kVersionIndex(List<MediaVersion> versions) {
     final height = version.resolutionHeight;
     if (!version.isPlayable ||
         height == null ||
-        height >= 2160 ||
+        version.is4K || height >= 2160 ||
         (version.width ?? 0) >= 3840 ||
         const {'4k', '8k', 'uhd'}.contains(version.videoResolution?.toLowerCase())) {
       continue;
@@ -357,7 +357,7 @@ Future<bool?> navigateToVideoPlayer(
   bool usePushReplacement = false,
   bool isOffline = false,
   bool resolveWatchState = true,
-  bool preferNon4k = false,
+  bool preferNon4k = true,
   WatchCopy? watchTogetherCopy,
   bool Function()? isLaunchCurrent,
   Duration? initialPosition,
@@ -391,6 +391,7 @@ Future<bool?> navigateToVideoPlayer(
 
   if (preferNon4k &&
       !isOffline &&
+      (metadata.isMovie || metadata.isEpisode) &&
       watchTogetherCopy == null &&
       selectedMediaIndex == null &&
       selectedMediaSourceId == null) {
@@ -399,7 +400,7 @@ Future<bool?> navigateToVideoPlayer(
         : await resolveMediaVersions(metadata, mediaClient);
     if (!launchCurrent()) return null;
     final index = preferredNon4kVersionIndex(versions);
-    if (index != null) {
+    if (versions.length > 1 && index != null) {
       selectedMediaIndex = index;
       selectedMediaSourceId = versions[index].id;
     }
@@ -704,7 +705,7 @@ Future<bool> promptAndPlayVersion(BuildContext context, MediaItem item) async {
       : await resolveMediaVersions(item, client);
   if (!context.mounted) return false;
 
-  int selectedVersionIndex = 0;
+  int selectedVersionIndex = preferredNon4kVersionIndex(versions) ?? 0;
   if (versions.length > 1) {
     final picked = await showVersionPickerDialog(context, versions, t.mediaMenu.playVersion);
     if (picked == null || !context.mounted) return false;

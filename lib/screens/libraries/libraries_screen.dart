@@ -39,6 +39,8 @@ import 'tabs/library_collections_tab.dart';
 import 'tabs/library_genres_tab.dart';
 import 'tabs/base_library_tab.dart';
 
+typedef LibraryShellHeaderBuilder = Widget Function(bool overlayArtwork);
+
 enum LibraryTabType { recommended, collections, genres, browse }
 
 List<LibraryTabType> visibleLibraryTabs(MediaLibrary library) {
@@ -867,6 +869,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
     final currentTabIndex = _visibleTabs.isEmpty ? 0 : tabController.index.clamp(0, _visibleTabs.length - 1).toInt();
     final currentTabType = _visibleTabs.isEmpty ? null : _visibleTabs[currentTabIndex];
     final useTvRecommendedBackdrop = PlatformDetector.isTV() && currentTabType == LibraryTabType.recommended;
+    final shellHeader = context.watch<LibraryShellHeaderBuilder?>();
     final showBrowseOptionsAction =
         selectedLibrary != null && PlatformDetector.isMobile(context) && currentTabType == LibraryTabType.browse;
     final canSelectedLibraryGroupByFolders = context.select<MultiServerProvider, bool>((provider) {
@@ -1107,7 +1110,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
               body: tabs,
             ),
             if (useTvRecommendedBackdrop)
-              Positioned(top: 0, left: 0, right: 0, child: ExcludeFocusTraversal(child: buildTransparentTvTopBar())),
+              Positioned(top: shellHeader == null ? 0 : MediaQuery.paddingOf(context).top + 62, left: 0, right: 0, child: ExcludeFocusTraversal(child: buildTransparentTvTopBar())),
           ],
         ),
       );
@@ -1124,6 +1127,13 @@ class _LibrariesScreenState extends State<LibrariesScreen>
       child: body,
     );
 
-    return Scaffold(body: scrollBody);
+    if (shellHeader == null) return Scaffold(body: scrollBody);
+    if (useTvRecommendedBackdrop && selectedLibrary != null && !isLoadingLibraries) {
+      return Scaffold(body: Stack(fit: StackFit.expand, children: [
+        scrollBody,
+        Positioned(top: 0, left: 0, right: 0, child: shellHeader(true)),
+      ]));
+    }
+    return Scaffold(body: Column(children: [shellHeader(false), Expanded(child: scrollBody)]));
   }
 }

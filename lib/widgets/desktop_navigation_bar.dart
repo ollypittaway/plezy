@@ -31,6 +31,7 @@ class DesktopNavigationBar extends StatefulWidget {
     required this.onSelect,
     required this.onMenu,
     this.homeActions,
+    this.overlayArtwork = false,
     this.remoteNavigation = false,
     this.remoteHomeFocusNode,
     this.onNavigateDown,
@@ -44,6 +45,7 @@ class DesktopNavigationBar extends StatefulWidget {
   final ValueChanged<NavigationTabId> onSelect;
   final VoidCallback onMenu;
   final Widget? homeActions;
+  final bool overlayArtwork;
   final bool remoteNavigation;
   final FocusNode? remoteHomeFocusNode;
   final VoidCallback? onNavigateDown;
@@ -239,7 +241,7 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final width = MediaQuery.sizeOf(context).width;
-    final floating = homeActions != null;
+    final floating = homeActions != null || widget.overlayArtwork;
     final background = theme.scaffoldBackgroundColor;
     final utilityTabs = [for (final id in [NavigationTabId.search, NavigationTabId.downloads, NavigationTabId.settings]) ...tabs.where((tab) => tab.id == id)];
     return Material(

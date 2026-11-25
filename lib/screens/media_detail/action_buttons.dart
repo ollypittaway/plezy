@@ -66,13 +66,14 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     final preference = settings == null || versions.length < 2 || widget.isOffline
         ? null
         : readMediaVersionPreference(settings, versionItem)?.resolveIndex(versions);
-    final index = probe?.mediaIndex ?? preference ?? versions.indexWhere((version) => version.isPlayable);
+    final hdIndex = widget.isOffline ? null : preferredNon4kVersionIndex(versions);
+    final index = hdIndex ?? probe?.mediaIndex ?? preference ?? versions.indexWhere((version) => version.isPlayable);
     final version = index < 0 ? null : versions.elementAtOrNull(index);
     final primarySource = primaryFourKPlayback(
       versionItem,
       index,
       fourK,
-      preferFourKLibrary: preference == null && isFourKLibraryTitle(library),
+      preferFourKLibrary: hdIndex == null && preference == null && isFourKLibraryTitle(library),
     );
     // An offline multi-version title needs the identity of the file actually downloaded.
     final offlineFourK =
