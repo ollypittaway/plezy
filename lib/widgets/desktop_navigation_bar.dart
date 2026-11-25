@@ -12,7 +12,15 @@ import 'app_menu.dart';
 /// Home supplies its existing profile and session controls to the shell's header.
 typedef DesktopHomeHeaderBuilder = Widget Function(Widget actions);
 
-class DesktopNavigationBar extends StatelessWidget {
+class DesktopRemoteHeaderBridge extends InheritedWidget {
+  const DesktopRemoteHeaderBridge({super.key, required this.focusUtilities, required super.child});
+  final VoidCallback focusUtilities;
+  static DesktopRemoteHeaderBridge? of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<DesktopRemoteHeaderBridge>();
+  @override
+  bool updateShouldNotify(DesktopRemoteHeaderBridge oldWidget) => focusUtilities != oldWidget.focusUtilities;
+}
+
+class DesktopNavigationBar extends StatefulWidget {
   const DesktopNavigationBar({
     super.key,
     required this.tabs,
@@ -40,6 +48,25 @@ class DesktopNavigationBar extends StatelessWidget {
   final FocusNode? remoteHomeFocusNode;
   final VoidCallback? onNavigateDown;
 
+  @override
+  State<DesktopNavigationBar> createState() => _DesktopNavigationBarState();
+}
+
+class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
+  final primaryKey = GlobalKey<FocusableActionBarState>();
+  final utilityKey = GlobalKey<FocusableActionBarState>();
+  final libraryMenuKey = GlobalKey<AppMenuButtonState<VoidCallback>>();
+  List<NavigationTab> get tabs => widget.tabs;
+  NavigationTabId get selected => widget.selected;
+  List<MediaLibrary> get libraries => widget.libraries;
+  String? get selectedLibraryKey => widget.selectedLibraryKey;
+  ValueChanged<String> get onSelectLibrary => widget.onSelectLibrary;
+  ValueChanged<NavigationTabId> get onSelect => widget.onSelect;
+  VoidCallback get onMenu => widget.onMenu;
+  Widget? get homeActions => widget.homeActions;
+  bool get remoteNavigation => widget.remoteNavigation;
+  FocusNode? get remoteHomeFocusNode => widget.remoteHomeFocusNode;
+  VoidCallback? get onNavigateDown => widget.onNavigateDown;
   static const _utilities = {NavigationTabId.search, NavigationTabId.downloads, NavigationTabId.settings};
 
   List<AppMenuEntry<VoidCallback>> _libraryEntries(BuildContext context) {
@@ -62,7 +89,7 @@ class DesktopNavigationBar extends StatelessWidget {
     ];
   }
 
-  Widget _destinations(BuildContext context) {
+  Widget _destinations(BuildContext context, {VoidCallback? onNavigateRight, GlobalKey<FocusableActionBarState>? remoteKey}) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final style = theme.textTheme.bodyMedium!.copyWith(
@@ -74,7 +101,6 @@ class DesktopNavigationBar extends StatelessWidget {
     final primaryTabs = tabs.where((tab) => !_utilities.contains(tab.id)).toList();
     if (primaryTabs.isEmpty) return const SizedBox.shrink();
     if (remoteNavigation) {
-      final libraryMenuKey = GlobalKey<AppMenuButtonState<VoidCallback>>();
       return Align(
         alignment: AlignmentDirectional.centerStart,
         child: SingleChildScrollView(
@@ -87,8 +113,10 @@ class DesktopNavigationBar extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(3),
               child: FocusableActionBar(
+                key: remoteKey,
                 onNavigateLeft: primaryTabs.first.id == NavigationTabId.discover ? onMenu : null,
                 onNavigateDown: onNavigateDown,
+                onNavigateRight: onNavigateRight,
                 actions: [
                   for (final tab in primaryTabs)
                     FocusableAction(
@@ -195,6 +223,7 @@ class DesktopNavigationBar extends StatelessWidget {
     final width = MediaQuery.sizeOf(context).width;
     final floating = homeActions != null;
     final background = theme.scaffoldBackgroundColor;
+    final utilityTabs = [for (final id in [NavigationTabId.search, NavigationTabId.downloads, NavigationTabId.settings]) ...tabs.where((tab) => tab.id == id)];
     return Material(
       type: MaterialType.transparency,
       child: DecoratedBox(
@@ -247,7 +276,25 @@ class DesktopNavigationBar extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(child: _destinations(context)),
+                  Expanded(child: _destinations(context, remoteKey: primaryKey, onNavigateRight: () => utilityKey.currentState?.requestFocusOnFirst())),
+                  if (remoteNavigation)
+                    FocusableActionBar(
+                      key: utilityKey,
+                      onNavigateLeft: () {
+                        final count = tabs.where((tab) => !_utilities.contains(tab.id)).length;
+                        primaryKey.currentState?.getFocusNode(count - 1)?.requestFocus();
+                      },
+                      onNavigateDown: onNavigateDown,
+                      onNavigateRight: homeActions == null ? null : () {
+                        final action = utilityKey.currentState?.getFocusNode(utilityTabs.length - 1);
+                        action?.focusInDirection(TraversalDirection.right);
+                      },
+                      actions: [
+                        for (final tab in utilityTabs)
+                          FocusableAction(debugLabel: 'desktop_utility_${tab.id.name}', icon: tab.icon, iconSize: 20, iconFill: 0, tooltip: tab.getLabel(), onPressed: () => onSelect(tab.id)),
+                      ],
+                    ),
+                  if (!remoteNavigation)
                   for (final tab in tabs.where((tab) => _utilities.contains(tab.id)))
                     Semantics(
                       label: tab.getLabel(),
@@ -264,7 +311,15 @@ class DesktopNavigationBar extends StatelessWidget {
                         ),
                       ),
                     ),
-                  if (homeActions != null) ...[const SizedBox(width: 6), homeActions!],
+                  if (homeActions != null) ...[
+                    const SizedBox(width: 6),
+                    if (remoteNavigation)
+                      DesktopRemoteHeaderBridge(
+                        focusUtilities: () => utilityKey.currentState?.getFocusNode(utilityTabs.length - 1)?.requestFocus(),
+                        child: homeActions!,
+                      )
+                    else homeActions!,
+                  ],
                 ],
               ),
             ),

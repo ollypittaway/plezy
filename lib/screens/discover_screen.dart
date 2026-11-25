@@ -894,7 +894,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             ),
             child: FocusableActionBar(
               key: _actionBarKey,
-              onNavigateLeft: _navigateToSidebar,
+              onNavigateLeft: DesktopRemoteHeaderBridge.of(context)?.focusUtilities ?? _navigateToSidebar,
               onNavigateDown: _focusContentFromAppBar,
               actions: [
                 FocusableAction(icon: Symbols.refresh_rounded, iconColor: foregroundColor, onPressed: manualRefresh),
