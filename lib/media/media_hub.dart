@@ -1,3 +1,4 @@
+import 'collection_title.dart';
 import 'media_item.dart';
 
 /// A named, ordered list of items grouped on the home screen (Plex `Hub`,
@@ -11,6 +12,16 @@ class MediaHub {
   final String? identifier;
 
   final String title;
+  final String? collectionLibraryTitle;
+
+  String get displayTitle => collectionTitleWithLibrary(title, collectionLibraryTitle);
+
+  /// Plex promotes individual collections using custom.collection identifiers
+  /// or a collection's children endpoint, even when the row type is "movie".
+  bool get isCollectionShelf =>
+      type == 'collection' ||
+      (identifier ?? '').toLowerCase().split('.').contains('collection') ||
+      Uri.tryParse(id)?.pathSegments.contains('collections') == true;
 
   /// Hub kind: `movie`, `show`, `mixed`, `clip`, etc. — drives UI rendering.
   final String type;
@@ -34,6 +45,7 @@ class MediaHub {
   const MediaHub({
     required this.id,
     required this.title,
+    this.collectionLibraryTitle,
     required this.type,
     required this.items,
     this.identifier,
@@ -59,11 +71,12 @@ class MediaHub {
     return hubIdentifier != null && matches(hubIdentifier);
   }
 
-  MediaHub copyWith({List<MediaItem>? items, int? size}) {
+  MediaHub copyWith({List<MediaItem>? items, int? size, String? collectionLibraryTitle}) {
     return MediaHub(
       id: id,
       identifier: identifier,
       title: title,
+      collectionLibraryTitle: collectionLibraryTitle ?? this.collectionLibraryTitle,
       type: type,
       items: items ?? this.items,
       size: size ?? this.size,

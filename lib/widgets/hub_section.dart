@@ -523,7 +523,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
                   child: Row(
                     mainAxisSize: .min,
                     children: [
-                      Flexible(child: ShelfHeading(widget.hub.title, fontSize: isTv ? 26 : 24)),
+                      Flexible(child: ShelfHeading(widget.hub.displayTitle, fontSize: isTv ? 26 : 24)),
                       if (widget.totalResults case final totalResults?) ...[
                         SizedBox(width: isTv ? 12 : 8),
                         Text(

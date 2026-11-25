@@ -2,6 +2,7 @@ import 'dart:async';
 import '../media/ids.dart';
 import '../media/media_server_client.dart';
 import '../navigation/main_screen_scope.dart';
+import '../navigation/desktop_escape.dart';
 import '../navigation/page_refresh_shortcut.dart';
 import 'dart:io' show Platform, exit;
 
@@ -88,27 +89,6 @@ import '../watch_together/watch_together.dart';
 // MainScreenFocusScope and SideNavigationBleedBuilder live in
 // navigation/main_screen_scope.dart (re-exported above) so widgets like the
 // browse rail can import the scope without an import cycle through this file.
-
-/// Desktop embedders report every hardware key as a keyboard key, so a remote
-/// (HDMI-CEC, IR receiver) Escape cannot be told apart from a keyboard Escape.
-/// TV mode is the signal that the machine is remote-driven: there Escape stays
-/// Back and keeps the press-back-again exit (#2490).
-@visibleForTesting
-bool shouldHandleDesktopRootEscape({
-  required bool isDesktop,
-  required bool isTV,
-  required bool isPhysicalKeyboardEvent,
-  required LogicalKeyboardKey logicalKey,
-  required bool isCurrentRoute,
-  required bool isHomeTab,
-}) {
-  return isDesktop &&
-      !isTV &&
-      isPhysicalKeyboardEvent &&
-      logicalKey == LogicalKeyboardKey.escape &&
-      isCurrentRoute &&
-      isHomeTab;
-}
 
 /// Whether a lifecycle resume should raise the "ask for a profile on open"
 /// picker.
@@ -410,6 +390,7 @@ class _MainScreenState extends State<MainScreen>
     with RouteAware, WindowListener, WidgetsBindingObserver, MountedSetStateMixin {
   NavigationTabId _currentTab = NavigationTabId.discover;
   String? _selectedLibraryGlobalKey;
+  final _desktopBackHistory = <({NavigationTabId tab, String? library})>[];
   Future<void>? _desktopExitFuture;
 
   /// Whether the app is in offline mode (no server connection)
@@ -551,6 +532,7 @@ class _MainScreenState extends State<MainScreen>
     _contentFocusScope.addListener(_syncSidebarFocusWithContent);
 
     if (PlatformDetector.isDesktopOS()) {
+      FocusManager.instance.addEarlyKeyEventHandler(_handleDesktopEscape);
       windowManager.addListener(this);
       windowManager.setPreventClose(true);
     }
@@ -1104,6 +1086,7 @@ class _MainScreenState extends State<MainScreen>
     // A replacement MainScreen may already have attached its session.
     _detachDeepLinks();
 
+    FocusManager.instance.removeEarlyKeyEventHandler(_handleDesktopEscape);
     super.dispose();
   }
 
@@ -1380,6 +1363,7 @@ class _MainScreenState extends State<MainScreen>
     );
 
     if (newOffline == _isOffline) return;
+    _desktopBackHistory.clear();
 
     final previousTab = _currentTab;
     final wasOffline = _isOffline;
@@ -1644,32 +1628,43 @@ class _MainScreenState extends State<MainScreen>
     return KeyEventResult.handled;
   }
 
-  /// Desktop physical-keyboard Escape at root Home is reserved for leaving
-  /// window fullscreen; it never arms the press-back-again quit, so an Escape
-  /// aimed at fullscreen can't close the app (#1748). In TV mode Escape is the
-  /// remote's Back and keeps the double-press exit path, as do gamepad B,
-  /// companion-remote back, and system back. On macOS this also keeps player
-  /// Escape away from native fullscreen, which is window state shared by
-  /// every route.
-  KeyEventResult _handleDesktopRootEscape(KeyEvent event) {
-    final tabs = _getVisibleTabs(_isOffline);
-    final shouldHandle = shouldHandleDesktopRootEscape(
-      isDesktop: PlatformDetector.isDesktopOS(),
-      isTV: PlatformDetector.isTV(),
-      isPhysicalKeyboardEvent: event.isPhysicalKeyboardEvent,
-      logicalKey: event.logicalKey,
-      isCurrentRoute: ModalRoute.of(context)?.isCurrent == true,
-      isHomeTab: tabs.isNotEmpty && _currentTab == tabs.first.id,
+  KeyEventResult _handleDesktopEscape(KeyEvent event) {
+    if (!mounted || _isShowingProfileSelection) return KeyEventResult.ignored;
+    return dispatchDesktopEscape(
+      context,
+      event,
+      searchSelected: _currentTab == NavigationTabId.search,
+      suppressKeyUp: _suppressBackAfterPop,
+      goBack: _backDesktopStage,
     );
-    if (!shouldHandle) return KeyEventResult.ignored;
+  }
 
-    if (event is KeyUpEvent) {
-      BackKeyCoordinator.markHandled();
-      unawaited(FullscreenStateManager().exitFullscreenIfActive());
+  void _backDesktopStage() {
+    if (_isSidebarFocused) {
+      _focusContent();
+      return;
     }
-    return event is KeyDownEvent || event is KeyRepeatEvent || event is KeyUpEvent
-        ? KeyEventResult.handled
-        : KeyEventResult.ignored;
+    final tabs = _getVisibleTabs(_isOffline);
+    while (_desktopBackHistory.isNotEmpty) {
+      final stage = _desktopBackHistory.removeLast();
+      if (!tabs.any((tab) => tab.id == stage.tab)) continue;
+      final library = stage.library;
+      if (library != null) {
+        if (context.read<LibrariesProvider>().libraryByGlobalKey(library) == null ||
+            context.read<HiddenLibrariesProvider>().hiddenLibraryKeys.contains(library)) {
+          continue;
+        }
+        _selectLibrary(library, remember: false);
+      } else {
+        _selectTab(stage.tab, remember: false);
+      }
+      return;
+    }
+    if (tabs.isNotEmpty && _currentTab != tabs.first.id) {
+      _selectTab(tabs.first.id, remember: false);
+      return;
+    }
+    unawaited(FullscreenStateManager().exitFullscreenIfActive());
   }
 
   KeyEventResult _handlePageRefreshShortcut(KeyEvent event) {
@@ -1799,11 +1794,15 @@ class _MainScreenState extends State<MainScreen>
     _fullRefreshContentTabs();
   }
 
-  void _selectTab(NavigationTabId tab, {bool focusSearchInput = true}) {
+  void _selectTab(NavigationTabId tab, {bool focusSearchInput = true, String? libraryKey, bool remember = true}) {
     // Guard: ignore if tab isn't available in current mode
     if (!_getVisibleTabs(_isOffline).any((t) => t.id == tab)) return;
 
     final previousTab = _currentTab;
+    if (remember && (previousTab != tab || (libraryKey != null && libraryKey != _selectedLibraryGlobalKey))) {
+      _rememberDesktopStage();
+    }
+    if (libraryKey != null) _selectedLibraryGlobalKey = libraryKey;
     final wasMounted = _mountedTabs.contains(tab);
     setState(() {
       _currentTab = tab;
@@ -1868,16 +1867,24 @@ class _MainScreenState extends State<MainScreen>
     }
   }
 
-  /// Handle library selection from side navigation rail
-  void _selectLibrary(String libraryGlobalKey) {
+  void _rememberDesktopStage() {
+    if (!PlatformDetector.isDesktopOS() || PlatformDetector.isTV()) return;
+    final stage = (
+      tab: _currentTab,
+      library: _currentTab == NavigationTabId.libraries ? _selectedLibraryGlobalKey : null,
+    );
+    if (_desktopBackHistory.lastOrNull != stage) _desktopBackHistory.add(stage);
+  }
+
+  /// Handle library selection from the desktop menu or side navigation rail.
+  void _selectLibrary(String libraryGlobalKey, {bool remember = true}) {
     if (!_getVisibleTabs(_isOffline).any((tab) => tab.id == NavigationTabId.libraries)) return;
 
-    _selectedLibraryGlobalKey = libraryGlobalKey;
-    _selectTab(NavigationTabId.libraries);
+    _selectTab(NavigationTabId.libraries, libraryKey: libraryGlobalKey, remember: remember);
     // A first visit promotes LibrariesScreen in _selectTab. Wait for its State
     // before applying the requested library and focus; neither action may drop.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted || _currentTab != NavigationTabId.libraries || _selectedLibraryGlobalKey != libraryGlobalKey) return;
       _onScreen<LibraryLoadable>(NavigationTabId.libraries, (screen) => screen.loadLibraryByKey(libraryGlobalKey));
       _onScreen<FocusableTab>(NavigationTabId.libraries, (screen) => screen.focusActiveTabIfReady());
     });
@@ -1895,6 +1902,7 @@ class _MainScreenState extends State<MainScreen>
 
   void _handleLibrariesScreenSelected(String libraryGlobalKey) {
     if (_selectedLibraryGlobalKey == libraryGlobalKey) return;
+    if (_currentTab == NavigationTabId.libraries && _selectedLibraryGlobalKey != null) _rememberDesktopStage();
     setState(() => _selectedLibraryGlobalKey = libraryGlobalKey);
   }
 
@@ -2137,8 +2145,6 @@ class _MainScreenState extends State<MainScreen>
             canPop: false,
             child: Focus(
               onKeyEvent: (node, event) {
-                final rootEscapeResult = _handleDesktopRootEscape(event);
-                if (rootEscapeResult == KeyEventResult.handled) return rootEscapeResult;
                 final fullscreenResult = _handleFullscreenShortcut(event);
                 if (fullscreenResult == KeyEventResult.handled) return fullscreenResult;
                 final refreshResult = _handlePageRefreshShortcut(event);

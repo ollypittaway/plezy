@@ -510,7 +510,7 @@ class _HubDetailScreenState extends State<HubDetailScreen>
               clipBehavior: Clip.none,
               slivers: [
                 CustomAppBar(
-                  title: Text(widget.hub.title),
+                  title: Text(widget.hub.displayTitle),
                   pinned: true,
                   actions: buildFocusableAppBarActions(),
                   onBackPressed: popFromAppBar,

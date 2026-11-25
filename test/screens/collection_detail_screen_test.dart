@@ -121,12 +121,18 @@ void main() {
     ]);
 
     await tester.pumpWidget(
-      harness.wrap(SizedBox(width: 1280, height: 720, child: CollectionDetailScreen(collection: _movieCollection))),
+      harness.wrap(
+        SizedBox(
+          width: 1280,
+          height: 720,
+          child: CollectionDetailScreen(collection: _movieCollection.copyWith(libraryTitle: 'Movie Archive')),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
     // Header title plus the pinned (initially invisible) bar title.
-    expect(find.text('Sinners'), findsNWidgets(2));
+    expect(find.text('Sinners · Movie Archive'), findsNWidgets(2));
     expect(find.text('2 items  ·  2007–2013'), findsOneWidget);
     expect(find.textContaining('ten animated films'), findsOneWidget);
     expect(find.byTooltip('Play'), findsOneWidget);

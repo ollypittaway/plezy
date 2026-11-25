@@ -1527,7 +1527,7 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
       };
     }
 
-    return [hub.title, if (selection.isNotEmpty) selection].join(', ');
+    return [hub.displayTitle, if (selection.isNotEmpty) selection].join(', ');
   }
 
   Widget _buildHubHeader(BuildContext context, {required MediaHub hub, required bool isActive, required double scale}) {
@@ -1547,7 +1547,7 @@ class TvBrowseRailState extends State<TvBrowseRail> with TickerProviderStateMixi
           child: Row(
             children: [
               Flexible(
-                child: ShelfHeading(hub.title, fontSize: 22 * scale, color: titleColor),
+                child: ShelfHeading(hub.displayTitle, fontSize: 22 * scale, color: titleColor),
               ),
               if (showServerName) ...[
                 SizedBox(width: 8 * scale),

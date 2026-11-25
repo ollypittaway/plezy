@@ -751,6 +751,18 @@ void main() {
     expect(find.text('91  CRITICS', findRichText: true), findsOneWidget);
     expect(client.detailLookups.where((id) => id == 'movie_0').length, 1);
 
+    // Pause/resume establishes a fresh interval aligned with the test clock.
+    await tester.tap(find.byIcon(Symbols.pause_rounded));
+    await tester.pump();
+    await tester.tap(find.byWidgetPredicate((w) => w is Icon && w.semanticLabel == t.accessibility.autoScrollPlay));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 9));
+    await tester.pump(const Duration(milliseconds: 999));
+    expect(carousel.page, 0);
+    await tester.pump(const Duration(milliseconds: 1));
+    await tester.pump(const Duration(milliseconds: 510));
+    expect(carousel.page, 1);
+
     // Entering keyboard mode must not hide the indicators on non-TV devices
     // (regression: back-key/BT-keyboard events left them permanently hidden).
     await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowDown);

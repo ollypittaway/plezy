@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import '../media/ids.dart';
 import '../focus/focusable_action_bar.dart';
 import '../media/library_query.dart';
+import '../media/collection_title.dart';
+import '../providers/libraries_provider.dart';
 import '../media/media_item.dart';
 import '../mixins/deletion_aware.dart';
 import '../mixins/paginated_item_loader.dart';
@@ -295,6 +297,15 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
     );
   }
 
+  String _collectionHeading(BuildContext context) {
+    final collection = widget.collection;
+    final key = collection.libraryGlobalKey;
+    final name =
+        collection.libraryTitle ??
+        (key == null ? null : context.select<LibrariesProvider?, String?>((p) => p?.libraryByGlobalKey(key)?.title));
+    return collectionTitleWithLibrary(collection.displayTitle, name);
+  }
+
   Widget _buildInfo(BuildContext context, {required bool centered, required bool isTv}) {
     final theme = Theme.of(context);
     final tk = tokens(context);
@@ -305,7 +316,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
       crossAxisAlignment: centered ? CrossAxisAlignment.center : CrossAxisAlignment.start,
       children: [
         Text(
-          widget.collection.displayTitle,
+          _collectionHeading(context),
           style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, fontSize: isTv ? 34 : null),
           textAlign: align,
         ),
@@ -464,6 +475,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
   /// the always-visible circular back button (as on the movie/show detail).
   List<Widget> _buildChrome(BuildContext context) {
     final theme = Theme.of(context);
+    final heading = _collectionHeading(context);
     final statusBar = MediaQuery.paddingOf(context).top;
     return [
       Positioned(
@@ -487,12 +499,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
           child: Padding(
             padding: EdgeInsets.only(top: statusBar),
             child: Center(
-              child: Text(
-                widget.collection.displayTitle,
-                style: theme.textTheme.titleLarge,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(heading, style: theme.textTheme.titleLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
             ),
           ),
         ),

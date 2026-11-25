@@ -669,7 +669,13 @@ class DataAggregationService {
             if (music.cancelled) legCancelledServerIds.add(serverId);
           }
           if (globalError != null) Error.throwWithStackTrace(globalError, globalStackTrace!);
-          hubs = [...globalHubs, if (music != null) ...music.hubs];
+          final libraryNames = {
+            for (final library in serverLibraries ?? const <MediaLibrary>[]) library.id: library.title,
+          };
+          hubs = [
+            for (final hub in globalHubs) _attributeGlobalCollection(hub, libraryNames),
+            if (music != null) ...music.hubs,
+          ];
         } else {
           // A fallback backend cannot run a hub leg without the libraries its
           // prefetch failed to discover.
@@ -770,7 +776,10 @@ class DataAggregationService {
             libraryKind: library.kind,
             diagnostics: diagnostics,
           );
-          results[index] = hubs;
+          results[index] = [
+            for (final hub in hubs)
+              if (hub.isCollectionShelf) hub.copyWith(collectionLibraryTitle: library.title) else hub,
+          ];
           if (hubs.isNotEmpty || (!diagnostics.failed && !diagnostics.cancelled)) succeeded = true;
         } catch (e, st) {
           if (_isCancellation(e)) {
@@ -789,6 +798,24 @@ class DataAggregationService {
     await Future.wait([for (var i = 0; i < concurrency && i < visible.length; i++) worker()]);
 
     return (hubs: [for (final list in results) ...list], succeeded: succeeded, failed: failed, cancelled: cancelled);
+  }
+
+  /// Resolve a promoted collection against its own server. An ambiguous
+  /// or unknown origin is left unlabelled even if the first item has a name.
+  MediaHub _attributeGlobalCollection(MediaHub hub, Map<String, String> libraryNames) {
+    if (!hub.isCollectionShelf) return hub;
+    final ids = {
+      for (final item in hub.items)
+        if (item.libraryId != null) item.libraryId!,
+    };
+    if (ids.length > 1) return hub;
+    final explicitName = libraryNames[hub.libraryId ?? ids.singleOrNull];
+    if (explicitName != null) return hub.copyWith(collectionLibraryTitle: explicitName);
+    final names = {
+      for (final item in hub.items)
+        if (item.libraryTitle?.trim().isNotEmpty == true) item.libraryTitle!.trim(),
+    };
+    return names.length == 1 ? hub.copyWith(collectionLibraryTitle: names.single) : hub;
   }
 
   /// Filter hidden-library items and drop empty hubs.

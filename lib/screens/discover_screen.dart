@@ -79,7 +79,7 @@ class DiscoverScreen extends StatefulWidget {
 
 class _DiscoverScreenState extends State<DiscoverScreen>
     with Refreshable, ManualRefreshable, FullRefreshable, TabVisibilityAware, FocusableTab, WidgetsBindingObserver {
-  static const Duration _heroAutoScrollDuration = Duration(seconds: 8);
+  static const Duration _heroAutoScrollDuration = Duration(seconds: 10);
   static const Duration _indicatorUpdateInterval = Duration(milliseconds: 200);
 
   /// Data + refresh policy live in [DiscoverProvider]; this state keeps only
@@ -569,12 +569,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
       final nextPage = (_heroIndex.value + 1) % _onDeck.length;
       _heroController.animateToPage(nextPage, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
-      // Wait for page transition to complete before resetting progress
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted && !_isAutoScrollPaused) {
-          _startIndicatorProgress();
-        }
-      });
+      // onPageChanged restarts both the slide timer and its progress indicator.
     });
   }
 

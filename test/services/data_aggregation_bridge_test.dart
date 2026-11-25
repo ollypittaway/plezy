@@ -1640,6 +1640,51 @@ void main() {
       });
     });
 
+    for (final useGlobalHubs in [true, false]) {
+      test('Home collection headings use the library name (global hubs: $useGlobalHubs)', () async {
+        final client = testPlexClient(
+          serverId: ServerId('plex-1'),
+          serverName: 'Living Room',
+          promotedHubKey: '/hubs/promoted',
+          httpClient: MockClient((req) async {
+            if (req.url.path == '/library/sections') {
+              return _json({
+                'MediaContainer': {
+                  'Directory': [
+                    {'key': '2', 'type': 'movie', 'title': 'Family Films'},
+                  ],
+                },
+              });
+            }
+            if (req.url.path != (useGlobalHubs ? '/hubs/promoted' : '/hubs/sections/2')) {
+              return http.Response('unexpected request', 500);
+            }
+            return _json({
+              'MediaContainer': {
+                'Hub': [
+                  {
+                    'key': '/library/collections/42/children',
+                    'hubIdentifier': 'custom.collection.2.42',
+                    'type': 'movie',
+                    'title': 'Holiday Picks',
+                    'Metadata': [
+                      {'ratingKey': '7', 'type': 'movie', if (useGlobalHubs) 'librarySectionID': 2},
+                    ],
+                  },
+                ],
+              },
+            });
+          }),
+        );
+        addTearDown(client.close);
+        manager.debugRegisterClientForTesting(client);
+        final result = await service.getHubsFromAllServers(useGlobalHubs: useGlobalHubs);
+        final hub = result.hubs.single;
+        expect(hub.title, 'Holiday Picks');
+        expect(hub.copyWith(items: []).displayTitle, 'Holiday Picks · Family Films');
+      });
+    }
+
     test('Plex home layout keeps promoted hubs instead of splitting by preview libraries', () async {
       final captured = <Uri>[];
 
@@ -1695,7 +1740,7 @@ void main() {
 
       expect(result.succeededServerIds, {'plex-1'});
       expect(hubs, hasLength(1));
-      expect(hubs.single.title, 'Recently Added TV');
+      expect(hubs.single.displayTitle, 'Recently Added TV');
       expect(hubs.single.identifier, 'home.television.recent');
       expect(hubs.single.libraryId, isNull);
       expect(hubs.single.items, hasLength(7));

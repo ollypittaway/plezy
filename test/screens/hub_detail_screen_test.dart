@@ -1,3 +1,4 @@
+import 'package:plezy/utils/platform_detector.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -344,6 +345,16 @@ void main() {
       _cardFor(tester, 'Mike').focusNode!.requestFocus();
       await tester.pumpAndSettle();
     }
+
+    testWidgets('desktop Escape returns from a focused collection card with one press', (tester) async {
+      PlatformDetector.debugSetIsDesktopOSOverride(true);
+      addTearDown(() => PlatformDetector.debugSetIsDesktopOSOverride(null));
+      await pushHubFocusingMike(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(find.byType(HubDetailScreen), findsNothing);
+      expect(find.text('open'), findsOneWidget);
+    });
 
     testWidgets('a tap on the app-bar arrow leaves at once, wherever D-pad focus was', (tester) async {
       await pushHubFocusingMike(tester);
