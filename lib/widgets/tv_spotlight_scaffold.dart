@@ -70,6 +70,7 @@ class TvSpotlightScaffold extends StatelessWidget {
     required this.resolveClient,
     required this.foreground,
     this.hideSpoilers,
+    this.lightweightTransitions = false,
   });
 
   final List<MediaHub> hubs;
@@ -78,6 +79,7 @@ class TvSpotlightScaffold extends StatelessWidget {
   final TvSpotlightClientResolver resolveClient;
   final Widget foreground;
   final bool? hideSpoilers;
+  final bool lightweightTransitions;
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +133,10 @@ class TvSpotlightScaffold extends StatelessWidget {
                         contentTop: spotlightTop,
                         contentBottom: spotlightBottom,
                         contentLeft: spotlightLeft + foregroundLeft,
-                        targetWidthPx: (size.width * MediaQuery.devicePixelRatioOf(context)).ceil(),
+                        targetWidthPx: lightweightTransitions
+                            ? (size.width * MediaQuery.devicePixelRatioOf(context)).ceil().clamp(1, 1280).toInt()
+                            : (size.width * MediaQuery.devicePixelRatioOf(context)).ceil(),
+                        lightweightTransitions: lightweightTransitions,
                       );
                     },
                   ),
@@ -157,6 +162,7 @@ class _CatalogSpotlightBackground extends StatefulWidget {
     required this.contentBottom,
     required this.contentLeft,
     required this.targetWidthPx,
+    required this.lightweightTransitions,
   });
 
   final MediaItem? item;
@@ -166,6 +172,7 @@ class _CatalogSpotlightBackground extends StatefulWidget {
   final double contentBottom;
   final double contentLeft;
   final int targetWidthPx;
+  final bool lightweightTransitions;
 
   @override
   State<_CatalogSpotlightBackground> createState() => _CatalogSpotlightBackgroundState();
@@ -259,6 +266,7 @@ class _CatalogSpotlightBackgroundState extends State<_CatalogSpotlightBackground
       contentBottom: widget.contentBottom,
       contentLeft: widget.contentLeft,
       compact: true,
+      lightweightTransitions: widget.lightweightTransitions,
       metadataTrailing: _buildNextEpisodeMetadata(context),
     );
     if (accentColor == null) return background;

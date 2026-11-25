@@ -33,6 +33,7 @@ class TvSpotlightBackground extends StatelessWidget {
   final bool showInfo;
   final String? Function(String? artworkPath)? localArtworkPathResolver;
   final bool allowNetwork;
+  final bool lightweightTransitions;
 
   /// Optional caller-owned fact appended to the existing metadata line.
   final Widget? metadataTrailing;
@@ -49,6 +50,7 @@ class TvSpotlightBackground extends StatelessWidget {
     this.showInfo = true,
     this.localArtworkPathResolver,
     this.allowNetwork = true,
+    this.lightweightTransitions = false,
     this.metadataTrailing,
   });
 
@@ -78,18 +80,23 @@ class TvSpotlightBackground extends StatelessWidget {
           client: client,
           localArtworkPathResolver: localArtworkPathResolver == null ? null : (path) => localArtworkPathResolver!(path),
           allowNetwork: allowNetwork,
+          active: !lightweightTransitions,
+          lightweightFade: lightweightTransitions,
+          fadeDuration: const Duration(milliseconds: 220),
           // Always request at full-screen size: the corner box only crops the
           // layout. A mode-dependent size would change the transcode URL and
           // cold-start every cached backdrop when the setting is toggled.
-          width: size.width,
-          height: size.height,
+          width: lightweightTransitions ? math.min(size.width, 1280.0 / MediaQuery.devicePixelRatioOf(context)) : size.width,
+          height: lightweightTransitions ? math.min(size.height, 720.0 / MediaQuery.devicePixelRatioOf(context)) : size.height,
           fallbackColor: media == null ? bgColor : Theme.of(context).colorScheme.surfaceContainerHighest,
         );
         return Stack(
           fit: StackFit.expand,
           children: [
             RepaintBoundary(
-              child: cornerBackdrop ? _buildCornerBackdrop(backdropSize, backdrop) : blurArtwork(backdrop),
+              child: lightweightTransitions
+                  ? SizedBox.expand(child: backdrop)
+                  : cornerBackdrop ? _buildCornerBackdrop(backdropSize, backdrop) : blurArtwork(backdrop),
             ),
             _buildHorizontalScrim(bgColor),
             RasterizedGradient(
@@ -116,7 +123,16 @@ class TvSpotlightBackground extends StatelessWidget {
                 // The info block still cross-fades via AnimatedSwitcher, but its
                 // saveLayers are bounded to the text region, not the screen.
                 child: AnimatedSwitcher(
-                  duration: DevicePerformance.reducedDuration(const Duration(milliseconds: 280)),
+                  duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : lightweightTransitions
+                      ? const Duration(milliseconds: 180)
+                      : DevicePerformance.reducedDuration(const Duration(milliseconds: 280)),
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: lightweightTransitions ? SlideTransition(
+                      position: Tween<Offset>(begin: const Offset(0, 0.025), end: Offset.zero).animate(animation),
+                      child: child,
+                    ) : child,
+                  ),
                   switchInCurve: Curves.easeOutCubic,
                   switchOutCurve: Curves.easeOutCubic,
                   // Expand instead of the default loose centered Stack so the

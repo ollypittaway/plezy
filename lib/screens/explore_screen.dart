@@ -73,7 +73,7 @@ class ExploreScreenState extends State<ExploreScreen>
 
   final _tvBrowseRailKey = GlobalKey<TvBrowseRailState>();
   final _hubFocusMemory = HubFocusMemory();
-  final TvSpotlightController _spotlight = TvSpotlightController();
+  final TvSpotlightController _spotlight = TvSpotlightController(settleDelay: const Duration(milliseconds: 190));
 
   @override
   String get searchDebugLabel => 'ExploreSearch';
@@ -172,7 +172,11 @@ class ExploreScreenState extends State<ExploreScreen>
 
   void _setSpotlightItem(MediaItem item) => _spotlight.select(item);
 
+  List<ExploreRowHub>? _lastKeyedRows;
+
   void _updateHubKeys(List<ExploreRowHub> rowHubs) {
+    if (identical(_lastKeyedRows, rowHubs)) return;
+    _lastKeyedRows = rowHubs;
     final liveIds = <String>{for (final rowHub in rowHubs) rowHub.hub.id};
     _hubKeysById.removeWhere((id, _) => !liveIds.contains(id));
     _orderedHubKeys = [
@@ -186,7 +190,7 @@ class ExploreScreenState extends State<ExploreScreen>
       hubCount: keys.length,
       hubIndex: hubIndex,
       isUp: isUp,
-      onTopBoundary: searchFocusNode.requestFocus,
+      onTopBoundary: MainScreenFocusScope.of(context, listen: false)?.focusTopNavigation ?? searchFocusNode.requestFocus,
       requestFocus: (targetIndex) {
         keys[targetIndex].currentState?.requestFocusFromMemory();
       },
@@ -487,6 +491,7 @@ class ExploreScreenState extends State<ExploreScreen>
     return TvSpotlightScaffold(
       hubs: tvHubs,
       spotlightListenable: _spotlight,
+      lightweightTransitions: PlatformDetector.isFireTV(),
       resolveSpotlight: () => _spotlight.resolve(tvHubs),
       resolveClient: (spotlight) => context.tryGetMediaClientForServer(serverIdOrNull(spotlight?.serverId)),
       foreground: Stack(
@@ -524,7 +529,8 @@ class ExploreScreenState extends State<ExploreScreen>
                   final rowHub = _rowForHub(hub);
                   return rowHub == null ? () => Future.value(hub.items) : () => _explore.loadAllForHub(rowHub);
                 },
-                onNavigateUp: _actionBarKey.currentState?.requestFocusOnFirst,
+                onNavigateUp: MainScreenFocusScope.of(context, listen: false)?.focusTopNavigation ??
+                    () => _actionBarKey.currentState?.requestFocusOnFirst(),
                 onNavigateToSidebar: _navigateToSidebar,
                 onBack: _navigateToSidebar,
                 tallPosterScale: TvBrowseRailLayout.compactTallPosterScale,

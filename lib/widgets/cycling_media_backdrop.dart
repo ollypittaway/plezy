@@ -34,6 +34,7 @@ class CyclingMediaBackdrop extends StatefulWidget {
     this.alignment = Alignment.center,
     this.rotationInterval = const Duration(seconds: 10),
     this.fadeDuration = const Duration(milliseconds: 280),
+    this.lightweightFade = false,
   });
 
   final Object? mediaKey;
@@ -58,6 +59,7 @@ class CyclingMediaBackdrop extends StatefulWidget {
   final Color fallbackColor;
   final Duration rotationInterval;
   final Duration fadeDuration;
+  final bool lightweightFade;
 
   @override
   State<CyclingMediaBackdrop> createState() => _CyclingMediaBackdropState();
@@ -264,7 +266,8 @@ class _CyclingMediaBackdropState extends State<CyclingMediaBackdrop> with Widget
     final pending = localResolution == LocalFileResolution.pending;
     final provider = path == null || pending ? null : _providerFor(context, path, localFile);
     if (path != null && provider == null && !pending) _reportMissingProvider(path);
-    final fadeDuration = _disableAnimations ? Duration.zero : DevicePerformance.reducedDuration(widget.fadeDuration);
+    final fadeDuration = _disableAnimations ? Duration.zero : widget.lightweightFade
+        ? widget.fadeDuration : DevicePerformance.reducedDuration(widget.fadeDuration);
 
     return _BackdropArtworkCrossfade(
       artworkKey: (widget.mediaKey, path),

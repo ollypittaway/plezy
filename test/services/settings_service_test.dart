@@ -118,13 +118,13 @@ void main() {
     test('defaults to play and resets to play', () async {
       final settings = await SettingsService.getInstance();
 
-      expect(settings.read(SettingsService.episodeAction), EpisodeAction.play);
-
-      await settings.write(SettingsService.episodeAction, EpisodeAction.details);
       expect(settings.read(SettingsService.episodeAction), EpisodeAction.details);
 
-      await settings.resetAllSettings();
+      await settings.write(SettingsService.episodeAction, EpisodeAction.play);
       expect(settings.read(SettingsService.episodeAction), EpisodeAction.play);
+
+      await settings.resetAllSettings();
+      expect(settings.read(SettingsService.episodeAction), EpisodeAction.details);
     });
   });
 
