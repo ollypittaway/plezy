@@ -38,7 +38,7 @@ jobs:
             # Existing tags always win; only the explicit new-release branch
             # may bootstrap a missing tag, after checking the source version.
             ref="refs/tags/$tag"
-            if [[ "$GITHUB_REF_NAME" == release-build/v0.0.2 ]]; then
+            if [[ "$GITHUB_REF_NAME" == release-build/v0.0.3 ]]; then
               if lookup=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" 2>&1); then
                 :
               elif [[ "$lookup" == *"HTTP 404"* ]]; then
@@ -65,14 +65,14 @@ jobs:
           fi
           echo "number=$version" >> "$GITHUB_OUTPUT"
           echo "source=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Create v0.0.2 tag if missing
-        if: github.event_name == 'push' && github.ref == 'refs/heads/release-build/v0.0.2'
+      - name: Create v0.0.3 tag if missing
+        if: github.event_name == 'push' && github.ref == 'refs/heads/release-build/v0.0.3'
         env:
           GH_TOKEN: ${{ github.token }}
           SOURCE: ${{ steps.read.outputs.source }}
         run: |
           if ! gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v0.0.2" >/dev/null 2>&1; then
-            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref=refs/tags/v0.0.2 -f sha="$SOURCE"
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f ref=refs/tags/v0.0.3 -f sha="$SOURCE"
           fi
 
   android:

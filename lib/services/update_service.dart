@@ -187,136 +187,14 @@ class UpdateService {
   /// Accept only the expected signed asset and GitHub-provided SHA-256 digest.
   @visibleForTesting
   static Map<String, String>? firestickAssetForRelease(dynamic data, String version) {
-    if (!RegExp(r'^\d+\.\d+\.\d+({
-    required bool respectCooldown,
-    required MediaServerHttpClient client,
-    bool throwOnFailure = false,
-  }) {
-    return _performUpdateCheck(
-      respectCooldown: respectCooldown,
-      client: client,
-      forceEnabled: true,
-      throwOnFailure: throwOnFailure,
-    );
-  }
-
-  /// Check for updates on GitHub (manual check, ignores cooldown)
-  /// Returns a map with update info, or null when there is no update (or the
-  /// release is skipped). Throws when the check itself fails, so the caller
-  /// can say so instead of reporting the latest version.
-  static Future<Map<String, dynamic>?> checkForUpdates() {
-    return _performUpdateCheck(respectCooldown: false, throwOnFailure: true);
-  }
-
-  /// Check for updates on startup (respects cooldown and skipped versions)
-  /// Returns update info if available, null otherwise
-  static Future<Map<String, dynamic>?> checkForUpdatesOnStartup() {
-    return _performUpdateCheck(respectCooldown: true);
-  }
-
-  /// Parse version string into list of integers
-  /// Handles versions like "1.2.3+4" by taking only the numeric parts
-  static List<int> _parseVersionParts(String version) {
-    return version.split('.').map((p) {
-      final numPart = p.split('+').first.split('-').first;
-      return int.tryParse(numPart) ?? 0;
-    }).toList();
-  }
-
-  /// Compare two version strings
-  /// Returns true if newVersion is newer than currentVersion
-  static bool _isNewerVersion(String newVersion, String currentVersion) {
-    try {
-      final newParts = _parseVersionParts(newVersion);
-      final currentParts = _parseVersionParts(currentVersion);
-
-      // Compare each part
-      final maxLength = newParts.length > currentParts.length ? newParts.length : currentParts.length;
-
-      for (int i = 0; i < maxLength; i++) {
-        final newPart = i < newParts.length ? newParts[i] : 0;
-        final currentPart = i < currentParts.length ? currentParts[i] : 0;
-
-        if (newPart > currentPart) return true;
-        if (newPart < currentPart) return false;
-      }
-
-      return false;
-    } catch (error, stackTrace) {
-      appLogger.e('Error comparing versions', error: error, stackTrace: stackTrace);
-      return false;
-    }
-  }
-}
-).hasMatch(version) || data is! Map) return null;
+    if (!RegExp(r'^\d+\.\d+\.\d+$').hasMatch(version) || data is! Map) return null;
     final assets = data['assets'];
     if (assets is! List) return null;
     final expected = 'https://github.com/$_githubRepo/releases/download/v$version/$_firestickAsset';
     for (final asset in assets) {
       if (asset is! Map || asset['name'] != _firestickAsset || asset['browser_download_url'] != expected) continue;
       final digest = asset['digest'];
-      if (digest is String && RegExp(r'^sha256:[a-f0-9]{64}({
-    required bool respectCooldown,
-    required MediaServerHttpClient client,
-    bool throwOnFailure = false,
-  }) {
-    return _performUpdateCheck(
-      respectCooldown: respectCooldown,
-      client: client,
-      forceEnabled: true,
-      throwOnFailure: throwOnFailure,
-    );
-  }
-
-  /// Check for updates on GitHub (manual check, ignores cooldown)
-  /// Returns a map with update info, or null when there is no update (or the
-  /// release is skipped). Throws when the check itself fails, so the caller
-  /// can say so instead of reporting the latest version.
-  static Future<Map<String, dynamic>?> checkForUpdates() {
-    return _performUpdateCheck(respectCooldown: false, throwOnFailure: true);
-  }
-
-  /// Check for updates on startup (respects cooldown and skipped versions)
-  /// Returns update info if available, null otherwise
-  static Future<Map<String, dynamic>?> checkForUpdatesOnStartup() {
-    return _performUpdateCheck(respectCooldown: true);
-  }
-
-  /// Parse version string into list of integers
-  /// Handles versions like "1.2.3+4" by taking only the numeric parts
-  static List<int> _parseVersionParts(String version) {
-    return version.split('.').map((p) {
-      final numPart = p.split('+').first.split('-').first;
-      return int.tryParse(numPart) ?? 0;
-    }).toList();
-  }
-
-  /// Compare two version strings
-  /// Returns true if newVersion is newer than currentVersion
-  static bool _isNewerVersion(String newVersion, String currentVersion) {
-    try {
-      final newParts = _parseVersionParts(newVersion);
-      final currentParts = _parseVersionParts(currentVersion);
-
-      // Compare each part
-      final maxLength = newParts.length > currentParts.length ? newParts.length : currentParts.length;
-
-      for (int i = 0; i < maxLength; i++) {
-        final newPart = i < newParts.length ? newParts[i] : 0;
-        final currentPart = i < currentParts.length ? currentParts[i] : 0;
-
-        if (newPart > currentPart) return true;
-        if (newPart < currentPart) return false;
-      }
-
-      return false;
-    } catch (error, stackTrace) {
-      appLogger.e('Error comparing versions', error: error, stackTrace: stackTrace);
-      return false;
-    }
-  }
-}
-).hasMatch(digest)) {
+      if (digest is String && RegExp(r'^sha256:[a-f0-9]{64}$').hasMatch(digest)) {
         return {'url': expected, 'sha256': digest.substring(7)};
       }
     }
@@ -325,137 +203,12 @@ class UpdateService {
 
   static bool _installing = false;
 
-  /// Download into private app cache, verify the release digest, then hand
-  /// the APK to Android. The system enforces the installed signing identity
-  /// and requires user confirmation; this is not a silent install.
   static Future<bool> installApkUpdate(Map<String, dynamic> info) async {
     if (!supportsApkUpdates || _installing) return false;
     final version = info['latestVersion'];
     final digest = info['apkSha256'];
-    if (version is! String || !RegExp(r'^\d+\.\d+\.\d+({
-    required bool respectCooldown,
-    required MediaServerHttpClient client,
-    bool throwOnFailure = false,
-  }) {
-    return _performUpdateCheck(
-      respectCooldown: respectCooldown,
-      client: client,
-      forceEnabled: true,
-      throwOnFailure: throwOnFailure,
-    );
-  }
-
-  /// Check for updates on GitHub (manual check, ignores cooldown)
-  /// Returns a map with update info, or null when there is no update (or the
-  /// release is skipped). Throws when the check itself fails, so the caller
-  /// can say so instead of reporting the latest version.
-  static Future<Map<String, dynamic>?> checkForUpdates() {
-    return _performUpdateCheck(respectCooldown: false, throwOnFailure: true);
-  }
-
-  /// Check for updates on startup (respects cooldown and skipped versions)
-  /// Returns update info if available, null otherwise
-  static Future<Map<String, dynamic>?> checkForUpdatesOnStartup() {
-    return _performUpdateCheck(respectCooldown: true);
-  }
-
-  /// Parse version string into list of integers
-  /// Handles versions like "1.2.3+4" by taking only the numeric parts
-  static List<int> _parseVersionParts(String version) {
-    return version.split('.').map((p) {
-      final numPart = p.split('+').first.split('-').first;
-      return int.tryParse(numPart) ?? 0;
-    }).toList();
-  }
-
-  /// Compare two version strings
-  /// Returns true if newVersion is newer than currentVersion
-  static bool _isNewerVersion(String newVersion, String currentVersion) {
-    try {
-      final newParts = _parseVersionParts(newVersion);
-      final currentParts = _parseVersionParts(currentVersion);
-
-      // Compare each part
-      final maxLength = newParts.length > currentParts.length ? newParts.length : currentParts.length;
-
-      for (int i = 0; i < maxLength; i++) {
-        final newPart = i < newParts.length ? newParts[i] : 0;
-        final currentPart = i < currentParts.length ? currentParts[i] : 0;
-
-        if (newPart > currentPart) return true;
-        if (newPart < currentPart) return false;
-      }
-
-      return false;
-    } catch (error, stackTrace) {
-      appLogger.e('Error comparing versions', error: error, stackTrace: stackTrace);
-      return false;
-    }
-  }
-}
-).hasMatch(version) ||
-        digest is! String || !RegExp(r'^[a-f0-9]{64}({
-    required bool respectCooldown,
-    required MediaServerHttpClient client,
-    bool throwOnFailure = false,
-  }) {
-    return _performUpdateCheck(
-      respectCooldown: respectCooldown,
-      client: client,
-      forceEnabled: true,
-      throwOnFailure: throwOnFailure,
-    );
-  }
-
-  /// Check for updates on GitHub (manual check, ignores cooldown)
-  /// Returns a map with update info, or null when there is no update (or the
-  /// release is skipped). Throws when the check itself fails, so the caller
-  /// can say so instead of reporting the latest version.
-  static Future<Map<String, dynamic>?> checkForUpdates() {
-    return _performUpdateCheck(respectCooldown: false, throwOnFailure: true);
-  }
-
-  /// Check for updates on startup (respects cooldown and skipped versions)
-  /// Returns update info if available, null otherwise
-  static Future<Map<String, dynamic>?> checkForUpdatesOnStartup() {
-    return _performUpdateCheck(respectCooldown: true);
-  }
-
-  /// Parse version string into list of integers
-  /// Handles versions like "1.2.3+4" by taking only the numeric parts
-  static List<int> _parseVersionParts(String version) {
-    return version.split('.').map((p) {
-      final numPart = p.split('+').first.split('-').first;
-      return int.tryParse(numPart) ?? 0;
-    }).toList();
-  }
-
-  /// Compare two version strings
-  /// Returns true if newVersion is newer than currentVersion
-  static bool _isNewerVersion(String newVersion, String currentVersion) {
-    try {
-      final newParts = _parseVersionParts(newVersion);
-      final currentParts = _parseVersionParts(currentVersion);
-
-      // Compare each part
-      final maxLength = newParts.length > currentParts.length ? newParts.length : currentParts.length;
-
-      for (int i = 0; i < maxLength; i++) {
-        final newPart = i < newParts.length ? newParts[i] : 0;
-        final currentPart = i < currentParts.length ? currentParts[i] : 0;
-
-        if (newPart > currentPart) return true;
-        if (newPart < currentPart) return false;
-      }
-
-      return false;
-    } catch (error, stackTrace) {
-      appLogger.e('Error comparing versions', error: error, stackTrace: stackTrace);
-      return false;
-    }
-  }
-}
-).hasMatch(digest) ||
+    if (version is! String || !RegExp(r'^\d+\.\d+\.\d+$').hasMatch(version) ||
+        digest is! String || !RegExp(r'^[a-f0-9]{64}$').hasMatch(digest) ||
         info['apkUrl'] != 'https://github.com/$_githubRepo/releases/download/v$version/$_firestickAsset') {
       throw StateError('Invalid update metadata');
     }
@@ -469,14 +222,15 @@ class UpdateService {
         return false;
       }
       final cache = await getTemporaryDirectory();
-      final directory = await Directory('${cache.path}/gucciplexa-update').create(recursive: true);
-      file = File('${directory.path}/update.apk');
+      final directory = await Directory(cache.path + '/gucciplexa-update').create(recursive: true);
+      final target = File(directory.path + '/update.apk');
+      file = target;
       final response = await client.send(http.Request('GET', Uri.parse(info['apkUrl'] as String)))
           .timeout(const Duration(seconds: 45));
-      if (response.statusCode != 200) throw StateError('Download failed: HTTP ${response.statusCode}');
+      if (response.statusCode != 200) throw StateError('Download failed: HTTP ' + response.statusCode.toString());
       const maxBytes = 500 * 1024 * 1024;
       if ((response.contentLength ?? 0) > maxBytes) throw StateError('Update is too large');
-      final sink = file.openWrite();
+      final sink = target.openWrite();
       var bytes = 0;
       try {
         await for (final chunk in response.stream.timeout(const Duration(seconds: 45))) {
@@ -490,9 +244,9 @@ class UpdateService {
       if (bytes == 0 || (response.contentLength != null && bytes != response.contentLength)) {
         throw StateError('Incomplete update download');
       }
-      final actual = await sha256.bind(file.openRead()).first;
+      final actual = await sha256.bind(target.openRead()).first;
       if (actual.toString() != digest) throw StateError('Update checksum mismatch');
-      await deviceChannel.invokeMethod<void>('installGucciPlexaUpdate', {'path': file.path});
+      await deviceChannel.invokeMethod<void>('installGucciPlexaUpdate', {'path': target.path});
       return true;
     } catch (_) {
       if (file != null && await file.exists()) await file.delete();
