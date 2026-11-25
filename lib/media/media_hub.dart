@@ -28,6 +28,9 @@ class MediaHub {
 
   final List<MediaItem> items;
 
+  /// Original backend rows when Home combines several shelves with the same title.
+  final List<MediaHub> sources;
+
   /// Total number of items the server reports (may exceed [items.length] when
   /// a "see more" affordance is available).
   final int size;
@@ -48,6 +51,7 @@ class MediaHub {
     this.collectionLibraryTitle,
     required this.type,
     required this.items,
+    this.sources = const [],
     this.identifier,
     this.size = 0,
     this.more = false,
@@ -66,6 +70,7 @@ class MediaHub {
   bool get usesContinueWatchingAction => isContinueWatchingHub || _anySemanticKey(_usesContinueWatchingActionKey);
 
   bool _anySemanticKey(bool Function(String key) matches) {
+    if (sources.isNotEmpty) return false;
     if (matches(id)) return true;
     final hubIdentifier = identifier;
     return hubIdentifier != null && matches(hubIdentifier);
@@ -79,6 +84,7 @@ class MediaHub {
       collectionLibraryTitle: collectionLibraryTitle ?? this.collectionLibraryTitle,
       type: type,
       items: items ?? this.items,
+      sources: sources,
       size: size ?? this.size,
       more: more,
       libraryId: libraryId,

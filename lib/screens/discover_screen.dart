@@ -722,12 +722,6 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     fullRefresh();
   }
 
-  /// Whether the loaded hubs span more than one connected server.
-  bool _hubsSpanMultipleServers() {
-    final serverIds = _hubs.where((hub) => hub.serverId != null).map((hub) => hub.serverId).toSet();
-    return serverIds.length > 1;
-  }
-
   Future<void> _handleLogout() async {
     final confirm = await showConfirmDialog(
       context,
@@ -1010,7 +1004,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     }
 
     final showServerNameOnHubs = svc.read(SettingsService.showServerNameOnHubs);
-    final hubsSpanMultipleServers = _hubsSpanMultipleServers();
+    final hubsSpanMultipleServers = _discover.hubsSpanMultipleServers;
 
     final bottomPadding = MediaQuery.paddingOf(context).bottom;
     final theme = Theme.of(context);
@@ -1179,7 +1173,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final svc = SettingsService.instance;
     final hideSpoilers = svc.read(SettingsService.hideSpoilers);
     final showServerNameOnHubs = svc.read(SettingsService.showServerNameOnHubs);
-    final hubsSpanMultipleServers = _hubsSpanMultipleServers();
+    final hubsSpanMultipleServers = _discover.hubsSpanMultipleServers;
     final browseHubs = _tvBrowseHubs;
 
     return TvSpotlightScaffold(

@@ -779,6 +779,38 @@ void main() {
     await pumpEventQueue();
   });
 
+  test('Home combines exactly matching titles in library order and keeps distinct library editions', () async {
+    const title = 'Top Christmas Movies';
+    MediaHub shelf(String name, int section, List<String> ids, {String category = title}) => MediaHub(
+      id: '/library/collections/$section/children',
+      title: category,
+      collectionLibraryTitle: name,
+      type: 'movie',
+      items: [for (final id in ids) testMediaItem(id: id, title: 'Film', libraryId: '$section', serverId: 'server_1')],
+      serverId: 'server_1',
+    );
+    final kids = shelf('Kids Movies', 1, ['kids', 'shared']);
+    final uhd = shelf('4K Movies', 2, ['uhd']);
+    final movies = shelf('Movies', 3, ['shared', 'hd']);
+    final otherCase = shelf('Movies', 4, ['other'], category: 'Top Christmas movies');
+    aggregation.hubsResult = () => [kids, _hub('Other shelf'), uhd, otherCase, movies];
+    await provider.load();
+
+    expect(provider.hubs.map((hub) => hub.title), [title, 'Other shelf', otherCase.title]);
+    final group = provider.hubs.first;
+    expect(group.displayTitle, '$title · Kids Movies, 4K Movies, Movies');
+    expect(group.items.map((item) => item.id), ['kids', 'uhd', 'shared', 'hd']);
+    expect(group.sources, [kids, uhd, movies]);
+    expect(provider.hubs.last, same(otherCase));
+
+    MediaLibrary library(int id) =>
+        MediaLibrary(id: '$id', title: '$id', backend: MediaBackend.plex, serverId: 'server_1');
+    await libraries.updateLibraryOrder([library(3), library(2), library(1)]);
+    await pumpEventQueue();
+    expect(provider.hubs.first.sources, [movies, uhd, kids]);
+    expect(provider.hubs.first.items.first.id, 'shared');
+  });
+
   test('library order change re-sorts hubs without any refetch', () async {
     aggregation.hubsResult = () => [_hub('hub-lib2', libraryId: 'lib-2'), _hub('hub-lib1', libraryId: 'lib-1')];
     await provider.load();

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../media/grouped_home_hubs.dart';
 import '../media/ids.dart';
 import '../media/media_hub.dart';
 import '../media/library_change_event.dart';
@@ -232,6 +233,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   Map<String, List<MediaItem>> _continueWatchingCopies = const {};
 
   List<MediaHub> _hubs = [];
+  List<MediaHub> _displayHubs = [];
   bool _hasMoreContinueWatching = false;
   DiscoverLoadState _onDeckState = DiscoverLoadState.initial;
   DiscoverLoadState _hubsState = DiscoverLoadState.initial;
@@ -278,7 +280,8 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
     return [for (final copy in copies) copy.globalKey == item.globalKey ? item : copy];
   }
 
-  List<MediaHub> get hubs => _hubs;
+  List<MediaHub> get hubs => _displayHubs;
+  bool get hubsSpanMultipleServers => _hubs.map((hub) => hub.serverId).nonNulls.toSet().length > 1;
   bool get hasMoreContinueWatching => _hasMoreContinueWatching;
 
   /// Raw load failure (unlocalized); the screen wraps it for display.
@@ -978,6 +981,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
 
   void _replaceHubs(List<MediaHub> hubs) {
     _hubs = hubs;
+    _displayHubs = groupHomeHubs(hubs);
     ++_commitRevision;
   }
 

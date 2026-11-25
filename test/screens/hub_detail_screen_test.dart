@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/logger.dart';
 import 'package:plezy/focus/input_mode_tracker.dart';
 import 'package:plezy/i18n/strings.g.dart';
+import 'package:plezy/media/grouped_home_hubs.dart';
 import 'package:plezy/media/ids.dart';
 import 'package:plezy/media/library_query.dart';
 import 'package:plezy/media/media_backend.dart';
@@ -191,6 +192,54 @@ void main() {
     await tester.drag(find.byType(CustomScrollView), const Offset(0, -50000));
     await tester.pumpAndSettle();
     expect(harness.client.requestedStarts, [0, 200, 400]);
+  });
+
+  testWidgets('View All expands the original collections and includes a complete library preview', (tester) async {
+    final items = List.generate(6, (index) => _item(index, backend: MediaBackend.plex));
+    final harness = await _createHarness([], backend: MediaBackend.plex);
+    MediaHub source(int index, String library, {bool more = true}) => MediaHub(
+      id: '/library/collections/$index/children',
+      title: 'Top Christmas Movies',
+      collectionLibraryTitle: library,
+      type: 'movie',
+      items: [items[index]],
+      more: more,
+      serverId: 'server_1',
+    );
+    final kids = source(0, 'Kids Movies');
+    final uhd = source(1, '4K Movies', more: false);
+    final movies = source(2, 'Movies');
+    harness.client.hubItems[kids.id] = [items[0], items[3]];
+    harness.client.hubItems[movies.id] = [items[2], items[3], items[5]];
+    final hub = groupHomeHubs([kids, uhd, movies]).single;
+    await tester.pumpWidget(harness.wrap(HubDetailScreen(hub: hub)));
+    await tester.pumpAndSettle();
+
+    expect(harness.client.requestedHubIds, [kids.id, movies.id]);
+    expect(find.text('Top Christmas Movies · Kids Movies, 4K Movies, Movies'), findsOneWidget);
+    for (final index in [0, 1, 2, 3, 5]) {
+      expect(find.text('Item $index'), findsOneWidget);
+    }
+  });
+
+  testWidgets('View All includes overflow from locally complete shelves without a server request', (tester) async {
+    final harness = await _createHarness([], backend: MediaBackend.plex);
+    MediaHub completeShelf(int start) => MediaHub(
+      id: '/library/collections/$start/children',
+      title: 'Christmas',
+      type: 'movie',
+      items: List.generate(15, (index) => _item(start + index, backend: MediaBackend.plex)),
+      serverId: 'server_1',
+    );
+    final hub = groupHomeHubs([completeShelf(0), completeShelf(15)]).single;
+    expect(hub.items.length, defaultHubPreviewLimit);
+    expect(hub.more, isTrue);
+    await tester.pumpWidget(harness.wrap(HubDetailScreen(hub: hub)));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(CustomScrollView), const Offset(0, -5000));
+    await tester.pumpAndSettle();
+    expect(find.text('Item 29'), findsOneWidget);
+    expect(harness.client.requestedHubIds, isEmpty);
   });
 
   testWidgets('Plex hub replaces its preview with the full-hub response', (tester) async {
@@ -619,6 +668,8 @@ class _PagedHubClient implements MediaServerClient {
   final List<MediaItem> items;
   final List<int?> requestedStarts = [];
   final List<int?> requestedSizes = [];
+  final List<String> requestedHubIds = [];
+  final Map<String, List<MediaItem>> hubItems = {};
   int fullHubRequests = 0;
   List<MediaSort> sortOptions = const [];
 
@@ -645,10 +696,11 @@ class _PagedHubClient implements MediaServerClient {
     int? size,
     AbortController? abort,
   }) async {
+    requestedHubIds.add(hubId);
     requestedStarts.add(start);
     requestedSizes.add(size);
     await pageGate?.future;
-    return fakeLibraryPage(items, start: start, size: size);
+    return fakeLibraryPage(hubItems[hubId] ?? items, start: start, size: size);
   }
 
   @override
@@ -657,7 +709,7 @@ class _PagedHubClient implements MediaServerClient {
   @override
   Future<List<MediaItem>> fetchMoreHubItems(String hubId, {int? limit}) async {
     fullHubRequests++;
-    return List.unmodifiable(items);
+    return List.unmodifiable(hubItems[hubId] ?? items);
   }
 
   @override
