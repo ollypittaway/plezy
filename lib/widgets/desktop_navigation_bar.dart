@@ -55,6 +55,24 @@ class DesktopNavigationBar extends StatefulWidget {
 class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
   final primaryKey = GlobalKey<FocusableActionBarState>();
   final utilityKey = GlobalKey<FocusableActionBarState>();
+  final _profileActionsScope = FocusScopeNode(debugLabel: 'desktop_profile_actions');
+
+  @override
+  void dispose() {
+    _profileActionsScope.dispose();
+    super.dispose();
+  }
+
+  void _focusProfileActions() {
+    // Home actions intentionally exclude traversal. Request their actual node
+    // directly rather than relying on directional focus geometry.
+    for (final node in _profileActionsScope.descendants) {
+      if (node.debugLabel == 'desktop_header_refresh' && node.canRequestFocus) {
+        node.requestFocus();
+        return;
+      }
+    }
+  }
   final libraryMenuKey = GlobalKey<AppMenuButtonState<VoidCallback>>();
   List<NavigationTab> get tabs => widget.tabs;
   NavigationTabId get selected => widget.selected;
@@ -285,10 +303,7 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
                         primaryKey.currentState?.getFocusNode(count - 1)?.requestFocus();
                       },
                       onNavigateDown: onNavigateDown,
-                      onNavigateRight: homeActions == null ? null : () {
-                        final action = utilityKey.currentState?.getFocusNode(utilityTabs.length - 1);
-                        action?.focusInDirection(TraversalDirection.right);
-                      },
+                      onNavigateRight: homeActions == null ? null : _focusProfileActions,
                       actions: [
                         for (final tab in utilityTabs)
                           FocusableAction(debugLabel: 'desktop_utility_${tab.id.name}', icon: tab.icon, iconSize: 20, iconFill: 0, tooltip: tab.getLabel(), onPressed: () => onSelect(tab.id)),
@@ -316,7 +331,7 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
                     if (remoteNavigation)
                       DesktopRemoteHeaderBridge(
                         focusUtilities: () => utilityKey.currentState?.getFocusNode(utilityTabs.length - 1)?.requestFocus(),
-                        child: homeActions!,
+                        child: FocusScope(node: _profileActionsScope, child: homeActions!),
                       )
                     else homeActions!,
                   ],

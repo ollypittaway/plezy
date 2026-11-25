@@ -800,7 +800,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             ? ProfileAvatar(profile: active, size: 32, avatarUrl: activeProvider.avatarUrlFor(active.id))
             : const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white),
         tooltip: t.profiles.sectionTitle,
-        adaptiveSheet: true,
+        adaptiveSheet: !PlatformDetector.usesDesktopPresentation(),
         anchorAlignment: AppMenuAnchorAlignment.end,
         onSelected: (value) => unawaited(_handleUserMenuAction(context, value)),
         entriesBuilder: (context) =>
@@ -819,10 +819,20 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final switchable = profiles.where((p) => p.id != activeProfile?.id).toList();
 
     return [
+      if (activeProfile != null && PlatformDetector.usesDesktopPresentation()) ...[
+        AppMenuItem<String>(
+          value: 'manage_profiles',
+          leading: ProfileAvatar(profile: activeProfile, size: 34, avatarUrl: activeProvider.avatarUrlFor(activeProfile.id)),
+          label: activeProfile.displayName,
+          selected: true,
+          trailing: AppIcon(Symbols.check_circle_rounded, size: 18, color: theme.colorScheme.primary),
+        ),
+        const AppMenuDivider(),
+      ],
       for (final p in switchable)
         AppMenuItem<String>(
           value: 'profile:${p.id}',
-          leading: ProfileAvatar(profile: p, size: 24, avatarUrl: activeProvider.avatarUrlFor(p.id)),
+          leading: ProfileAvatar(profile: p, size: PlatformDetector.usesDesktopPresentation() ? 32 : 24, avatarUrl: activeProvider.avatarUrlFor(p.id)),
           label: p.displayName,
           trailing: p.isPinProtected
               ? AppIcon(Symbols.lock_rounded, fill: 1, size: 14, color: theme.colorScheme.onSurfaceVariant)
@@ -874,6 +884,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final colorScheme = Theme.of(context).colorScheme;
     final foregroundColor = colorScheme.onSurface;
     final actions = ExcludeFocusTraversal(
+      excluding: !PlatformDetector.isFireTV(),
       child: Consumer2<WatchTogetherProvider, CompanionRemoteProvider>(
         builder: (context, watchTogether, companionRemote, _) {
           final isDesktop = PlatformDetector.shouldActAsRemoteHost(context);
@@ -897,7 +908,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               onNavigateLeft: DesktopRemoteHeaderBridge.of(context)?.focusUtilities ?? _navigateToSidebar,
               onNavigateDown: _focusContentFromAppBar,
               actions: [
-                FocusableAction(icon: Symbols.refresh_rounded, iconColor: foregroundColor, onPressed: manualRefresh),
+                FocusableAction(debugLabel: 'desktop_header_refresh', icon: Symbols.refresh_rounded, iconColor: foregroundColor, onPressed: manualRefresh),
                 // Watch Together
                 FocusableAction(
                   onPressed: openWatchTogether,

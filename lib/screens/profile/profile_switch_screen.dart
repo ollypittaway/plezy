@@ -17,6 +17,7 @@ import '../../profiles/profile_connection.dart';
 import '../../profiles/profile_merge.dart';
 import '../../services/app_exit_service.dart';
 import '../../theme/mono_tokens.dart';
+import '../../utils/platform_detector.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/app_menu.dart';
 import '../../widgets/backend_badge.dart';
@@ -199,7 +200,8 @@ class _ProfileSwitchScreenState extends State<ProfileSwitchScreen> with MountedS
           final profile = profiles[index];
           final isActive = profile.id == activeId;
           final tokensRef = tokens(context);
-          final tileRadii = groupItemRadii(context, index, profiles.length);
+          final desktop = PlatformDetector.usesDesktopPresentation();
+          final tileRadii = desktop ? BorderRadius.circular(tokensRef.radiusLg) : groupItemRadii(context, index, profiles.length);
           final isFirstSelectable = autofocusFirst && index == 0;
           final profileFocusNode = _profileFocusNode(profile);
           final menuFocusNode = _profileMenuFocusNode(profile);
@@ -220,12 +222,17 @@ class _ProfileSwitchScreenState extends State<ProfileSwitchScreen> with MountedS
 
           return Padding(
             key: ValueKey(profile.id),
-            padding: EdgeInsets.fromLTRB(16, index == 0 ? 4 : tokensRef.groupGap, 16, 0),
+            padding: EdgeInsets.fromLTRB(16, index == 0 ? 12 : (desktop ? 12 : tokensRef.groupGap), 16, 0),
             // The focus fill must paint above the opaque Card surface, so the
             // wrapper sits inside the Card (clipped by its shape) rather than
             // around it.
-            child: Card(
-              shape: RoundedRectangleBorder(borderRadius: tileRadii),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: desktop ? 680 : double.infinity),
+                child: Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: tileRadii, side: desktop ? BorderSide(color: tokensRef.outline) : BorderSide.none),
               clipBehavior: Clip.antiAlias,
               child: FocusableWrapper(
                 autofocus: isFirstSelectable,
@@ -256,6 +263,8 @@ class _ProfileSwitchScreenState extends State<ProfileSwitchScreen> with MountedS
                   menuFocusNode: menuFocusNode,
                   menuKey: menuKey,
                   onMenuNavigateLeft: () => profileFocusNode.requestFocus(),
+                ),
+              ),
                 ),
               ),
             ),
@@ -477,10 +486,10 @@ class _ProfileTile extends StatelessWidget {
       onLongPress: onLongPress,
       borderRadius: borderRadius,
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(PlatformDetector.usesDesktopPresentation() ? 20 : 12),
         child: Row(
           children: [
-            ProfileAvatar(profile: profile, size: 44, avatarUrl: avatarUrl),
+            ProfileAvatar(profile: profile, size: PlatformDetector.usesDesktopPresentation() ? 64 : 44, avatarUrl: avatarUrl),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
