@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   auto_updater_windows
   connectivity_plus
+  firebase_core
   os_media_controls
   screen_retriever_windows
   sentry_flutter

@@ -75,3 +75,9 @@ maestro/**/*.png
 
 server/deploy.sh
 server/Caddyfile
+
+# Local push service configuration
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist
+/server/notifications/__pycache__/
+/server/notifications/data/

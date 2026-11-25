@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../i18n/strings.g.dart';
 import '../../../media/media_display_criteria.dart';
@@ -81,7 +82,7 @@ class _PlaybackFormatLineState extends State<PlaybackFormatLine> {
     }
   }
 
-  List<String> _picture(_VideoFormat? opened) {
+  ({String? resolution, String? range, String? codec}) _picture(_VideoFormat? opened) {
     final version = widget.isTranscoding ? null : widget.version;
     final criteria = widget.isTranscoding ? null : widget.source?.displayCriteria;
     final video = version == null ? null : videoStreamForPart(version, partIndex: widget.source?.partIndex);
@@ -112,7 +113,7 @@ class _PlaybackFormatLineState extends State<PlaybackFormatLine> {
         : video?.hdr == true || color.isHdr || criteria?.isHdr == true
         ? 'HDR'
         : null;
-    return [if (widget.isTranscoding) t.fileInfo.transcoding, ?resolution, ?range, if (codec != range) ?codec];
+    return (resolution: resolution, range: range, codec: codec == range ? null : codec);
   }
 
   String? _audio() {
@@ -154,9 +155,19 @@ class _PlaybackFormatLineState extends State<PlaybackFormatLine> {
           stream: widget.player.streams.tracks,
           builder: (_, _) {
             final audio = _audio();
-            final labels = [..._picture(snapshot.data), ?audio];
+            final picture = _picture(snapshot.data);
+            final mode = widget.isTranscoding ? t.fileInfo.transcoding : null;
+            final labels = [?mode, ?picture.resolution, ?picture.range, ?picture.codec, ?audio];
             if (labels.isEmpty) return const SizedBox.shrink();
-            if (widget.showStartupBadges) return _startupBadges(labels, audio);
+            if (widget.showStartupBadges) {
+              return _startupBadges(
+                labels,
+                resolution: picture.resolution,
+                range: picture.range,
+                audio: audio,
+                technical: [?picture.codec, ?mode],
+              );
+            }
             return Text(
               toBulletedString(labels),
               maxLines: 1,
@@ -169,7 +180,13 @@ class _PlaybackFormatLineState extends State<PlaybackFormatLine> {
     );
   }
 
-  Widget _startupBadges(List<String> labels, String? audio) {
+  Widget _startupBadges(
+    List<String> labels, {
+    String? resolution,
+    String? range,
+    String? audio,
+    required List<String> technical,
+  }) {
     // Start the clock only once a format is known. Audio and decoder updates
     // may fill in more badges while the notification is on screen.
     _hideTimer ??= Timer(const Duration(seconds: 4), () => setState(() => _fading = true));
@@ -190,49 +207,70 @@ class _PlaybackFormatLineState extends State<PlaybackFormatLine> {
                 liveRegion: true,
                 excludeSemantics: true,
                 label: toBulletedString(labels),
-                child: Wrap(
-                  direction: Axis.vertical,
-                  spacing: 5,
-                  runSpacing: 5,
-                  children: [
-                    for (final label in labels)
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: const Color(0xDC141617),
-                          border: Border.all(color: Colors.white38),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (label == audio || label == 'Dolby Vision') ...[
-                                Icon(
-                                  label == audio ? Symbols.surround_sound_rounded : Symbols.contrast_rounded,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 6),
-                              ],
-                              Flexible(
-                                child: Text(
-                                  label,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    height: 1.2,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: DecoratedBox(
+                    key: const ValueKey('playback-format-panel'),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Color(0xEE20292A), Color(0xDF101617)]),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0x48DCF1EB)),
+                      boxShadow: const [BoxShadow(color: Colors.black38, blurRadius: 14, offset: Offset(0, 4))],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (resolution != null || technical.isNotEmpty)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (resolution != null)
+                                  Text(
+                                    resolution,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 25,
+                                      height: 1.05,
+                                      letterSpacing: -0.8,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                                if (technical.isNotEmpty)
+                                  Text(
+                                    toBulletedString(technical),
+                                    style: const TextStyle(
+                                      color: Color(0xFFCBDCD7),
+                                      fontSize: 12,
+                                      height: 1.45,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          if ((resolution != null || technical.isNotEmpty) && (range != null || audio != null))
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 13),
+                              width: 1,
+                              height: 28,
+                              color: Colors.white24,
+                            ),
+                          if (range != null || audio != null)
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (range != null) _formatMark(range, Symbols.hdr_on_rounded),
+                                if (range != null && audio != null) const SizedBox(height: 5),
+                                if (audio != null) _formatMark(audio, Symbols.surround_sound_rounded),
+                              ],
+                            ),
+                        ],
                       ),
-                  ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -241,4 +279,25 @@ class _PlaybackFormatLineState extends State<PlaybackFormatLine> {
       ),
     );
   }
+
+  Widget _formatMark(String label, IconData fallback) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      if (label.startsWith('Dolby '))
+        SvgPicture.asset(
+          'assets/player_icons/dolby.svg',
+          width: 20,
+          height: 16,
+          excludeFromSemantics: true,
+          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+        )
+      else
+        Icon(fallback, size: 19, color: const Color(0xFFCFDFDA)),
+      const SizedBox(width: 7),
+      Text(
+        label,
+        style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.15, fontWeight: FontWeight.w500),
+      ),
+    ],
+  );
 }

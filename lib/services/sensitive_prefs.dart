@@ -50,6 +50,9 @@ const List<String> trackerSessionBaseKeys = <String>[
 /// Unscoped base key used by `SeerrSessionStore`.
 const String seerrSessionBaseKey = 'seerr_session';
 
+/// Device pairing and its private read key.
+const String announcementPairPref = 'gucciplexa_notification_pair_v1';
+
 /// Every credential slot that is profile-scoped through `profileScopedPrefsKey`,
 /// so a stored key is either the bare base key or `user_{scope}_{baseKey}`.
 const List<String> profileScopedCredentialBaseKeys = <String>[...trackerSessionBaseKeys, seerrSessionBaseKey];
@@ -74,4 +77,7 @@ bool isSeerrSessionPrefKey(String key) => profileScopedCredentialBaseKey(key) ==
 /// Whether [key] holds a credential and must never be dropped or exported
 /// without an explicit, informed user decision.
 bool isSensitivePrefKey(String key) =>
-    key == credentialVaultKeyPref || key == legacyPlexTokenPref || profileScopedCredentialBaseKey(key) != null;
+    key == announcementPairPref ||
+    key == credentialVaultKeyPref ||
+    key == legacyPlexTokenPref ||
+    profileScopedCredentialBaseKey(key) != null;

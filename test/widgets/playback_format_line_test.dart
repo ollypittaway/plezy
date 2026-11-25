@@ -86,7 +86,10 @@ void main() {
     await tester.pump();
     expect(find.text('4K'), findsOneWidget);
     expect(find.text('Dolby Vision'), findsOneWidget);
-    final badges = tester.getRect(find.byType(Wrap));
+    final panel = find.byKey(const ValueKey('playback-format-panel'));
+    expect(find.descendant(of: panel, matching: find.text('HEVC')), findsOneWidget);
+    expect(find.descendant(of: panel, matching: find.text('Dolby Vision')), findsOneWidget);
+    final badges = tester.getRect(panel);
     final screen = tester.getRect(find.byType(Scaffold));
     expect(badges.left - screen.left, 24);
     expect(badges.center.dy, closeTo(screen.center.dy, 1));

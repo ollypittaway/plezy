@@ -1,4 +1,28 @@
 {
+  "announcements": {
+    "title": "Notifications",
+    "pairHint": "In your web panel, choose Pair a device and paste the link here.",
+    "link": "Private pairing link",
+    "pair": "Pair device",
+    "connected": "Announcements enabled",
+    "disconnect": "Disconnect",
+    "mobilePush": "Mobile push notifications",
+    "background": "Receive alerts when GucciPlexa is in the background.",
+    "configurePush": "Add Firebase credentials to your notification panel to enable mobile push.",
+    "recent": "Recent announcements",
+    "empty": "No announcements yet.",
+    "connectionError": "Could not complete the request. Check your connection and mobile push configuration.",
+    "invalidLink": "Paste the private pairing link from your notification panel.",
+    "unauthorized": "The panel rejected this pairing link.",
+    "unavailable": "The notification panel is unavailable.",
+    "alreadyPaired": "Disconnect the current panel first.",
+    "permission": "Allow notifications in your device settings to enable push.",
+    "applePending": "Apple has not registered this device yet. Try again shortly.",
+    "tokenPending": "This device has not received a push token yet.",
+    "registrationError": "Mobile push registration needs attention. Check this device’s permission and the panel configuration.",
+    "refreshError": "Could not refresh announcements. Check the connection to your panel.",
+    "setupNeeded": "This build needs a Firebase mobile configuration to enable push."
+  },
   "app": {
     "title": "GucciPlexa"
   },

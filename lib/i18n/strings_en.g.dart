@@ -40,6 +40,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	Translations $copyWith({TranslationMetadata<AppLocale, Translations>? meta}) => Translations(meta: meta ?? this.$meta);
 
 	// Translations
+	late final Translations$announcements$en announcements = Translations$announcements$en.internal(_root);
 	late final Translations$app$en app = Translations$app$en.internal(_root);
 	late final Translations$appIcon$en appIcon = Translations$appIcon$en.internal(_root);
 	late final Translations$auth$en auth = Translations$auth$en.internal(_root);
@@ -95,6 +96,81 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$services$en services = Translations$services$en.internal(_root);
 	late final Translations$addServer$en addServer = Translations$addServer$en.internal(_root);
 	late final Translations$deepLinks$en deepLinks = Translations$deepLinks$en.internal(_root);
+}
+
+// Path: announcements
+class Translations$announcements$en {
+	Translations$announcements$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'Notifications'
+	String get title => 'Notifications';
+
+	/// en: 'In your web panel, choose Pair a device and paste the link here.'
+	String get pairHint => 'In your web panel, choose Pair a device and paste the link here.';
+
+	/// en: 'Private pairing link'
+	String get link => 'Private pairing link';
+
+	/// en: 'Pair device'
+	String get pair => 'Pair device';
+
+	/// en: 'Announcements enabled'
+	String get connected => 'Announcements enabled';
+
+	/// en: 'Disconnect'
+	String get disconnect => 'Disconnect';
+
+	/// en: 'Mobile push notifications'
+	String get mobilePush => 'Mobile push notifications';
+
+	/// en: 'Receive alerts when GucciPlexa is in the background.'
+	String get background => 'Receive alerts when GucciPlexa is in the background.';
+
+	/// en: 'Add Firebase credentials to your notification panel to enable mobile push.'
+	String get configurePush => 'Add Firebase credentials to your notification panel to enable mobile push.';
+
+	/// en: 'Recent announcements'
+	String get recent => 'Recent announcements';
+
+	/// en: 'No announcements yet.'
+	String get empty => 'No announcements yet.';
+
+	/// en: 'Could not complete the request. Check your connection and mobile push configuration.'
+	String get connectionError => 'Could not complete the request. Check your connection and mobile push configuration.';
+
+	/// en: 'Paste the private pairing link from your notification panel.'
+	String get invalidLink => 'Paste the private pairing link from your notification panel.';
+
+	/// en: 'The panel rejected this pairing link.'
+	String get unauthorized => 'The panel rejected this pairing link.';
+
+	/// en: 'The notification panel is unavailable.'
+	String get unavailable => 'The notification panel is unavailable.';
+
+	/// en: 'Disconnect the current panel first.'
+	String get alreadyPaired => 'Disconnect the current panel first.';
+
+	/// en: 'Allow notifications in your device settings to enable push.'
+	String get permission => 'Allow notifications in your device settings to enable push.';
+
+	/// en: 'Apple has not registered this device yet. Try again shortly.'
+	String get applePending => 'Apple has not registered this device yet. Try again shortly.';
+
+	/// en: 'This device has not received a push token yet.'
+	String get tokenPending => 'This device has not received a push token yet.';
+
+	/// en: 'Mobile push registration needs attention. Check this device’s permission and the panel configuration.'
+	String get registrationError => 'Mobile push registration needs attention. Check this device’s permission and the panel configuration.';
+
+	/// en: 'Could not refresh announcements. Check the connection to your panel.'
+	String get refreshError => 'Could not refresh announcements. Check the connection to your panel.';
+
+	/// en: 'This build needs a Firebase mobile configuration to enable push.'
+	String get setupNeeded => 'This build needs a Firebase mobile configuration to enable push.';
 }
 
 // Path: app
@@ -8137,6 +8213,28 @@ class Translations$services$libraryFilter$en {
 extension on Translations {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
+			'announcements.title' => 'Notifications',
+			'announcements.pairHint' => 'In your web panel, choose Pair a device and paste the link here.',
+			'announcements.link' => 'Private pairing link',
+			'announcements.pair' => 'Pair device',
+			'announcements.connected' => 'Announcements enabled',
+			'announcements.disconnect' => 'Disconnect',
+			'announcements.mobilePush' => 'Mobile push notifications',
+			'announcements.background' => 'Receive alerts when GucciPlexa is in the background.',
+			'announcements.configurePush' => 'Add Firebase credentials to your notification panel to enable mobile push.',
+			'announcements.recent' => 'Recent announcements',
+			'announcements.empty' => 'No announcements yet.',
+			'announcements.connectionError' => 'Could not complete the request. Check your connection and mobile push configuration.',
+			'announcements.invalidLink' => 'Paste the private pairing link from your notification panel.',
+			'announcements.unauthorized' => 'The panel rejected this pairing link.',
+			'announcements.unavailable' => 'The notification panel is unavailable.',
+			'announcements.alreadyPaired' => 'Disconnect the current panel first.',
+			'announcements.permission' => 'Allow notifications in your device settings to enable push.',
+			'announcements.applePending' => 'Apple has not registered this device yet. Try again shortly.',
+			'announcements.tokenPending' => 'This device has not received a push token yet.',
+			'announcements.registrationError' => 'Mobile push registration needs attention. Check this device’s permission and the panel configuration.',
+			'announcements.refreshError' => 'Could not refresh announcements. Check the connection to your panel.',
+			'announcements.setupNeeded' => 'This build needs a Firebase mobile configuration to enable push.',
 			'app.title' => 'GucciPlexa',
 			'appIcon.title' => 'App icon',
 			'appIcon.defaultIcon' => 'Default',
@@ -8627,6 +8725,8 @@ extension on Translations {
 			'settings.scopeZoom' => 'Zoom',
 			'settings.scopeSyncOffsets' => 'Audio & Subtitle Sync',
 			'settings.playerScopeOff' => 'Don\'t save',
+			_ => null,
+		} ?? switch (path) {
 			'settings.playerScopeGlobal' => 'Everywhere',
 			'settings.playerScopeLibrary' => 'Per library',
 			'settings.playerScopeTitle' => 'Per show or movie',
@@ -8649,8 +8749,6 @@ extension on Translations {
 			'themeEditor.slots.outline' => 'Outline',
 			'themeEditor.slots.text' => 'Text',
 			'themeEditor.slots.textMuted' => 'Secondary text',
-			_ => null,
-		} ?? switch (path) {
 			'themeEditor.slots.accent' => 'Accent',
 			'themeEditor.opacity' => 'Opacity',
 			'themeEditor.hexHint' => '#RRGGBB or #AARRGGBB',
@@ -9141,6 +9239,8 @@ extension on Translations {
 			'profiles.connectionsLabel' => 'Connections',
 			'profiles.add' => 'Add',
 			'profiles.deleteProfileButton' => 'Delete profile',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.noConnectionsHint' => 'No connections — add one to use this profile.',
 			'profiles.noConnections' => 'No connections',
 			'profiles.plexHomeAccount' => 'Plex Home account',
@@ -9163,8 +9263,6 @@ extension on Translations {
 			'profiles.incorrectPinTryAgain' => 'Incorrect PIN. Please try again.',
 			'profiles.sourceProfileMissingParentAccount' => 'Source profile is missing its parent account.',
 			'profiles.failedToLoadHomeUsers' => 'Could not load your Plex Home users. Check your connection and try again.',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.failedToVerifyPin' => 'Failed to verify PIN.',
 			'profiles.newProfile' => 'New profile',
 			'profiles.profileNameHint' => 'e.g. Guests, Kids, Family Room',
@@ -9655,6 +9753,8 @@ extension on Translations {
 			'liveTv.recordOptions' => 'Record Options',
 			'liveTv.saveTo' => 'Save to',
 			'liveTv.recordings' => 'Recordings',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.scheduledRecordings' => 'Scheduled',
 			'liveTv.recordingRules' => 'Recording Rules',
 			'liveTv.noScheduledRecordings' => 'Nothing scheduled to record',
@@ -9677,8 +9777,6 @@ extension on Translations {
 			'liveTv.recordingInProgress' => 'Recording now',
 			'liveTv.recordingsCount' => ({required Object count}) => '${count} scheduled',
 			'liveTv.editRule' => 'Edit rule',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.editRuleAction' => 'Edit',
 			'liveTv.recordingRuleUpdated' => 'Recording rule updated',
 			'liveTv.guideReloadRequested' => 'Guide refresh requested',
@@ -10169,6 +10267,8 @@ extension on Translations {
 			'performanceOverlay.dvPath' => 'DV Path',
 			'performanceOverlay.dvRouteDecoder' => 'Dolby Vision decoder',
 			'performanceOverlay.dvRouteDecoderP81' => 'Dolby Vision decoder (P7→8.1)',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.dvRouteBaseLayer' => 'Base layer',
 			'performanceOverlay.dvRouteBaseLayerHdr10' => 'HDR10 base layer',
 			'performanceOverlay.dvRouteBaseLayerHlg' => 'HLG base layer',
@@ -10191,8 +10291,6 @@ extension on Translations {
 			'performanceOverlay.maxLuma' => 'Max Luma',
 			'performanceOverlay.minLuma' => 'Min Luma',
 			'performanceOverlay.maxCll' => 'MaxCLL',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.maxFall' => 'MaxFALL',
 			'performanceOverlay.cacheUsed' => 'Cache Used',
 			'performanceOverlay.cacheLimit' => 'Cache Limit',

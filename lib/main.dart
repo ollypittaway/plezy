@@ -40,6 +40,7 @@ import 'services/video_decode_capabilities.dart';
 import 'services/macos_window_service.dart';
 import 'services/native_window_service.dart';
 import 'services/fullscreen_state_manager.dart';
+import 'services/announcement_service.dart';
 import 'services/settings_service.dart';
 import 'services/agent_control_service.dart';
 import 'widgets/splash_logo.dart';
@@ -1749,6 +1750,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
         // Expose AppDatabase + ConnectionRegistry so screens (Settings, Setup)
         // can manage stored Jellyfin/Plex connections without re-creating
         // the registry per-call site.
+        ChangeNotifierProvider<AnnouncementService>(lazy: false, create: (_) => AnnouncementService()..start()),
         Provider<SettingsService>.value(value: widget.settings),
         Provider<StorageService>.value(value: widget.storage),
         Provider<AppDatabase>.value(value: _appDatabase),

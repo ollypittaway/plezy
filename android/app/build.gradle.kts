@@ -10,6 +10,10 @@ plugins {
   id("dev.flutter.flutter-gradle-plugin")
 }
 
+if (file("google-services.json").isFile) {
+  apply(plugin = "com.google.gms.google-services")
+}
+
 apply(from = rootProject.file("gradle/native-artifacts.gradle.kts"))
 
 @Suppress("UNCHECKED_CAST")
