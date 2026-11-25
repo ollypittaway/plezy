@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../i18n/strings.g.dart';
 import '../../../media/media_display_criteria.dart';
@@ -21,14 +24,32 @@ class PlaybackFormatLine extends StatefulWidget {
   final MediaVersion? version;
   final MediaSourceInfo? source;
   final bool isTranscoding;
+  final bool showStartupBadges;
 
-  const PlaybackFormatLine({super.key, required this.player, this.version, this.source, required this.isTranscoding});
+  const PlaybackFormatLine({
+    super.key,
+    required this.player,
+    this.version,
+    this.source,
+    required this.isTranscoding,
+    this.showStartupBadges = false,
+  });
 
   @override
   State<PlaybackFormatLine> createState() => _PlaybackFormatLineState();
 }
 
 class _PlaybackFormatLineState extends State<PlaybackFormatLine> {
+  Timer? _hideTimer;
+  bool _fading = false;
+  bool _finished = false;
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+
   late final _openedVideo = _readVideo(widget.player);
 
   Future<_VideoFormat?> _readVideo(Player player) async {
@@ -124,6 +145,7 @@ class _PlaybackFormatLineState extends State<PlaybackFormatLine> {
 
   @override
   Widget build(BuildContext context) {
+    if (_finished) return const SizedBox.shrink();
     return FutureBuilder<_VideoFormat?>(
       future: _openedVideo,
       builder: (_, snapshot) => StreamBuilder<TrackSelection>(
@@ -131,8 +153,10 @@ class _PlaybackFormatLineState extends State<PlaybackFormatLine> {
         builder: (_, _) => StreamBuilder<Tracks>(
           stream: widget.player.streams.tracks,
           builder: (_, _) {
-            final labels = [..._picture(snapshot.data), ?_audio()];
+            final audio = _audio();
+            final labels = [..._picture(snapshot.data), ?audio];
             if (labels.isEmpty) return const SizedBox.shrink();
+            if (widget.showStartupBadges) return _startupBadges(labels, audio);
             return Text(
               toBulletedString(labels),
               maxLines: 1,
@@ -140,6 +164,79 @@ class _PlaybackFormatLineState extends State<PlaybackFormatLine> {
               style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _startupBadges(List<String> labels, String? audio) {
+    // Start the clock only once a format is known. Audio and decoder updates
+    // may fill in more badges while the notification is on screen.
+    _hideTimer ??= Timer(const Duration(seconds: 4), () => setState(() => _fading = true));
+    return IgnorePointer(
+      child: SafeArea(
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: AnimatedOpacity(
+              opacity: _fading ? 0 : 1,
+              duration: const Duration(milliseconds: 220),
+              onEnd: () {
+                if (_fading) setState(() => _finished = true);
+              },
+              child: Semantics(
+                container: true,
+                liveRegion: true,
+                excludeSemantics: true,
+                label: toBulletedString(labels),
+                child: Wrap(
+                  direction: Axis.vertical,
+                  spacing: 5,
+                  runSpacing: 5,
+                  children: [
+                    for (final label in labels)
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: const Color(0xDC141617),
+                          border: Border.all(color: Colors.white38),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (label == audio || label == 'Dolby Vision') ...[
+                                Icon(
+                                  label == audio ? Symbols.surround_sound_rounded : Symbols.contrast_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 6),
+                              ],
+                              Flexible(
+                                child: Text(
+                                  label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

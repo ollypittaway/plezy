@@ -17,6 +17,9 @@ import '../focus/input_mode_tracker.dart';
 import '../focus/key_event_utils.dart';
 
 import '../media/media_item.dart';
+import '../media/media_item_merge.dart';
+import '../media/media_library.dart';
+import '../widgets/playback_copy_builder.dart';
 import '../media/media_item_types.dart';
 import '../media/media_server_client.dart';
 import '../media/media_hub.dart';
@@ -96,6 +99,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   String? get _errorMessage => _discover.errorMessage == null ? null : t.errors.unableToLoad(context: t.discover.title);
 
   bool _switchingProfile = false;
+  var _heroPlaybackCopies = PlaybackCopyCache();
   final _heroDetails = <(MediaServerClient, String), Future<MediaItem?>>{};
   final PageController _heroController = PageController();
   final ScrollController _scrollController = ScrollController();
@@ -430,7 +434,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
     if (renderChanged) {
       setState(() {
-        if (isNewLoad) _heroDetails.clear();
+        if (isNewLoad) {
+          _heroDetails.clear();
+          _heroPlaybackCopies = PlaybackCopyCache();
+        }
         if (isNewLoad || heroOutOfBounds) _heroIndex.value = 0;
         _updateHubKeys();
       });
@@ -618,7 +625,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   @override
   void onTabHidden() {
-    _isTabVisible = false;
+    if (_isTabVisible && mounted) setState(() => _isTabVisible = false);
     _pendingTvBrowseRailFocus = false;
     _autoScrollTimer?.cancel();
     _stopIndicatorProgress();
@@ -626,7 +633,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
 
   @override
   void onTabShown() {
-    _isTabVisible = true;
+    if (!_isTabVisible && mounted) setState(() => _isTabVisible = true);
     _discover.refreshIfStale();
     if (!_isAutoScrollPaused) {
       _startAutoScroll();
@@ -1534,6 +1541,29 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final hideSpoilers = SettingsService.instance.read(SettingsService.hideSpoilers);
     final shouldHideSpoiler = hideSpoilers && heroItem.shouldHideSpoiler;
 
+    final actions = FutureBuilder<MediaItem?>(
+      key: ValueKey(heroItem.globalKey),
+      future: heroItem.isMovie ? details : null,
+      builder: (context, snapshot) {
+        final detail = snapshot.data;
+        final target = detail == null
+            ? heroItem
+            : heroItem.copyWith(
+                year: heroItem.year ?? detail.year,
+                guid: heroItem.guid ?? detail.guid,
+                mediaVersions: detail.mediaVersions?.isNotEmpty == true ? detail.mediaVersions : heroItem.mediaVersions,
+              );
+        // Movie details can supply the year or ID needed to match another library.
+        final waitingForIdentity =
+            target.isMovie &&
+            target.mediaVersions?.isNotEmpty != true &&
+            target.year == null &&
+            target.guid == null &&
+            snapshot.connectionState == ConnectionState.waiting;
+        return _buildHeroActions(target, showDetails: alignLeft, lookupReady: !waitingForIdentity);
+      },
+    );
+
     final heroLabel = isEpisode ? "${heroItem.grandparentTitle}, ${heroItem.title}" : heroItem.title;
 
     return Semantics(
@@ -1627,7 +1657,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                                   FeaturedMetadata(item: heroItem, details: snapshot.data, centered: !alignLeft),
                             ),
 
-                            if (!alignLeft) ...[const SizedBox(height: 20), _buildSmartPlayButton(heroItem)],
+                            if (!alignLeft) ...[const SizedBox(height: 20), actions],
 
                             if (heroItem.summary != null && !shouldHideSpoiler) ...[
                               const SizedBox(height: 12),
@@ -1673,40 +1703,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                               ),
                             ],
 
-                            if (alignLeft) ...[
-                              SizedBox(height: compact ? 12 : 20),
-                              IntrinsicWidth(
-                                child: IntrinsicHeight(
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      Expanded(child: _buildSmartPlayButton(heroItem)),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          onPressed: () => navigateToMediaItemDetails(
-                                            context,
-                                            heroItem,
-                                            onRefresh: _discover.updateItem,
-                                          ),
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: colorScheme.onSurface,
-                                            backgroundColor: colorScheme.surface.withValues(alpha: 0.9),
-                                            padding: EdgeInsets.symmetric(horizontal: isTv ? 34 : 24),
-                                            minimumSize: Size.zero,
-                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                            visualDensity: VisualDensity.standard,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                            textStyle: TextStyle(fontSize: isTv ? 18 : 14),
-                                          ),
-                                          child: Text(t.mediaMenu.viewDetails, textAlign: TextAlign.center),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
+                            if (alignLeft) ...[SizedBox(height: compact ? 12 : 20), actions],
                           ],
                         ),
                       ),
@@ -1721,7 +1718,99 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     );
   }
 
-  Widget _buildSmartPlayButton(MediaItem rawHeroItem) {
+  Widget _buildHeroActions(MediaItem item, {required bool showDetails, required bool lookupReady}) {
+    final isTv = PlatformDetector.isTV();
+    final colorScheme = Theme.of(context).colorScheme;
+    final style = OutlinedButton.styleFrom(
+      foregroundColor: colorScheme.onSurface,
+      backgroundColor: colorScheme.surface.withValues(alpha: 0.9),
+      padding: EdgeInsets.symmetric(horizontal: isTv ? 18 : 12),
+      minimumSize: Size.zero,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.standard,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      textStyle: TextStyle(fontSize: isTv ? 18 : 14),
+    );
+    return ValueListenableBuilder<int>(
+      valueListenable: _heroIndex,
+      builder: (context, index, _) {
+        final active =
+            _onDeck.elementAtOrNull(index)?.globalKey == item.globalKey &&
+            _isTabVisible &&
+            (ModalRoute.isCurrentOf(context) ?? true);
+        return PlaybackCopyBuilder(
+          key: ValueKey((item.globalKey, _heroPlaybackCopies)),
+          cache: _heroPlaybackCopies,
+          target: active && lookupReady && (item.isMovie || item.isEpisode) ? item : null,
+          initialCopies: _discover.continueWatchingCopiesOf(item),
+          builder: (selected, _, _, fourK) {
+            final versionItem = selected?.globalKey == item.globalKey ? selected! : item;
+            final versions = versionItem.mediaVersions ?? const [];
+            final preference = versions.length < 2
+                ? null
+                : readMediaVersionPreference(SettingsService.instance, versionItem)?.resolveIndex(versions);
+            final primary = primaryFourKPlayback(
+              versionItem,
+              preference ?? versions.indexWhere((v) => v.isPlayable),
+              fourK,
+              preferFourKLibrary: preference == null && isFourKLibraryTitle(versionItem.libraryTitle),
+            );
+            final extra = primary == null ? fourK : null;
+            final play = _buildSmartPlayButton(item, fourK: primary, compact: extra != null);
+            if (!showDetails && extra == null) return play;
+            return IntrinsicWidth(
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: play),
+                    if (extra != null) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: style,
+                          onPressed: () => _playHeroFourK(item, extra),
+                          child: Text(t.mediaMenu.playIn4k, textAlign: TextAlign.center),
+                        ),
+                      ),
+                    ],
+                    if (showDetails) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton(
+                          style: style,
+                          onPressed: () => navigateToMediaItemDetails(context, item, onRefresh: _discover.updateItem),
+                          child: Text(t.mediaMenu.viewDetails, textAlign: TextAlign.center),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _playHeroFourK(MediaItem featured, FourKPlayback fourK) async {
+    final item = context.readFreshWatchState(featured);
+    final resumeFromFeatured = item.globalKey != fourK.item.globalKey && item.hasActiveProgress;
+    _autoScrollTimer?.cancel();
+    _stopIndicatorProgress();
+    try {
+      await navigateToFourKPlayback(
+        context,
+        fourK,
+        initialPosition: resumeFromFeatured ? Duration(milliseconds: item.viewOffsetMs!) : null,
+      );
+    } finally {
+      if (mounted && _isTabVisible && !_heroFocusPausedAutoScroll) _startAutoScroll();
+    }
+  }
+
+  Widget _buildSmartPlayButton(MediaItem rawHeroItem, {FourKPlayback? fourK, bool compact = false}) {
     return Builder(
       builder: (context) {
         // The on-deck snapshot refetches shortly after a watch event; the store
@@ -1742,12 +1831,21 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             final backgroundColor = colorScheme.primary;
             final foregroundColor = colorScheme.onPrimary;
             return InkWell(
-              onTap: () => navigateToVideoPlayer(context, metadata: heroItem),
+              onTap: fourK != null
+                  ? () => _playHeroFourK(heroItem, fourK)
+                  : () => navigateToVideoPlayer(context, metadata: heroItem),
               borderRadius: BorderRadius.all(Radius.circular(12)),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 curve: Curves.easeOutCubic,
-                padding: .symmetric(horizontal: isTv ? 34 : 24, vertical: isTv ? 16 : 12),
+                padding: .symmetric(
+                  horizontal: compact
+                      ? 12
+                      : isTv
+                      ? 34
+                      : 24,
+                  vertical: isTv ? 16 : 12,
+                ),
                 decoration: BoxDecoration(
                   color: backgroundColor,
                   borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -1785,7 +1883,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                     ],
                     Flexible(
                       child: Text(
-                        hasProgress ? t.discover.minutesLeft(minutes: minutesLeft) : t.common.play,
+                        fourK != null
+                            ? t.mediaMenu.playIn4k
+                            : hasProgress
+                            ? t.discover.minutesLeft(minutes: minutesLeft)
+                            : t.common.play,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: foregroundColor,

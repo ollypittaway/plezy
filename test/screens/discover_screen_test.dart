@@ -35,6 +35,12 @@ import 'package:plezy/providers/hidden_libraries_provider.dart';
 import 'package:plezy/providers/libraries_provider.dart';
 import 'package:plezy/providers/multi_server_provider.dart';
 import 'package:plezy/screens/discover_screen.dart';
+import 'package:plezy/media/media_version.dart';
+import 'package:plezy/providers/download_provider.dart';
+import 'package:plezy/services/offline_watch_sync_service.dart';
+import 'package:plezy/screens/video_player_screen.dart';
+import 'package:plezy/utils/video_player_navigation.dart';
+import 'package:plezy/utils/media_server_http_client.dart';
 import 'package:plezy/screens/main_screen.dart';
 import 'package:plezy/services/data_aggregation_service.dart';
 import 'package:plezy/services/multi_server_manager.dart';
@@ -623,6 +629,7 @@ void main() {
           backend: MediaBackend.plex,
           kind: MediaKind.movie,
           title: 'Movie $i',
+          mediaVersions: i == 1 ? const [MediaVersion(id: 'sole-4k', height: 2160)] : null,
           durationMs: const Duration(hours: 2, minutes: 53).inMilliseconds,
           viewOffsetMs: i == 0 ? const Duration(minutes: 53).inMilliseconds : null,
           serverId: 'server_1',
@@ -646,13 +653,27 @@ void main() {
       },
     );
     final manager = MultiServerManager()..debugRegisterClientForTesting(client);
-    final multiServerProvider = testMultiServerProvider(manager);
+    final uhd = onDeck.first.copyWith(
+      id: 'uhd-copy',
+      viewOffsetMs: null,
+      mediaVersions: const [
+        MediaVersion(id: 'hd-file', height: 1080),
+        MediaVersion(id: 'uhd-file', height: 2160),
+      ],
+    );
+    final lookup = _HeroCopyLookup(manager, uhd);
+    final multiServerProvider = MultiServerProvider(manager, lookup);
+    final observer = _HeroPlayerObserver();
+    final downloads = _HeroDownloads();
+    addTearDown(downloads.dispose);
     final hiddenLibrariesProvider = HiddenLibrariesProvider();
     final librariesProvider = LibrariesProvider();
     final watchTogetherProvider = WatchTogetherProvider();
     final companionRemoteProvider = CompanionRemoteProvider();
 
     final db = AppDatabase.forTesting(NativeDatabase.memory());
+    final offlineWatch = OfflineWatchSyncService(database: db, serverManager: manager);
+    addTearDown(offlineWatch.dispose);
     final profileRegistry = _FakeProfileRegistry(db);
     final connectionRegistry = _FakeConnectionRegistry(db);
     final profileConnectionRegistry = _FakeProfileConnectionRegistry(db);
@@ -694,6 +715,8 @@ void main() {
       TranslationProvider(
         child: MultiProvider(
           providers: [
+            ChangeNotifierProvider<DownloadProvider>.value(value: downloads),
+            ChangeNotifierProvider<OfflineWatchSyncService>.value(value: offlineWatch),
             ChangeNotifierProvider<MultiServerProvider>.value(value: multiServerProvider),
             ChangeNotifierProvider<HiddenLibrariesProvider>.value(value: hiddenLibrariesProvider),
             ChangeNotifierProvider<LibrariesProvider>.value(value: librariesProvider),
@@ -704,6 +727,7 @@ void main() {
           ],
           child: InputModeTracker(
             child: MaterialApp(
+              navigatorObservers: [observer],
               theme: monoTheme(MonoPalette.dark).copyWith(platform: TargetPlatform.macOS),
               home: MainScreenFocusScope(
                 focusSidebar: () {},
@@ -743,14 +767,28 @@ void main() {
       expect(tester.getTopLeft(detailsFace).dy, tester.getTopLeft(play).dy);
     }
 
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
     expectMatchingHeroButtons(t.discover.minutesLeft(minutes: 120));
+    final fourKAction = find.widgetWithText(OutlinedButton, t.mediaMenu.playIn4k).hitTestable();
+    expect(fourKAction, findsOneWidget);
+    await tester.tap(fourKAction);
+    await tester.pump();
+    await tester.pump();
+    expect(observer.player?.metadata.id, 'uhd-copy');
+    expect(observer.player?.selectedMediaSourceId, 'uhd-file');
+    expect(observer.player?.selectedMediaIndex, 1);
+    expect(observer.player?.strictMediaSelection, isTrue);
+    expect(observer.player?.initialPosition, const Duration(minutes: 53));
 
     final carousel = tester.widget<PageView>(find.byType(PageView)).controller!;
     await tester.tap(find.byTooltip('Next page'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(carousel.page, 1);
-    expectMatchingHeroButtons(t.common.play);
+    await tester.pump();
+    expectMatchingHeroButtons(t.mediaMenu.playIn4k);
+    expect(find.widgetWithText(OutlinedButton, t.mediaMenu.playIn4k).hitTestable(), findsNothing);
     expect(find.text('91  CRITICS', findRichText: true), findsNothing);
     await tester.tap(find.byTooltip('Previous page'));
     await tester.pump();
@@ -759,6 +797,7 @@ void main() {
     await tester.pump(); // The rebuilt slide receives its cached detail future.
     expect(find.text('91  CRITICS', findRichText: true), findsOneWidget);
     expect(client.detailLookups.where((id) => id == 'movie_0').length, 1);
+    expect(lookup.firstMovieLookups, 1);
 
     // Pause/resume establishes a fresh interval aligned with the test clock.
     await tester.tap(find.byIcon(Symbols.pause_rounded));
@@ -1320,6 +1359,37 @@ Future<void> _pumpDiscoverShell(WidgetTester tester, {required bool isTv, WatchT
   // pumpAndSettle would never settle.
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 100));
+}
+
+class _HeroCopyLookup extends DataAggregationService {
+  _HeroCopyLookup(super.manager, this.alternate);
+  final MediaItem alternate;
+  int firstMovieLookups = 0;
+
+  @override
+  Future<List<MediaItem>> playbackCopies(MediaItem item, {required AbortController abort}) async {
+    if (item.id != 'movie_0') return [item];
+    firstMovieLookups++;
+    return [item, alternate];
+  }
+}
+
+class _HeroDownloads extends ChangeNotifier implements DownloadProvider {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _HeroPlayerObserver extends NavigatorObserver {
+  VideoPlayerScreen? player;
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (route is VideoPlayerRoute) {
+      player =
+          route.pageBuilder(navigator!.context, kAlwaysCompleteAnimation, kAlwaysDismissedAnimation)
+              as VideoPlayerScreen;
+      scheduleMicrotask(() => navigator?.pop());
+    }
+  }
 }
 
 class _FakeMediaServerClient implements MediaServerClient {

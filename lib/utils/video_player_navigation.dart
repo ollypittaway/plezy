@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../media/media_item.dart';
+import '../media/media_item_merge.dart';
 import '../media/media_item_types.dart';
 import '../media/media_version.dart';
 import '../media/media_version_preference.dart';
@@ -37,6 +38,24 @@ import 'quality_preset_labels.dart';
 import '../i18n/strings.g.dart';
 
 const String kVideoPlayerRouteName = '/video_player';
+
+/// Open the exact UHD file, retaining the bandwidth check used by normal playback.
+Future<bool?> navigateToFourKPlayback(
+  BuildContext context,
+  FourKPlayback source, {
+  Duration? initialPosition,
+  bool Function()? isLaunchCurrent,
+}) => navigateToVideoPlayer(
+  context,
+  metadata: initialPosition == null ? source.item : source.item.copyWith(viewOffsetMs: initialPosition.inMilliseconds),
+  resolveWatchState: initialPosition == null,
+  selectedMediaIndex: source.index,
+  selectedMediaSourceId: source.version.id.isEmpty ? null : source.version.id,
+  selectedQualityPreset: TranscodeQualityPreset.original,
+  strictMediaSelection: true,
+  initialPosition: initialPosition,
+  isLaunchCurrent: isLaunchCurrent,
+);
 
 /// One video route per navigator, shared by VOD and Live TV.
 ///

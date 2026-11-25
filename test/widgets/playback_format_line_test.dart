@@ -61,6 +61,52 @@ void main() {
     expect(find.text('4K · Dolby Vision · HEVC · AAC Stereo'), findsOneWidget);
   });
 
+  testWidgets('startup badges appear at middle left, pass taps through and fade once per title', (tester) async {
+    final player = _Player();
+    addTearDown(player.dispose);
+    var taps = 0;
+    Widget playback(String id) => MaterialApp(
+      home: Scaffold(
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            GestureDetector(behavior: HitTestBehavior.opaque, onTap: () => taps++),
+            PlaybackFormatLine(
+              key: ValueKey(id),
+              player: player,
+              version: source,
+              isTranscoding: false,
+              showStartupBadges: true,
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpWidget(playback('first'));
+    await tester.pump();
+    expect(find.text('4K'), findsOneWidget);
+    expect(find.text('Dolby Vision'), findsOneWidget);
+    final badges = tester.getRect(find.byType(Wrap));
+    final screen = tester.getRect(find.byType(Scaffold));
+    expect(badges.left - screen.left, 24);
+    expect(badges.center.dy, closeTo(screen.center.dy, 1));
+    await tester.tapAt(tester.getCenter(find.text('Dolby Vision')));
+    expect(taps, 1);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpWidget(playback('first'));
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(milliseconds: 230));
+    await tester.pump();
+    expect(find.text('4K'), findsNothing);
+    player.changes.add(player.state.track);
+    await tester.pump();
+    expect(find.text('Dolby Vision'), findsNothing);
+    await tester.pumpWidget(playback('next'));
+    await tester.pump();
+    expect(find.text('Dolby Vision'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('transcodes show the received resolution and codec instead of source formats', (tester) async {
     final player = _Player();
     addTearDown(player.dispose);

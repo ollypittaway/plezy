@@ -31,7 +31,6 @@ import '../media/library_change_event.dart';
 import '../media/media_hub.dart';
 import '../media/media_item_merge.dart';
 import '../media/media_library.dart' show isFourKLibraryTitle;
-import '../models/transcode_quality_preset.dart';
 import '../widgets/playback_copy_builder.dart';
 import '../widgets/anchored_option_menus.dart';
 import '../providers/libraries_provider.dart';

@@ -13,10 +13,26 @@ import '../providers/libraries_provider.dart';
 import '../providers/multi_server_provider.dart';
 import '../utils/media_server_http_client.dart';
 
+/// The Home carousel revisits a title every rotation. Keep its results until
+/// Home refreshes or the active profile's set of connected clients changes.
+class PlaybackCopyCache {
+  Map<String, MediaServerClient> _clients = const {};
+  Map<String, List<MediaItem>> _entries = {};
+
+  Map<String, List<MediaItem>> _forClients(Map<String, MediaServerClient> clients) {
+    if (!mapEquals(_clients, clients)) {
+      _clients = Map.of(clients);
+      _entries = {};
+    }
+    return _entries;
+  }
+}
+
 /// Resolves the file for the detail page's current playback target. TV
 /// focus can move through several episodes before settling on one.
 class PlaybackCopyBuilder extends StatefulWidget {
   final MediaItem? target;
+  final PlaybackCopyCache? cache;
   final List<MediaItem>? initialCopies;
   final Widget Function(
     MediaItem? selected,
@@ -26,7 +42,7 @@ class PlaybackCopyBuilder extends StatefulWidget {
   )
   builder;
 
-  const PlaybackCopyBuilder({super.key, required this.target, this.initialCopies, required this.builder});
+  const PlaybackCopyBuilder({super.key, required this.target, this.initialCopies, this.cache, required this.builder});
 
   @override
   State<PlaybackCopyBuilder> createState() => _PlaybackCopyBuilderState();
@@ -47,7 +63,7 @@ class _PlaybackCopyBuilderState extends State<PlaybackCopyBuilder> {
     final clients = servers?.serverManager.visibleOnlineClients ?? const <String, MediaServerClient>{};
     final target = widget.target;
     if (target?.globalKey != _key || !mapEquals(clients, _clients)) {
-      final initial = _request == null && _key == null ? widget.initialCopies : null;
+      final initial = widget.cache != null || (_request == null && _key == null) ? widget.initialCopies : null;
       _request?.abort();
       _debounce?.cancel();
       _key = target?.globalKey;
@@ -55,8 +71,14 @@ class _PlaybackCopyBuilderState extends State<PlaybackCopyBuilder> {
       _matches = const [];
       if (target != null && servers != null && clients.isNotEmpty) {
         if (initial != null && initial.any((item) => item.globalKey == target.globalKey)) _matches = initial;
-        final request = _request = AbortController();
-        _debounce = Timer(const Duration(milliseconds: 250), () => _load(servers, target, request));
+        final entries = widget.cache?._forClients(clients);
+        final cached = entries?[target.globalKey];
+        if (cached != null) {
+          _matches = mergeLibraryCopies(_matches, cached);
+        } else {
+          final request = _request = AbortController();
+          _debounce = Timer(const Duration(milliseconds: 250), () => _load(servers, target, request, entries));
+        }
       }
     }
     final available = mergeLibraryCopies([?target], _matches)
@@ -99,11 +121,19 @@ class _PlaybackCopyBuilderState extends State<PlaybackCopyBuilder> {
     );
   }
 
-  Future<void> _load(MultiServerProvider servers, MediaItem target, AbortController request) async {
+  Future<void> _load(
+    MultiServerProvider servers,
+    MediaItem target,
+    AbortController request,
+    Map<String, List<MediaItem>>? entries,
+  ) async {
     if (request.isAborted) return;
     try {
       final matches = await servers.aggregationService.playbackCopies(target, abort: request);
-      if (mounted && !request.isAborted) setState(() => _matches = mergeLibraryCopies(_matches, matches));
+      if (mounted && !request.isAborted) {
+        entries?[target.globalKey] = matches;
+        setState(() => _matches = mergeLibraryCopies(_matches, matches));
+      }
     } on MediaServerHttpException {
       if (!request.isAborted) rethrow;
     }

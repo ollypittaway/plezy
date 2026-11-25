@@ -68,18 +68,12 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
         : readMediaVersionPreference(settings, versionItem)?.resolveIndex(versions);
     final index = probe?.mediaIndex ?? preference ?? versions.indexWhere((version) => version.isPlayable);
     final version = index < 0 ? null : versions.elementAtOrNull(index);
-    final FourKPlayback? primarySource;
-    if (fourK != null && fourK.item.globalKey == playItem.globalKey) {
-      if (version != null && version.is4K && version.isPlayable) {
-        primarySource = (item: versionItem, version: version, index: index);
-      } else if (preference == null && isFourKLibraryTitle(library)) {
-        primarySource = fourK;
-      } else {
-        primarySource = null;
-      }
-    } else {
-      primarySource = null;
-    }
+    final primarySource = primaryFourKPlayback(
+      versionItem,
+      index,
+      fourK,
+      preferFourKLibrary: preference == null && isFourKLibraryTitle(library),
+    );
     // An offline multi-version title needs the identity of the file actually downloaded.
     final offlineFourK =
         widget.isOffline &&
@@ -137,15 +131,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
 
     Future<void> playFourKFile(FourKPlayback fourK) async {
       if (!_canUseDetail) return;
-      await navigateToVideoPlayer(
-        context,
-        metadata: fourK.item,
-        selectedMediaIndex: fourK.index,
-        selectedMediaSourceId: fourK.version.id.isEmpty ? null : fourK.version.id,
-        selectedQualityPreset: TranscodeQualityPreset.original,
-        strictMediaSelection: true,
-        isLaunchCurrent: () => _canUseDetail,
-      );
+      await navigateToFourKPlayback(context, fourK, isLaunchCurrent: () => _canUseDetail);
       if (_canUseDetail) await _refreshWatchState();
     }
 

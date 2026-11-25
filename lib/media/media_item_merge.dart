@@ -26,6 +26,19 @@ FourKPlayback? findFourKPlayback(Iterable<MediaItem> copies) {
   return null;
 }
 
+/// The primary action owns the 4K label when its effective file is UHD.
+FourKPlayback? primaryFourKPlayback(
+  MediaItem item,
+  int index,
+  FourKPlayback? fourK, {
+  required bool preferFourKLibrary,
+}) {
+  if (fourK == null || fourK.item.globalKey != item.globalKey) return null;
+  final version = index < 0 ? null : item.mediaVersions?.elementAtOrNull(index);
+  if (version != null && version.isPlayable && version.is4K) return (item: item, version: version, index: index);
+  return preferFourKLibrary ? fourK : null;
+}
+
 /// The library a copy belongs to: [MediaItem.libraryId] with the
 /// [MediaItem.libraryTitle] that labels it. The two travel as a pair, since a
 /// title is only meaningful next to the id it names.

@@ -166,6 +166,32 @@ extension _VideoPlayerBuildMethods on VideoPlayerScreenState {
     _pinchStartZoomScale = null;
   }
 
+  Widget _buildPlaybackFormats({bool startup = false}) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _firstFrame.uiReady,
+      builder: (_, ready, _) {
+        final currentPlayer = player;
+        if (!ready || !_firstFrame.rendered || currentPlayer == null) return const SizedBox.shrink();
+        final versions = _availableVersions.isNotEmpty ? _availableVersions : _currentMetadata.mediaVersions;
+        return PlaybackFormatLine(
+          key: ValueKey((
+            currentPlayer,
+            _currentMetadata.globalKey,
+            _effectiveSelectedMediaIndex,
+            _isTranscoding,
+            startup ? null : _playbackSession?.context,
+            startup ? null : _currentMediaInfo?.partIndex,
+          )),
+          player: currentPlayer,
+          version: versions?.elementAtOrNull(_effectiveSelectedMediaIndex),
+          source: _currentMediaInfo,
+          isTranscoding: _isTranscoding,
+          showStartupBadges: startup,
+        );
+      },
+    );
+  }
+
   Widget _buildVideoPlayer(BuildContext context) {
     // Cache platform detection to avoid multiple calls
     final isMobile = PlatformDetector.isMobile(context);
@@ -287,27 +313,7 @@ extension _VideoPlayerBuildMethods on VideoPlayerScreenState {
                         player: player!,
                         volumeController: _volumeController!,
                         metadata: _currentMetadata,
-                        formatInfo: ValueListenableBuilder<bool>(
-                          valueListenable: _firstFrame.uiReady,
-                          builder: (_, ready, _) {
-                            if (!ready) return const SizedBox.shrink();
-                            final versions = _availableVersions.isNotEmpty
-                                ? _availableVersions
-                                : _currentMetadata.mediaVersions;
-                            return PlaybackFormatLine(
-                              key: ValueKey((
-                                player,
-                                _currentMetadata.globalKey,
-                                _playbackSession?.context,
-                                _currentMediaInfo?.partIndex,
-                              )),
-                              player: player!,
-                              version: versions?.elementAtOrNull(_effectiveSelectedMediaIndex),
-                              source: _currentMediaInfo,
-                              isTranscoding: _isTranscoding,
-                            );
-                          },
-                        ),
+                        formatInfo: _buildPlaybackFormats(),
                         onNext: onNext,
                         onPrevious: onPrevious,
                         availableVersions: _availableVersions,
@@ -371,6 +377,13 @@ extension _VideoPlayerBuildMethods on VideoPlayerScreenState {
                       ),
                     );
                   },
+                ),
+              ),
+              Positioned.fill(
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: PipService().isPipActive,
+                  builder: (_, inPip, child) => Offstage(offstage: inPip, child: child),
+                  child: _buildPlaybackFormats(startup: true),
                 ),
               ),
               // Netflix-style auto-play overlay (hidden in PiP mode)
