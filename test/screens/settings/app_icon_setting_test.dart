@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show SemanticsNode;
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/focus/input_mode_tracker.dart';
 import 'package:plezy/focus/key_event_utils.dart';
@@ -349,47 +348,35 @@ void main() {
         await pumpPicker(tester, supporter: supporter, appIcons: await appIconsFor(supporter));
       }
 
-      Finder defaultLogo() => find.descendant(of: tile(defaultAppIconId), matching: find.byType(SvgPicture));
+      String defaultAsset(WidgetTester tester) {
+        final image = tester.widget<Image>(find.descendant(of: tile(defaultAppIconId), matching: find.byType(Image)));
+        return (image.image as AssetImage).assetName;
+      }
 
-      Color plate(WidgetTester tester) =>
-          tester.widget<ColoredBox>(find.ancestor(of: defaultLogo(), matching: find.byType(ColoredBox)).first).color;
-
-      testWidgets('on TV: the dark TV artwork', (tester) async {
+      testWidgets('on Apple TV it uses the TV artwork', (tester) async {
         TvDetectionService.debugSetAppleTVOverride(true);
         addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
         await pumpDefault(tester);
-
-        final image = tester.widget<Image>(find.descendant(of: tile(defaultAppIconId), matching: find.byType(Image)));
-        expect((image.image as AssetImage).assetName, defaultAppIconTvosPreview);
-        expect(defaultLogo(), findsNothing);
+        expect(defaultAsset(tester), defaultAppIconTvosPreview);
       });
 
-      testWidgets('on Android phones: white, or #1A1A1A in night mode', (tester) async {
-        debugDefaultTargetPlatformOverride = TargetPlatform.android;
-        try {
-          await pumpDefault(tester);
-          expect(plate(tester), const Color(0xFFFFFFFF));
+      for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+        testWidgets('on ${platform.name} it uses the branded icon in both appearances', (tester) async {
+          debugDefaultTargetPlatformOverride = platform;
+          try {
+            tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+            addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+            await pumpDefault(tester);
+            expect(defaultAsset(tester), 'assets/plezy.png');
 
-          tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
-          addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-          await tester.pump();
-          expect(plate(tester), const Color(0xFF1A1A1A));
-        } finally {
-          debugDefaultTargetPlatformOverride = null;
-        }
-      });
-
-      testWidgets('on iOS: the light plate, also in dark mode', (tester) async {
-        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-        try {
-          tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
-          addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-          await pumpDefault(tester);
-          expect(plate(tester), const Color(0xFFF1F1F1));
-        } finally {
-          debugDefaultTargetPlatformOverride = null;
-        }
-      });
+            tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+            await tester.pump();
+            expect(defaultAsset(tester), 'assets/plezy.png');
+          } finally {
+            debugDefaultTargetPlatformOverride = null;
+          }
+        });
+      }
     });
 
     testWidgets('D-pad moves through the grid by row and column and Select applies the icon', (tester) async {
