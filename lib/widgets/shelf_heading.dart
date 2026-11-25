@@ -18,8 +18,8 @@ class ShelfHeading extends StatelessWidget {
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
           color: color,
           fontSize: fontSize,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.035 * fontSize,
+          fontWeight: FontWeight.w400,
+          letterSpacing: -0.025 * fontSize,
           height: 1.15,
         ),
       ),

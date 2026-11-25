@@ -163,6 +163,7 @@ flutter:
     - assets/licenses/InterTight.txt
     - assets/licenses/SpatialAudioBridge.txt
     - assets/harbor.jpg
+    - assets/plezy.svg
     - assets/plezy.png
     - assets/plezy_adaptive_foreground.svg
     - assets/plex_chevron.svg

@@ -110,7 +110,7 @@ class _FeaturedScore extends StatelessWidget {
               text: '$value',
               style: TextStyle(
                 color: theme.brightness == Brightness.dark ? const Color(0xff65df95) : const Color(0xff16653c),
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w600,
               ),
             ),
             TextSpan(
@@ -118,7 +118,7 @@ class _FeaturedScore extends StatelessWidget {
               style: TextStyle(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.70),
                 fontSize: 11,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w500,
                 letterSpacing: 0.25,
               ),
             ),

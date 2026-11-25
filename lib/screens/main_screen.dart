@@ -2084,6 +2084,32 @@ class _MainScreenState extends State<MainScreen>
     return CoveredRouteFocusBoundary(child: _buildContent(context, useSideNav));
   }
 
+  Widget _buildDesktopNavigationBar({Widget? homeActions}) {
+    return Consumer2<LibrariesProvider, HiddenLibrariesProvider>(
+      builder: (context, libraries, hidden, _) {
+        final hiddenKeys = hidden.hiddenLibraryKeys;
+        return DesktopNavigationBar(
+          tabs: _getVisibleTabs(_isOffline),
+          selected: _currentTab,
+          libraries: !_isOffline && hidden.isInitialized
+              ? libraries.libraries.where((lib) => !hiddenKeys.contains(lib.globalKey)).toList()
+              : const [],
+          selectedLibraryKey: _selectedLibraryGlobalKey,
+          onSelectLibrary: (key) {
+            _selectLibrary(key);
+            if (_isSidebarFocused) _focusContent(restorePreviousFocus: false);
+          },
+          onSelect: (tab) {
+            _selectTab(tab);
+            if (_isSidebarFocused) _focusContent(restorePreviousFocus: false);
+          },
+          onMenu: _isSidebarFocused ? _focusContent : _focusSidebar,
+          homeActions: homeActions,
+        );
+      },
+    );
+  }
+
   Widget _buildContent(BuildContext context, bool useSideNav) {
     if (useSideNav) {
       return SettingValueBuilder<bool>(
@@ -2147,16 +2173,7 @@ class _MainScreenState extends State<MainScreen>
                     openSettings: _openSettings,
                     child: Column(
                       children: [
-                        if (useTopBar)
-                          DesktopNavigationBar(
-                            tabs: _getVisibleTabs(_isOffline),
-                            selected: _currentTab,
-                            onSelect: (tab) {
-                              _selectTab(tab);
-                              if (_isSidebarFocused) _focusContent(restorePreviousFocus: false);
-                            },
-                            onMenu: _isSidebarFocused ? _focusContent : _focusSidebar,
-                          ),
+                        if (useTopBar && _currentTab != NavigationTabId.discover) _buildDesktopNavigationBar(),
                         Expanded(
                           child: SideNavigationScope(
                             child: Stack(
@@ -2176,7 +2193,12 @@ class _MainScreenState extends State<MainScreen>
                                       node: _contentFocusScope,
                                       // No autofocus - we control focus programmatically to prevent
                                       // autofocus from stealing focus back after setState() rebuilds
-                                      child: _buildTickerAwareStack(),
+                                      child: Provider<DesktopHomeHeaderBuilder?>.value(
+                                        value: useTopBar && _currentTab == NavigationTabId.discover
+                                            ? (actions) => _buildDesktopNavigationBar(homeActions: actions)
+                                            : null,
+                                        child: _buildTickerAwareStack(),
+                                      ),
                                     ),
                                     // Duration/curve must stay in sync with
                                     // SideNavigationBleedBuilder and the rail's width

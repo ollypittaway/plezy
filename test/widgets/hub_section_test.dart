@@ -335,7 +335,7 @@ void main() {
     final header = find.ancestor(of: find.text('Popular'), matching: find.byType(InkWell)).first;
     expect(find.descendant(of: header, matching: find.byType(Icon)), findsNothing);
     expect(tester.widget<InkWell>(header).onTap, isNotNull);
-    expect(tester.widget<Text>(find.text('Popular')).style?.fontWeight, FontWeight.w600);
+    expect(tester.widget<Text>(find.text('Popular')).style?.fontWeight, FontWeight.w400);
     expect(find.text(t.explore.totalResults(n: 237)), findsNothing);
 
     await tester.pumpWidget(
