@@ -1,0 +1,37 @@
+name: Publish Offstage package
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+      platform:
+        type: string
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # Builds run in parallel. Only one publisher can create or edit a release at a time.
+    concurrency:
+      group: offstage-release-uploads
+      queue: max
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: release-${{ inputs.platform }}
+          path: build/distribution
+      - name: Publish verified package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_PLATFORM: ${{ inputs.platform }}
+        working-directory: build/distribution
+        run: bash "$GITHUB_WORKSPACE/scripts/release/publish-package.sh"

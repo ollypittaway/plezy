@@ -402,263 +402,55 @@ jobs:
           if-no-files-found: error
           compression-level: 0
 
-  release_init:
-    if: github.ref == 'refs/heads/tofa-redesign' || github.ref_type == 'tag' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-build/'))
-    needs: version
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Prepare release for independent asset uploads
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ needs.version.outputs.number }}
-        run: |
-          set -euo pipefail
-          tag="v$RELEASE_VERSION"
-          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "Offstage $RELEASE_VERSION" --notes 'Packages are published as each platform finishes. Android and Fire OS APKs are signed. For a new Fire TV installation, download Offstage-Firestick.apk. Fire TV v0.0.23 can migrate using its in-app updater. On earlier releases, open firestick.offstage.download in Downloader to install Offstage directly. The iPhone IPA requires external signing. The Mac disk image is ad hoc signed and the Windows installer is unsigned.'
-          fi
-
   publish_android:
-    if: ${{ needs.release_init.result == 'success' && needs.android.result == 'success' }}
-    needs: [version, release_init, android]
-    runs-on: ubuntu-latest
+    needs: [version, android]
+    if: &publish_ref github.ref == 'refs/heads/tofa-redesign' || github.ref_type == 'tag' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-build/'))
     permissions:
       contents: write
-      actions: read
-    steps:
-      - name: Download package from this run
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: release-android
-          path: build/distribution
-      - name: Publish android package independently
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ needs.version.outputs.number }}
-        working-directory: build/distribution
-        run: |
-          set -euo pipefail
-          tag="v$RELEASE_VERSION"
-          repo="$GITHUB_REPOSITORY"
-          assets=(Offstage-Android-arm64-v8a.apk Offstage-Android-armeabi-v7a.apk Offstage-Android-x86_64.apk)
-          for asset in "${assets[@]}"; do
-            test -s "$asset"
-          done
-          # Never replace a binary already attached to this version.
-          existing=$(gh release view "$tag" --repo "$repo" --json assets --jq '.assets[].name')
-          for asset in "${assets[@]}"; do
-            if ! grep -Fxq "$asset" <<< "$existing"; then
-              gh release upload "$tag" --repo "$repo" "$asset"
-            fi
-          done
-          # Derive checksums from the published assets, not a potentially different retry build.
-          manifest="SHA256SUMS-android.txt"
-          : > "$manifest"
-          for asset in "${assets[@]}"; do
-            digest=$(gh api --paginate "repos/$repo/releases/$(gh api --paginate "repos/$repo/releases?per_page=100" --jq ".[] | select(.tag_name == \"$tag\") | .id")/assets?per_page=100" --jq ".[] | select(.name == \"$asset\") | .digest")
-            [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
-            printf '%s  %s\n' "${digest#sha256:}" "$asset" >> "$manifest"
-          done
-          if ! grep -Fxq "$manifest" <<< "$existing"; then
-            gh release upload "$tag" --repo "$repo" "$manifest"
-          fi
-          if [[ $(gh release view "$tag" --repo "$repo" --json isDraft --jq .isDraft) == true ]]; then
-            gh release edit "$tag" --repo "$repo" --draft=false
-          fi
+    uses: ./.github/workflows/publish-offstage-package.yml
+    with:
+      version: ${{ needs.version.outputs.number }}
+      platform: android
 
   publish_firestick:
-    if: ${{ needs.release_init.result == 'success' && needs.firestick.result == 'success' }}
-    needs: [version, release_init, firestick]
-    runs-on: ubuntu-latest
+    needs: [version, firestick]
+    if: *publish_ref
     permissions:
       contents: write
-      actions: read
-    steps:
-      - name: Download package from this run
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: release-firestick
-          path: build/distribution
-      - name: Publish firestick package independently
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ needs.version.outputs.number }}
-        working-directory: build/distribution
-        run: |
-          set -euo pipefail
-          tag="v$RELEASE_VERSION"
-          repo="$GITHUB_REPOSITORY"
-          assets=(Offstage-Firestick.apk Offstage-Firestick-Migration.apk)
-          for asset in "${assets[@]}"; do
-            test -s "$asset"
-          done
-          # Never replace a binary already attached to this version.
-          existing=$(gh release view "$tag" --repo "$repo" --json assets --jq '.assets[].name')
-          for asset in "${assets[@]}"; do
-            if ! grep -Fxq "$asset" <<< "$existing"; then
-              gh release upload "$tag" --repo "$repo" "$asset"
-            fi
-          done
-          # Derive checksums from the published assets, not a potentially different retry build.
-          manifest="SHA256SUMS-firestick.txt"
-          : > "$manifest"
-          for asset in "${assets[@]}"; do
-            digest=$(gh api --paginate "repos/$repo/releases/$(gh api --paginate "repos/$repo/releases?per_page=100" --jq ".[] | select(.tag_name == \"$tag\") | .id")/assets?per_page=100" --jq ".[] | select(.name == \"$asset\") | .digest")
-            [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
-            printf '%s  %s\n' "${digest#sha256:}" "$asset" >> "$manifest"
-          done
-          if ! grep -Fxq "$manifest" <<< "$existing"; then
-            gh release upload "$tag" --repo "$repo" "$manifest"
-          fi
-          if [[ $(gh release view "$tag" --repo "$repo" --json isDraft --jq .isDraft) == true ]]; then
-            gh release edit "$tag" --repo "$repo" --draft=false
-          fi
+    uses: ./.github/workflows/publish-offstage-package.yml
+    with:
+      version: ${{ needs.version.outputs.number }}
+      platform: firestick
 
   publish_ios:
-    if: ${{ needs.release_init.result == 'success' && needs.ios.result == 'success' }}
-    needs: [version, release_init, ios]
-    runs-on: ubuntu-latest
+    needs: [version, ios]
+    if: *publish_ref
     permissions:
       contents: write
-      actions: read
-    steps:
-      - name: Download package from this run
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: release-ios
-          path: build/distribution
-      - name: Publish ios package independently
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ needs.version.outputs.number }}
-        working-directory: build/distribution
-        run: |
-          set -euo pipefail
-          tag="v$RELEASE_VERSION"
-          repo="$GITHUB_REPOSITORY"
-          assets=(Offstage-iOS-unsigned.ipa)
-          for asset in "${assets[@]}"; do
-            test -s "$asset"
-          done
-          # Never replace a binary already attached to this version.
-          existing=$(gh release view "$tag" --repo "$repo" --json assets --jq '.assets[].name')
-          for asset in "${assets[@]}"; do
-            if ! grep -Fxq "$asset" <<< "$existing"; then
-              gh release upload "$tag" --repo "$repo" "$asset"
-            fi
-          done
-          # Derive checksums from the published assets, not a potentially different retry build.
-          manifest="SHA256SUMS-ios.txt"
-          : > "$manifest"
-          for asset in "${assets[@]}"; do
-            digest=$(gh api --paginate "repos/$repo/releases/$(gh api --paginate "repos/$repo/releases?per_page=100" --jq ".[] | select(.tag_name == \"$tag\") | .id")/assets?per_page=100" --jq ".[] | select(.name == \"$asset\") | .digest")
-            [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
-            printf '%s  %s\n' "${digest#sha256:}" "$asset" >> "$manifest"
-          done
-          if ! grep -Fxq "$manifest" <<< "$existing"; then
-            gh release upload "$tag" --repo "$repo" "$manifest"
-          fi
-          if [[ $(gh release view "$tag" --repo "$repo" --json isDraft --jq .isDraft) == true ]]; then
-            gh release edit "$tag" --repo "$repo" --draft=false
-          fi
+    uses: ./.github/workflows/publish-offstage-package.yml
+    with:
+      version: ${{ needs.version.outputs.number }}
+      platform: ios
 
   publish_macos:
-    if: ${{ needs.release_init.result == 'success' && needs.macos.result == 'success' }}
-    needs: [version, release_init, macos]
-    runs-on: ubuntu-latest
+    needs: [version, macos]
+    if: *publish_ref
     permissions:
       contents: write
-      actions: read
-    steps:
-      - name: Download package from this run
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: release-macos
-          path: build/distribution
-      - name: Publish macos package independently
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ needs.version.outputs.number }}
-        working-directory: build/distribution
-        run: |
-          set -euo pipefail
-          tag="v$RELEASE_VERSION"
-          repo="$GITHUB_REPOSITORY"
-          assets=(Offstage-macOS.dmg)
-          for asset in "${assets[@]}"; do
-            test -s "$asset"
-          done
-          # Never replace a binary already attached to this version.
-          existing=$(gh release view "$tag" --repo "$repo" --json assets --jq '.assets[].name')
-          for asset in "${assets[@]}"; do
-            if ! grep -Fxq "$asset" <<< "$existing"; then
-              gh release upload "$tag" --repo "$repo" "$asset"
-            fi
-          done
-          # Derive checksums from the published assets, not a potentially different retry build.
-          manifest="SHA256SUMS-macos.txt"
-          : > "$manifest"
-          for asset in "${assets[@]}"; do
-            digest=$(gh api --paginate "repos/$repo/releases/$(gh api --paginate "repos/$repo/releases?per_page=100" --jq ".[] | select(.tag_name == \"$tag\") | .id")/assets?per_page=100" --jq ".[] | select(.name == \"$asset\") | .digest")
-            [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
-            printf '%s  %s\n' "${digest#sha256:}" "$asset" >> "$manifest"
-          done
-          if ! grep -Fxq "$manifest" <<< "$existing"; then
-            gh release upload "$tag" --repo "$repo" "$manifest"
-          fi
-          if [[ $(gh release view "$tag" --repo "$repo" --json isDraft --jq .isDraft) == true ]]; then
-            gh release edit "$tag" --repo "$repo" --draft=false
-          fi
+    uses: ./.github/workflows/publish-offstage-package.yml
+    with:
+      version: ${{ needs.version.outputs.number }}
+      platform: macos
 
   publish_windows:
-    if: ${{ needs.release_init.result == 'success' && needs.installer.result == 'success' }}
-    needs: [version, release_init, installer]
-    runs-on: ubuntu-latest
+    needs: [version, installer]
+    if: *publish_ref
     permissions:
       contents: write
-      actions: read
-    steps:
-      - name: Download package from this run
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: release-windows
-          path: build/distribution
-      - name: Publish windows package independently
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ needs.version.outputs.number }}
-        working-directory: build/distribution
-        run: |
-          set -euo pipefail
-          tag="v$RELEASE_VERSION"
-          repo="$GITHUB_REPOSITORY"
-          assets=(Offstage-Windows-Setup.exe)
-          for asset in "${assets[@]}"; do
-            test -s "$asset"
-          done
-          # Never replace a binary already attached to this version.
-          existing=$(gh release view "$tag" --repo "$repo" --json assets --jq '.assets[].name')
-          for asset in "${assets[@]}"; do
-            if ! grep -Fxq "$asset" <<< "$existing"; then
-              gh release upload "$tag" --repo "$repo" "$asset"
-            fi
-          done
-          # Derive checksums from the published assets, not a potentially different retry build.
-          manifest="SHA256SUMS-windows.txt"
-          : > "$manifest"
-          for asset in "${assets[@]}"; do
-            digest=$(gh api --paginate "repos/$repo/releases/$(gh api --paginate "repos/$repo/releases?per_page=100" --jq ".[] | select(.tag_name == \"$tag\") | .id")/assets?per_page=100" --jq ".[] | select(.name == \"$asset\") | .digest")
-            [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
-            printf '%s  %s\n' "${digest#sha256:}" "$asset" >> "$manifest"
-          done
-          if ! grep -Fxq "$manifest" <<< "$existing"; then
-            gh release upload "$tag" --repo "$repo" "$manifest"
-          fi
-          if [[ $(gh release view "$tag" --repo "$repo" --json isDraft --jq .isDraft) == true ]]; then
-            gh release edit "$tag" --repo "$repo" --draft=false
-          fi
+    uses: ./.github/workflows/publish-offstage-package.yml
+    with:
+      version: ${{ needs.version.outputs.number }}
+      platform: windows
 
   publish_checksums:
     needs: [version, publish_android, publish_firestick, publish_ios, publish_macos, publish_windows]
@@ -682,3 +474,22 @@ jobs:
           done
           cat SHA256SUMS-{android,firestick,ios,macos,windows}.txt > SHA256SUMS.txt
           gh release upload "$tag" --repo "$repo" SHA256SUMS.txt
+
+  cleanup_empty_drafts:
+    needs: [version, publish_android, publish_firestick, publish_ios, publish_macos, publish_windows]
+    if: always() && needs.version.result == 'success' && (github.ref == 'refs/heads/tofa-redesign' || github.ref_type == 'tag' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release-build/')))
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    concurrency:
+      group: offstage-release-uploads
+      queue: max
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Remove abandoned empty CI drafts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/release/cleanup-empty-drafts.sh

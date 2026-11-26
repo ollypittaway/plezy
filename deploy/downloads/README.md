@@ -1,8 +1,10 @@
 # Offstage releases
 
-The **Offstage packages** workflow builds a versioned GitHub Release when a maintainer pushes to `tofa-redesign`. The Coolify service redirects each platform hostname to an asset in the latest public release. GitHub serves the files, so Coolify does not need storage for packages or a GitHub token.
+The **Offstage packages** workflow builds a versioned GitHub Release when a maintainer pushes to `tofa-redesign`. The Coolify service directs downloads to GitHub. Each hostname selects the highest stable version with a completed upload of its own installer. Android selects each architecture independently.
 
-Fire TV updater requests to `firestick.offstage.download/releases/latest` receive GitHub release metadata cached for three minutes. The v0.0.23 updater sees the migration APK under the filename they recognize and its real SHA-256 digest. The router sends its version-specific request to the signed migration APK on the same GitHub release. New installations use the regular `Offstage-Firestick.apk`. The bare hostname remains the Downloader install link.
+Deploy the website’s `/api/downloads/[platform]` and `/api/fire-tv-release` endpoints before deploying this router. They check published release assets with a three-minute cache and resolve each checksum link against the same tag as its installer. GitHub serves the binaries. The iOS link downloads an unsigned IPA for an external signing service.
+
+Fire TV updater requests to `firestick.offstage.download/releases/latest` receive metadata for the same release as the Fire TV download. The v0.0.23 updater sees the migration APK under the filename it recognizes and its real SHA-256 digest. The router sends its version-specific request to the signed migration APK on the same GitHub release. New installations use the regular `Offstage-Firestick.apk`. The bare hostname remains the Downloader install link.
 
 | Download hostname | Release asset |
 | --- | --- |
@@ -41,9 +43,9 @@ The iOS asset needs signing for the intended devices before installation. The Ma
 
 GitHub Actions must be enabled in the fork. A push to `tofa-redesign` starts the workflow, which assigns a version and build number and tags the source. A manual workflow run can produce Actions artifacts for testing.
 
-Open **Actions → Offstage packages**. Each platform publishes independently to the same release as soon as its package is ready. The first successful publisher makes the release public. Existing binaries are preserved on retries. Platform-specific SHA-256 manifests are uploaded alongside packages; SHA256SUMS.txt becomes available after all platforms publish. During a partial release, download URLs for unfinished platforms (and the combined checksum manifest) may return 404. On a branch, a manual workflow run produces downloadable Actions artifacts. GitHub shows the manual dispatch button once the workflow is present on the default branch.
+Open **Actions → Offstage packages**. Each platform publishes independently to the same release as soon as its package is ready. CI creates a draft only after a publisher has its package in hand. The first successful publisher makes the release public. Existing binaries are preserved on retries. Platform-specific SHA-256 manifests are uploaded alongside packages; SHA256SUMS.txt becomes available after all platforms publish. During a partial release, an unfinished platform continues to serve its last published installer and matching checksums. New uploads appear as the three-minute release cache refreshes. On a branch, a manual workflow run produces downloadable Actions artifacts. GitHub shows the manual dispatch button once the workflow is present on the default branch.
 
-The download routes pick up each new public release automatically.
+After the publishers finish, CI removes its empty drafts from finished or cancelled builds. A later release run also picks up empty drafts left by a hard cancellation. Drafts with any attached file and manually created drafts are preserved. A retry can recreate an empty draft using the existing version tag.
 
 If a runner or workflow needs a fix after a release tag is pushed, commit the workflow fix and push that commit to `release-build/v0.0.1` (substitute the intended version). The workflow on that branch resolves the existing release tag once and builds its exact source commit on every platform. This keeps the published tag stable.
 
