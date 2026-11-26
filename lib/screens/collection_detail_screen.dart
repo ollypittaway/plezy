@@ -527,7 +527,7 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
     final size = MediaQuery.sizeOf(context);
     final isTv = PlatformDetector.isTV();
     final compact = size.width < ScreenBreakpoints.mobile;
-    final inset = isTv ? TvLayoutConstants.horizontalInset : 16.0;
+    final inset = PageLayout.horizontalOf(context);
     final artHeight = compact ? size.height * 0.62 : (isTv ? size.height * 0.7 : 460.0);
 
     final libraryOrder = context.select<LibrariesProvider?, Map<String, int>>((p) => p?.libraryOrder ?? const {});
@@ -540,18 +540,15 @@ class _CollectionDetailScreenState extends BaseMediaListDetailScreen<CollectionD
         ),
         ...buildStateSlivers(),
         if (hasItems)
-          SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: isTv ? inset - 8 : 8),
-            sliver: buildSparseFocusableGrid(
-              totalItems: rows.length,
-              itemAt: (index) => rows.items[index],
-              onRefresh: updateItem,
-              onSkeletonVisible: (index) => ensureIndexLoaded(rows.sourceIndex(index), pageSize: _pageSize),
-              collectionId: widget.isOffline ? null : widget.collection.id,
-              onListRefresh: loadItems,
-              isOffline: widget.isOffline,
-              shape: _isMusic ? CardShape.square : null,
-            ),
+          buildSparseFocusableGrid(
+            totalItems: rows.length,
+            itemAt: (index) => rows.items[index],
+            onRefresh: updateItem,
+            onSkeletonVisible: (index) => ensureIndexLoaded(rows.sourceIndex(index), pageSize: _pageSize),
+            collectionId: widget.isOffline ? null : widget.collection.id,
+            onListRefresh: loadItems,
+            isOffline: widget.isOffline,
+            shape: _isMusic ? CardShape.square : null,
           ),
       ],
       above: _buildChrome(context),

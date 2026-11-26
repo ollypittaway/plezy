@@ -78,6 +78,19 @@ void main() {
 
   tearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
 
+  testWidgets('collection grid follows the same page margins when the viewport changes', (tester) async {
+    final harness = _CollectionHarness.plex();
+    addTearDown(harness.dispose);
+    await _pumpTab(tester, harness: harness, library: _musicLibrary);
+
+    for (final (width, edge) in [(1280.0, 36.0), (390.0, 12.0)]) {
+      tester.view.physicalSize = Size(width, 720);
+      await tester.pumpAndSettle();
+      final grid = tester.widget<MediaCardSliverLayout>(find.byType(MediaCardSliverLayout));
+      expect(grid.padding, EdgeInsets.fromLTRB(edge, 8, edge, 8));
+    }
+  });
+
   testWidgets('music library collections use square grid geometry and square cards', (tester) async {
     final harness = _CollectionHarness.plex();
     addTearDown(harness.dispose);

@@ -14,6 +14,7 @@ import '../../../mixins/deletion_aware.dart';
 import '../../../mixins/item_updatable.dart';
 import '../../../mixins/watch_state_aware.dart';
 import '../../../services/settings_service.dart';
+import '../../../utils/layout_constants.dart';
 import '../../../utils/deletion_notifier.dart';
 import '../../../utils/media_event_keys.dart';
 import '../../../utils/platform_detector.dart';
@@ -286,9 +287,6 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<MediaHub, LibraryR
     MainScreenFocusScope.focusSidebarOf(context);
   }
 
-  // Extra top padding for focus decoration (scale + border extends beyond item bounds)
-  static const double _focusDecorationPadding = 8.0;
-
   @override
   Widget buildContent(List<MediaHub> items) {
     final hubKeys = _keysForHubs(items);
@@ -307,7 +305,7 @@ class _LibraryRecommendedTabState extends BaseLibraryTabState<MediaHub, LibraryR
         slivers: [
           SliverOverlapInjector(handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context)),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(0, _focusDecorationPadding, 0, 8),
+            padding: const EdgeInsets.fromLTRB(0, PageLayout.tabContentTop, 0, 8),
             sliver: SliverList.builder(
               itemCount: items.length,
               findChildIndexCallback: (key) {

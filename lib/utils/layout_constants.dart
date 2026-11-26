@@ -37,6 +37,22 @@ class AppDurations {
   static const Duration snackBarLong = Duration(seconds: 4);
 }
 
+/// Foreground content edges within the page's horizontal SafeArea.
+class PageLayout {
+  static const double tabContentTop = 8;
+
+  static double horizontalOf(BuildContext context) {
+    if (PlatformDetector.isTV()) return TvLayoutConstants.contentInsetForScale(TvLayoutConstants.scaleOf(context));
+    if (PlatformDetector.isAutomotive()) return 24;
+    return ScreenBreakpoints.isWideTabletOrLarger(MediaQuery.sizeOf(context).width) ? 36 : 12;
+  }
+
+  static EdgeInsets padding(BuildContext context, {double top = 0, double bottom = 0}) {
+    final side = horizontalOf(context);
+    return EdgeInsets.fromLTRB(side, top, side, bottom);
+  }
+}
+
 class GridLayoutConstants {
   /// Artwork width:height per card shape. Captioned grid cells add the card's
   /// caption band on top of the artwork (see `MediaGridDelegate.cellHeightFor`);
@@ -57,15 +73,10 @@ class GridLayoutConstants {
   static double get mainAxisSpacing => PlatformDetector.isAutomotive() ? 24 : 0;
 
   static double fullCardGridSpacingForScale(double scale) => (12 * scale).clamp(8, 18).toDouble();
-
-  /// Standard grid padding
-  static EdgeInsets get gridPadding =>
-      PlatformDetector.isAutomotive() ? const EdgeInsets.all(24) : const EdgeInsets.only(left: 2, right: 2, bottom: 2);
 }
 
 class TvLayoutConstants {
-  static const double horizontalInset = 72;
-  static const double shelfHorizontalInset = 56;
+  static double contentInsetForScale(double scale) => (24 * scale).clamp(18, 40).toDouble();
   static const double shelfVerticalGap = 32;
   static const double heroContentMaxWidth = 760;
   static const double heroLogoWidth = 520;

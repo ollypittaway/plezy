@@ -331,60 +331,49 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
                 ),
               ),
               SliverToBoxAdapter(
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: ProfileSettingsLayout.maxWidth),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        ProfileSettingsLayout.outerInset,
-                        0,
-                        ProfileSettingsLayout.outerInset,
-                        12,
+                child: Padding(
+                  padding: ProfileSettingsLayout.outerPadding(context, bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: ProfileSettingsLayout.rowPadding,
+                        child: Text(
+                          t.viewerSettings.subtitle,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Padding(
-                            padding: ProfileSettingsLayout.rowPadding,
-                            child: Text(
-                              t.viewerSettings.subtitle,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      const SizedBox(height: 18),
+                      _tabStrip(
+                        tabs: _SettingsArea.values,
+                        selected: _area,
+                        label: (area) => area == _SettingsArea.profile
+                            ? t.viewerSettings.myProfile
+                            : t.viewerSettings.appSettings,
+                        select: (area) => setState(() => _area = area),
+                      ),
+                      const SizedBox(height: 8),
+                      if (_area == _SettingsArea.app)
+                        _tabStrip(
+                          tabs: _AppSettingsTab.values,
+                          selected: _category,
+                          label: (tab) => tab.label,
+                          select: (tab) => setState(() => _category = tab),
+                          secondary: true,
+                        )
+                      else
+                        Padding(
+                          padding: ProfileSettingsLayout.rowPadding,
+                          child: ViewerSettingsBody(
+                            onPair: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const AnnouncementSettingsScreen()),
                             ),
                           ),
-                          const SizedBox(height: 18),
-                          _tabStrip(
-                            tabs: _SettingsArea.values,
-                            selected: _area,
-                            label: (area) => area == _SettingsArea.profile
-                                ? t.viewerSettings.myProfile
-                                : t.viewerSettings.appSettings,
-                            select: (area) => setState(() => _area = area),
-                          ),
-                          const SizedBox(height: 8),
-                          if (_area == _SettingsArea.app)
-                            _tabStrip(
-                              tabs: _AppSettingsTab.values,
-                              selected: _category,
-                              label: (tab) => tab.label,
-                              select: (tab) => setState(() => _category = tab),
-                              secondary: true,
-                            )
-                          else
-                            Padding(
-                              padding: ProfileSettingsLayout.rowPadding,
-                              child: ViewerSettingsBody(
-                                onPair: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const AnnouncementSettingsScreen()),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
+                        ),
+                    ],
                   ),
                 ),
               ),

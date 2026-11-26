@@ -12,6 +12,7 @@ import '../../providers/download_provider.dart';
 import '../../providers/multi_server_provider.dart';
 import '../../services/music/music_playback_service.dart';
 import '../../theme/mono_tokens.dart';
+import '../../utils/layout_constants.dart';
 import '../../utils/music_navigation.dart';
 import '../../models/download_models.dart';
 import '../../widgets/app_icon.dart';
@@ -242,7 +243,7 @@ class DownloadsScreenState extends State<DownloadsScreen>
                   ),
                   if (!PlatformDetector.shouldUseSideNavigation(context))
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: PageLayout.padding(context, top: 8, bottom: 8),
                       alignment: .centerLeft,
                       child: SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
@@ -473,7 +474,7 @@ class _DownloadsGridContentState extends State<_DownloadsGridContent>
     VoidCallback? firstRowUp,
   }) {
     // Extra top padding for focus decoration (scale + border extends beyond item bounds)
-    const effectivePadding = EdgeInsets.only(left: 8, right: 8, top: 8);
+    final effectivePadding = PageLayout.padding(context, top: 8);
     return MediaCardSliverLayout(
       viewMode: viewMode,
       itemCount: items.length,
@@ -658,7 +659,7 @@ class _DownloadedMusicContentState extends State<_DownloadedMusicContent>
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
+      padding: PageLayout.padding(context, top: 16, bottom: 8),
       child: Row(
         children: [
           ClipRRect(
@@ -779,7 +780,7 @@ class _DownloadedMusicContentState extends State<_DownloadedMusicContent>
 
     return [
       SliverPadding(
-        padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + bottomInset),
+        padding: PageLayout.padding(context, bottom: 16 + bottomInset),
         sliver: SliverList.builder(
           itemCount: rows.length,
           itemBuilder: (context, index) {
@@ -820,7 +821,7 @@ class _DownloadedMusicContentState extends State<_DownloadedMusicContent>
 
     return [
       SliverPadding(
-        padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + bottomInset),
+        padding: PageLayout.padding(context, bottom: 16 + bottomInset),
         sliver: SliverList.builder(
           itemCount: tracks.length,
           itemBuilder: (context, index) {
@@ -863,7 +864,7 @@ class _DownloadedMusicContentState extends State<_DownloadedMusicContent>
     if (sections.isEmpty) return [_emptySliver()];
 
     // Extra top padding for focus decoration (scale + border extends beyond item bounds)
-    const effectivePadding = EdgeInsets.only(left: 8, right: 8, top: 8);
+    final effectivePadding = PageLayout.padding(context, top: 8);
     return [
       for (var i = 0; i < sections.length; i++) ...[
         SliverToBoxAdapter(child: DownloadsLibrarySectionHeader(section: sections[i])),

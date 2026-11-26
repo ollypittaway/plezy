@@ -73,6 +73,7 @@ class TvDetectionService {
   static final AsyncSingleton<TvDetectionService> _singleton = AsyncSingleton();
   @visibleForTesting
   static set debugDetectionGate(Future<void>? value) => _singleton.debugGate = value;
+  static bool? _debugTVOverride;
   static bool? _debugAppleTVOverride;
   static bool? _debugAutomotiveOverride;
   bool _detected = false;
@@ -179,17 +180,20 @@ class TvDetectionService {
   ///
   /// App code goes through the [PlatformDetector] facade ([PlatformDetector.isTV]
   /// and siblings); these raw accessors exist for the facade and tests.
-  static bool isTVSync() => _debugAppleTVOverride ?? _singleton.instance?.isTV ?? false;
+  static bool isTVSync() => _debugTVOverride ?? _debugAppleTVOverride ?? _singleton.instance?.isTV ?? false;
 
   /// Synchronous TV-hardware check: [isTVSync] without the user's force-TV
   /// override (false before initialization).
-  static bool isTVDeviceSync() => _debugAppleTVOverride ?? _singleton.instance?._detected ?? false;
+  static bool isTVDeviceSync() => _debugTVOverride ?? _debugAppleTVOverride ?? _singleton.instance?._detected ?? false;
 
   /// Synchronous Apple TV check (returns false if not initialized or not tvOS).
   static bool isAppleTVSync() => _debugAppleTVOverride ?? (_tvosBuild || _singleton.instance?._isAppleTV == true);
 
   /// Synchronous Android Automotive OS check (false before initialization).
   static bool isAutomotiveSync() => _debugAutomotiveOverride ?? _singleton.instance?._isAutomotive ?? false;
+
+  @visibleForTesting
+  static void debugSetTVOverride(bool? value) => _debugTVOverride = value;
 
   @visibleForTesting
   static void debugSetAppleTVOverride(bool? value) {
@@ -204,6 +208,7 @@ class TvDetectionService {
   @visibleForTesting
   static void debugReset() {
     _singleton.debugReset();
+    _debugTVOverride = null;
     _debugAppleTVOverride = null;
     _debugAutomotiveOverride = null;
   }
@@ -228,10 +233,12 @@ class PlatformDetector {
 
   static bool isFireTV() => TvDetectionService.tvDetectionReasonsSync().contains('fire_tv');
 
-  // Fire TV uses desktop presentation while retaining TV hardware/input policy.
-  static bool usesTvPresentation() => isTV() && !isFireTV();
+  /// These TVs use the desktop header with directional remote navigation.
+  static bool usesRemoteTopNavigation() => isFireTV() || isAppleTV();
 
-  static bool usesDesktopPresentation() => isDesktopOS() || isFireTV();
+  static bool usesTvPresentation() => isTV() && !usesRemoteTopNavigation();
+
+  static bool usesDesktopPresentation() => isDesktopOS() || usesRemoteTopNavigation();
 
   static bool isAppleTV() {
     return TvDetectionService.isAppleTVSync();

@@ -985,6 +985,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
         bottom: false,
         child: AppBar(
           primary: false,
+          titleSpacing: PageLayout.horizontalOf(context),
           backgroundColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
           shadowColor: Colors.transparent,
@@ -1079,7 +1080,7 @@ class _LibrariesScreenState extends State<LibrariesScreen>
                   SliverToBoxAdapter(
                     child: Container(
                       color: Theme.of(context).scaffoldBackgroundColor,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      padding: PageLayout.padding(context, top: 4, bottom: 4),
                       // Horizontal-only SafeArea: the strip's background
                       // stays full-bleed; its chips clear a landscape notch
                       // or iPhone Duo's portrait sensor column.

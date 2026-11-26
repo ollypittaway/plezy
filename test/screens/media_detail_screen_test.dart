@@ -67,18 +67,35 @@ import '../test_helpers/profile_navigation.dart';
 import '../test_helpers/media_items.dart';
 import '../test_helpers/multi_server_fixtures.dart';
 
+class _EmptyDetailDownloads extends NoSyncRulesDownloadProvider {
+  @override
+  DownloadProgress? getProgress(String globalKey) => null;
+
+  @override
+  bool isQueueing(String globalKey) => false;
+
+  @override
+  bool isDownloaded(String globalKey) => false;
+}
+
+Future<void> _pumpDetailWidget(WidgetTester tester, Widget child) => tester.pumpWidget(
+  ChangeNotifierProvider<DownloadProvider>(create: (_) => _EmptyDetailDownloads(), child: child),
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
     resetSharedPreferencesForTest();
     SettingsService.resetForTesting();
-    TvDetectionService.debugSetAppleTVOverride(true);
+    TvDetectionService.debugSetTVOverride(true);
+    PlatformDetector.debugSetIsDesktopOSOverride(false);
     LocaleSettings.setLocaleSync(AppLocale.en);
   });
 
   tearDown(() {
-    TvDetectionService.debugSetAppleTVOverride(null);
+    TvDetectionService.debugSetTVOverride(null);
+    PlatformDetector.debugSetIsDesktopOSOverride(null);
   });
 
   testWidgets('TV detail scales fallback title to fit logo bounds', (tester) async {
@@ -97,7 +114,8 @@ void main() {
       summary: 'A compact viewport should make the fallback title shrink before it can overlap the detail text.',
     );
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: MaterialApp(
           theme: monoTheme(MonoPalette.dark),
@@ -133,7 +151,8 @@ void main() {
       genres: ['Drama', 'Mystery'],
     );
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: MaterialApp(
           theme: monoTheme(MonoPalette.dark),
@@ -192,7 +211,8 @@ void main() {
       ],
     );
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: MaterialApp(
           theme: monoTheme(MonoPalette.dark),
@@ -245,7 +265,8 @@ void main() {
       summary: 'The detail foreground should appear without needing a D-pad frame.',
     );
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: MaterialApp(
           theme: monoTheme(MonoPalette.dark),
@@ -286,7 +307,8 @@ void main() {
       ],
     );
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: MaterialApp(
           theme: monoTheme(MonoPalette.dark),
@@ -324,7 +346,8 @@ void main() {
       ratings: [MediaRatingSource(source: 'rottenTomatoesAudience', value: 8.7)],
     );
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: MaterialApp(
           theme: monoTheme(MonoPalette.dark),
@@ -384,7 +407,8 @@ void main() {
     );
     final provider = testMultiServer(clients: [client]).provider;
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: MaterialApp(
           theme: monoTheme(MonoPalette.dark),
@@ -507,7 +531,8 @@ void main() {
     );
     final provider = testMultiServer(clients: [client]).provider;
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: ChangeNotifierProvider<MultiServerProvider>.value(
           value: provider,
@@ -597,7 +622,8 @@ void main() {
     );
     final provider = testMultiServer(clients: [client]).provider;
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: ChangeNotifierProvider<MultiServerProvider>.value(
           value: provider,
@@ -682,7 +708,8 @@ void main() {
     )..onDeckGate = Completer<void>();
     final provider = testMultiServer(clients: [client]).provider;
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: ChangeNotifierProvider<MultiServerProvider>.value(
           value: provider,
@@ -738,7 +765,8 @@ void main() {
     );
     final theme = monoTheme(MonoPalette.light);
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: MaterialApp(
           theme: theme,
@@ -821,7 +849,8 @@ void main() {
     );
     final provider = testMultiServer(clients: [client]).provider;
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: ChangeNotifierProvider<MultiServerProvider>.value(
           value: provider,
@@ -916,7 +945,8 @@ void main() {
     );
     final provider = testMultiServer(clients: [client]).provider;
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: ChangeNotifierProvider<MultiServerProvider>.value(
           value: provider,
@@ -1005,7 +1035,8 @@ void main() {
     );
     final provider = testMultiServer(clients: [client]).provider;
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: ChangeNotifierProvider<MultiServerProvider>.value(
           value: provider,
@@ -1105,7 +1136,8 @@ void main() {
     );
     final provider = testMultiServer(clients: [client]).provider;
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: ChangeNotifierProvider<MultiServerProvider>.value(
           value: provider,
@@ -1241,7 +1273,8 @@ void main() {
     );
     final provider = testMultiServer(clients: [client]).provider;
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: ChangeNotifierProvider<MultiServerProvider>.value(
           value: provider,
@@ -1352,7 +1385,8 @@ void main() {
     );
     final provider = testMultiServer(clients: [client]).provider;
 
-    await tester.pumpWidget(
+    await _pumpDetailWidget(
+      tester,
       TranslationProvider(
         child: ChangeNotifierProvider<MultiServerProvider>.value(
           value: provider,
@@ -1425,7 +1459,8 @@ void main() {
       final provider = testMultiServer(clients: [client]).provider;
       final navigator = GlobalKey<NavigatorState>();
       final observer = RouteObserver<PageRoute<dynamic>>();
-      await tester.pumpWidget(
+      await _pumpDetailWidget(
+        tester,
         TranslationProvider(
           child: MultiProvider(
             providers: [
@@ -1803,7 +1838,7 @@ void main() {
       ThemeData? theme,
       PlaybackBandwidth? bandwidth,
     }) async {
-      TvDetectionService.debugSetAppleTVOverride(false);
+      TvDetectionService.debugSetTVOverride(false);
       await SettingsService.getInstance();
       tester.view.physicalSize = const Size(1100, 2400);
       tester.view.devicePixelRatio = 1;
@@ -2403,11 +2438,11 @@ void main() {
       }
 
       // 1100 wide: everything fits (test font ~13px/char puts the full strip
-      // near 740px against ~1068px of hero width).
+      // near 740px against ~1028px of hero width).
       expectChips(present: ['2017', 'PG-13', '1h 46min', '1080p', '9.2', '7.4', '6.4', rate], absent: []);
 
       // The scores pill sheds badges from the end before anything else.
-      await resizeTo(660);
+      await resizeTo(652);
       expectChips(present: ['2017', 'PG-13', '1h 46min', '1080p', '9.2', rate], absent: ['7.4', '6.4']);
 
       void expectScoresRow(List<String> scores) {
@@ -2423,13 +2458,13 @@ void main() {
       // Phone width: every score moves to its own row, and the strip sheds
       // the quality label and the certification — never the runtime, year,
       // or Rate.
-      await resizeTo(420);
+      await resizeTo(412);
       expectChips(present: ['2017', '1h 46min', rate], absent: ['9.2', '7.4', '6.4', '1080p', 'PG-13']);
       expectScoresRow(['9.2', '7.4', '6.4']);
 
       // Down to the bone: the strip keeps the year and the interactive Rate
       // chip, and the scores row still has room for all three.
-      await resizeTo(320);
+      await resizeTo(312);
       expectChips(present: ['2017', rate], absent: ['1h 46min', '1080p', 'PG-13', '9.2']);
       expectScoresRow(['9.2', '7.4', '6.4']);
     });
@@ -2459,9 +2494,9 @@ void main() {
       Finder actions() => find.byType(FocusableActionBar).first;
       double centerX(Finder finder) => tester.getCenter(finder).dx;
 
-      // 1100 wide: everything hugs the 16px hero inset.
+      // 1100 wide: everything aligns with the 36px page margin.
       for (final finder in [strip(), genres(), actions()]) {
-        expect(tester.getTopLeft(finder).dx, moreOrLessEquals(16, epsilon: 1));
+        expect(tester.getTopLeft(finder).dx, moreOrLessEquals(36, epsilon: 1));
       }
       expect(tester.widget<FittingTitleText>(title()).textAlign, isNull);
 
@@ -2997,7 +3032,8 @@ void main() {
       );
       final provider = testMultiServer(clients: [client]).provider;
       final profileKey = GlobalKey<NavigatorState>();
-      await tester.pumpWidget(
+      await _pumpDetailWidget(
+        tester,
         TranslationProvider(
           child: MultiProvider(
             providers: [

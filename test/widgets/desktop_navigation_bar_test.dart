@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:plezy/i18n/strings.g.dart';
@@ -6,6 +7,7 @@ import 'package:plezy/media/media_backend.dart';
 import 'package:plezy/media/media_library.dart';
 import 'package:plezy/navigation/navigation_tabs.dart';
 import 'package:plezy/theme/mono_theme.dart';
+import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/widgets/desktop_navigation_bar.dart';
 
 void main() {
@@ -69,6 +71,46 @@ void main() {
     expect(find.byTooltip(t.common.search), findsNothing);
     await tester.tap(find.byTooltip(t.navigation.downloads));
     expect(selections.last, NavigationTabId.downloads);
+  });
+
+  testWidgets('Apple TV remote opens a named library from the Home header', (tester) async {
+    LocaleSettings.setLocaleSync(AppLocale.en);
+    TvDetectionService.debugSetAppleTVOverride(true);
+    addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
+    final home = FocusNode();
+    addTearDown(home.dispose);
+    const library = MediaLibrary(id: 'films', title: 'Silent Cinema', serverId: 'a', backend: MediaBackend.plex);
+    String? destination;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: monoTheme(MonoPalette.dark),
+        home: Scaffold(
+          body: DesktopNavigationBar(
+            tabs: NavigationTab.getVisibleTabs(isOffline: false),
+            selected: NavigationTabId.discover,
+            libraries: const [library],
+            selectedLibraryKey: null,
+            remoteNavigation: PlatformDetector.usesRemoteTopNavigation(),
+            remoteHomeFocusNode: home,
+            onSelectLibrary: (key) => destination = key,
+            onSelect: (_) {},
+            onMenu: () {},
+          ),
+        ),
+      ),
+    );
+    home.requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pump();
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'desktop_remote_libraries');
+    await tester.sendKeyEvent(LogicalKeyboardKey.select);
+    await tester.pumpAndSettle();
+    expect(find.text('Silent Cinema'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.select);
+    await tester.pumpAndSettle();
+    expect(destination, library.globalKey);
+    expect(find.text('Silent Cinema'), findsNothing);
   });
 
   testWidgets('libraries dropdown distinguishes matching names across servers', (tester) async {

@@ -10,6 +10,23 @@ void main() {
     addTearDown(TvDetectionService.debugReset);
   });
 
+  test('Apple TV uses the remote top bar and desktop layout while generic TVs use the rail', () {
+    PlatformDetector.debugSetIsDesktopOSOverride(false);
+    addTearDown(() => PlatformDetector.debugSetIsDesktopOSOverride(null));
+    TvDetectionService.debugSetAppleTVOverride(true);
+    expect(PlatformDetector.isTVDevice(), isTrue);
+    expect(PlatformDetector.usesRemoteTopNavigation(), isTrue);
+    expect(PlatformDetector.usesDesktopPresentation(), isTrue);
+    expect(PlatformDetector.usesTvPresentation(), isFalse);
+
+    TvDetectionService.debugSetAppleTVOverride(null);
+    TvDetectionService.debugSetTVOverride(true);
+    expect(PlatformDetector.isTVDevice(), isTrue);
+    expect(PlatformDetector.usesRemoteTopNavigation(), isFalse);
+    expect(PlatformDetector.usesDesktopPresentation(), isFalse);
+    expect(PlatformDetector.usesTvPresentation(), isTrue);
+  });
+
   test('concurrent callers wait for TV detection', () async {
     final detection = Completer<void>();
     TvDetectionService.debugDetectionGate = detection.future;

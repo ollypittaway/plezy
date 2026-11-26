@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../utils/layout_constants.dart';
 import '../focus/focusable_button.dart';
 import '../focus/focusable_text_field.dart';
 import '../i18n/strings.g.dart';
@@ -67,7 +68,7 @@ class _SearchInputFieldState extends State<SearchInputField> {
     final height = theme.materialTapTargetSize == MaterialTapTargetSize.padded ? kMinInteractiveDimension : 42.0;
     final hasText = widget.controller.text.isNotEmpty;
     return Padding(
-      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+      padding: PageLayout.padding(context, top: PageLayout.tabContentTop, bottom: 16),
       child: Stack(
         children: [
           FocusableTextField(

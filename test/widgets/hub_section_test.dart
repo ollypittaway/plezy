@@ -31,7 +31,7 @@ void main() {
   });
 
   tearDown(() {
-    TvDetectionService.debugSetAppleTVOverride(null);
+    TvDetectionService.debugSetTVOverride(null);
   });
 
   testWidgets('custom item callbacks own pointer actions', (tester) async {
@@ -142,7 +142,7 @@ void main() {
   });
 
   testWidgets('grid poster override uses dense 2:3 TV geometry', (tester) async {
-    TvDetectionService.debugSetAppleTVOverride(true);
+    TvDetectionService.debugSetTVOverride(true);
     final item = testMediaItem(
       id: 'poster_episode',
       backend: MediaBackend.plex,
@@ -281,7 +281,7 @@ void main() {
   });
 
   testWidgets('TV shelf wide cards use the rail wide formula, not a tall-card multiplier', (tester) async {
-    TvDetectionService.debugSetAppleTVOverride(true);
+    TvDetectionService.debugSetTVOverride(true);
     tester.view.physicalSize = const Size(1920, 1080);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(tester.view.reset);
@@ -305,7 +305,7 @@ void main() {
       density: LibraryDensity.defaultValue,
       useWideLayout: true,
       scale: TvLayoutConstants.scaleForSize(const Size(960, 540)),
-      horizontalPadding: TvLayoutConstants.shelfHorizontalInset * 2,
+      horizontalPadding: TvBrowseRailLayout.horizontalInsetForScale(TvLayoutConstants.scaleForSize(const Size(960, 540))) * 2,
       itemGap: spacing.gridGap,
     );
     // TV defaults to normal spacing, so the gutter is there from first launch.

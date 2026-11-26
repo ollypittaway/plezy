@@ -18,7 +18,6 @@ import 'package:plezy/utils/platform_detector.dart';
 import 'package:plezy/widgets/catalog_source_logo.dart';
 import 'package:plezy/widgets/search_input_field.dart';
 import 'package:plezy/widgets/fitting_title_text.dart';
-import 'package:plezy/widgets/optimized_media_image.dart' show ClearLogoImage;
 import 'package:plezy/widgets/tv_spotlight_background.dart';
 import 'package:provider/provider.dart';
 
@@ -165,7 +164,7 @@ Future<_FakeCatalogSourcesProvider> _pumpExplore(
   int? traktTotalResults,
   CatalogHubStyle? plexHubStyle,
 }) async {
-  if (tv != null) TvDetectionService.debugSetAppleTVOverride(tv);
+  if (tv != null) TvDetectionService.debugSetTVOverride(tv);
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = const Size(1280, 720);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -233,11 +232,11 @@ void main() {
     resetSharedPreferencesForTest();
     SettingsService.resetForTesting();
     await SettingsService.getInstance();
-    TvDetectionService.debugSetAppleTVOverride(true);
+    TvDetectionService.debugSetTVOverride(true);
   });
 
   tearDown(() {
-    TvDetectionService.debugSetAppleTVOverride(null);
+    TvDetectionService.debugSetTVOverride(null);
   });
 
   testWidgets('TV source switcher is reachable from the browse rail and changes source', (tester) async {
@@ -268,7 +267,7 @@ void main() {
   });
 
   testWidgets('source switcher announces the active source as its value', (tester) async {
-    TvDetectionService.debugSetAppleTVOverride(false);
+    TvDetectionService.debugSetTVOverride(false);
     final semantics = tester.ensureSemantics();
     final sources = await _pumpExplore(tester);
 
@@ -353,7 +352,7 @@ void main() {
   });
 
   group('TV catalog spotlight', () {
-    testWidgets('prefers logo and banner art, applies the accent tint, and shows the next episode', (tester) async {
+    testWidgets('prefers logo and resolution-matched backdrop art, applies the accent tint, and shows the next episode', (tester) async {
       final item = CatalogItem(
         source: CatalogSourceId.trakt,
         kind: MediaKind.show,
@@ -372,8 +371,14 @@ void main() {
       final spotlightFinder = find.byType(TvSpotlightBackground);
       final spotlight = tester.widget<TvSpotlightBackground>(spotlightFinder);
       expect(spotlight.item?.clearLogoPath, 'https://images.example/logo.png');
-      expect(spotlight.item?.artPath, 'https://images.example/banner.jpg');
-      expect(find.descendant(of: spotlightFinder, matching: find.byType(ClearLogoImage)), findsOneWidget);
+      expect(spotlight.item?.artPath, 'https://images.example/backdrop-1920.jpg');
+      expect(
+        find.descendant(
+          of: spotlightFinder,
+          matching: find.byWidgetPredicate((widget) => widget is Image && widget.fit == BoxFit.contain && widget.alignment == Alignment.centerLeft),
+        ),
+        findsOneWidget,
+      );
       // Scoped to the spotlight: the shelf card underneath renders its own
       // countdown badge from the same item, so an unscoped finder matches two.
       expect(
@@ -531,6 +536,19 @@ void main() {
       expect(_fakeSource(sources, CatalogSourceId.mal).searchQueries, ['abc']);
       expect(find.text('MyAnimeList search: abc'), findsOneWidget);
       expect(find.text('Trakt search: abc'), findsNothing);
+    });
+
+    testWidgets('search input and shelf headings share a responsive page edge', (tester) async {
+      await _pumpExplore(tester, tv: false);
+      for (final (width, edge) in [(390.0, 12.0), (1280.0, 36.0)]) {
+        tester.view.physicalSize = Size(width, 844);
+        await tester.pumpAndSettle();
+        final input = tester.getRect(find.descendant(of: find.byType(SearchInputField), matching: find.byType(TextField)));
+        final shelf = tester.getRect(find.text(t.explore.rows.popularMovies));
+        expect(input.left, edge);
+        expect(input.right, width - edge);
+        expect(shelf.left, input.left);
+      }
     });
 
     testWidgets('the field sits between the app bar and the first shelf at phone width', (tester) async {

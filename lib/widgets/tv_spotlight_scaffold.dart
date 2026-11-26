@@ -131,7 +131,7 @@ class TvSpotlightScaffold extends StatelessWidget {
         : baseSpotlightBottom;
     final maxSpotlightBottom = (size.height - spotlightTop - (96 * scale)).clamp(0.0, double.infinity).toDouble();
     final spotlightBottom = desiredSpotlightBottom > maxSpotlightBottom ? maxSpotlightBottom : desiredSpotlightBottom;
-    final spotlightLeft = (24 * scale).clamp(18.0, 40.0).toDouble();
+    final spotlightLeft = TvLayoutConstants.contentInsetForScale(scale);
 
     return Material(
       color: Theme.of(context).scaffoldBackgroundColor,

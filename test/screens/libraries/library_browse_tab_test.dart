@@ -363,6 +363,9 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
 
     expect(handleRight, size.width - trailingInset);
+    final firstCard = tester.getRect(find.byType(FocusableMediaCard).first);
+    expect(firstCard.left, 36);
+
     expect(cardRights, isNotEmpty);
     expect(cardRights, everyElement(lessThanOrEqualTo(size.width - trailingInset)));
   });

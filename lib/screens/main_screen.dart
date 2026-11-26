@@ -275,12 +275,12 @@ bool shouldPassTvosMenuToSystem({
   required bool isShowingProfileSelection,
   required bool isOverlaySheetOpen,
   required bool isRouteCurrent,
-  required bool isSidebarFocused,
+  required bool isNavigationRootFocused,
   required bool hasVisibleTabs,
   required bool isCurrentTabRoot,
 }) {
   return isAppleTV &&
-      isSidebarFocused &&
+      isNavigationRootFocused &&
       !isShowingProfileSelection &&
       !isOverlaySheetOpen &&
       isRouteCurrent &&
@@ -542,6 +542,7 @@ class _MainScreenState extends State<MainScreen>
 
     WidgetsBinding.instance.addObserver(this);
     _contentFocusScope.addListener(_syncSidebarFocusWithContent);
+    if (PlatformDetector.isAppleTV()) _remoteHomeFocusNode.addListener(_updateTvosMenuPassthrough);
 
     if (PlatformDetector.isDesktopOS()) {
       FocusManager.instance.addEarlyKeyEventHandler(_handleDesktopEscape);
@@ -654,12 +655,13 @@ class _MainScreenState extends State<MainScreen>
       // Links act once the profile is settled and its preferences are loaded.
       _attachDeepLinks();
 
-      // Focus content initially (replaces autofocus which caused focus stealing issues)
+      // Give the remote an actionable starting point once startup dialogs settle.
       // Skip if profile selection is on top — it manages its own focus. A
       // session remounted under the root picker (another profile chosen)
       // gets this claim when the picker pops instead of losing it (#2817).
       if (!_isSidebarFocused && !_isShowingProfileSelection) {
-        CoveredRouteFocusBoundary.requestInitialFocus(context, _contentFocusScope);
+        final target = _remoteHomeFocusNode.context != null ? _remoteHomeFocusNode : _contentFocusScope;
+        CoveredRouteFocusBoundary.requestInitialFocus(context, target);
       }
 
       _updateTvosMenuPassthrough();
@@ -1038,7 +1040,12 @@ class _MainScreenState extends State<MainScreen>
       if (tabs.isEmpty) return;
       _selectTab(tabs.first.id);
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _sideNavKey.currentState?.focusHomeItem();
+        if (!mounted) return;
+        if (_remoteHomeFocusNode.context != null) {
+          _focusRemoteTopNavigation();
+        } else {
+          _sideNavKey.currentState?.focusHomeItem();
+        }
       });
     };
     receiver.onSearchAction = (query) {
@@ -1439,7 +1446,11 @@ class _MainScreenState extends State<MainScreen>
     if (!restoreContentFocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _sideNavKey.currentState?.focusActiveItem();
+        if (_remoteHomeFocusNode.context != null && !_isSidebarFocused) {
+          _focusRemoteTopNavigation();
+        } else {
+          _sideNavKey.currentState?.focusActiveItem();
+        }
       });
     }
 
@@ -1522,7 +1533,9 @@ class _MainScreenState extends State<MainScreen>
       isShowingProfileSelection: _isShowingProfileSelection,
       isOverlaySheetOpen: _isOverlaySheetOpen,
       isRouteCurrent: ModalRoute.of(context)?.isCurrent == true,
-      isSidebarFocused: _isSidebarFocused,
+      isNavigationRootFocused: _remoteHomeFocusNode.context == null
+          ? _isSidebarFocused
+          : _remoteHomeFocusNode.hasFocus && !_isSidebarFocused,
       hasVisibleTabs: tabs.isNotEmpty,
       isCurrentTabRoot: tabs.isNotEmpty && _currentTab == tabs.first.id,
     );
@@ -1552,7 +1565,7 @@ class _MainScreenState extends State<MainScreen>
       _selectTab(homeTab);
       // Keep the focus ring in step with the new selection; the sidebar scope
       // already has focus, so no post-frame deferral is needed.
-      _sideNavKey.currentState?.focusHomeItem();
+      if (_isSidebarFocused) _sideNavKey.currentState?.focusHomeItem();
       _lastBackPressAt = null;
       return KeyEventResult.handled;
     }
@@ -1624,7 +1637,7 @@ class _MainScreenState extends State<MainScreen>
     return KeyEventResult.ignored;
   }
 
-  KeyEventResult _handleBackKey(KeyEvent event) {
+  KeyEventResult _handleBackKey(KeyEvent event, {required bool remoteTopBar}) {
     if (ModalRoute.of(context)?.isCurrent != true) {
       return KeyEventResult.ignored;
     }
@@ -1634,15 +1647,19 @@ class _MainScreenState extends State<MainScreen>
       return KeyEventResult.handled;
     }
 
-    if (PlatformDetector.isFireTV()) {
-      // The desktop-style shell has no persistent sidebar focus stage.
-      // Back at Home must reach the existing double-press exit handler.
+    if (remoteTopBar) {
+      final menuReturnsToHeader = PlatformDetector.isAppleTV() &&
+          !_remoteHomeFocusNode.hasFocus &&
+          _currentTab == _getVisibleTabs(_isOffline).firstOrNull?.id;
+      if (_isSidebarFocused || menuReturnsToHeader) {
+        return handleBackKeyAction(event, _focusRemoteTopNavigation);
+      }
       return _handleMainBackKeyAction(event);
     }
 
     if (!_isSidebarFocused) {
       // Content focused → move to sidebar
-      return handleBackKeyAction(event, PlatformDetector.isFireTV() ? _focusRemoteTopNavigation : _focusSidebar);
+      return handleBackKeyAction(event, _focusSidebar);
     }
 
     return _handleMainBackKeyAction(event);
@@ -2144,8 +2161,8 @@ class _MainScreenState extends State<MainScreen>
             if (_isSidebarFocused) _focusContent(restorePreviousFocus: false);
           },
           onMenu: _isSidebarFocused ? _focusContent : _focusSidebar,
-          remoteNavigation: PlatformDetector.isFireTV(),
-          remoteHomeFocusNode: PlatformDetector.isFireTV() ? _remoteHomeFocusNode : null,
+          remoteNavigation: PlatformDetector.usesRemoteTopNavigation(),
+          remoteHomeFocusNode: PlatformDetector.usesRemoteTopNavigation() ? _remoteHomeFocusNode : null,
           onNavigateDown: _focusRemotePageContent,
           homeActions: homeActions,
           onOpenProfile: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ProfileSwitchScreen())),
@@ -2165,6 +2182,7 @@ class _MainScreenState extends State<MainScreen>
               PlatformDetector.usesDesktopPresentation() &&
               !PlatformDetector.usesTvPresentation() &&
               ScreenBreakpoints.isWideTabletOrLarger(MediaQuery.sizeOf(context).width);
+          final remoteTopBar = useTopBar && PlatformDetector.usesRemoteTopNavigation();
           final targetContentOffset = useTopBar ? 0.0 : _sideNavigationWidth(context, alwaysExpanded: alwaysExpanded);
           final reservedContentOffset = useTopBar
               ? 0.0
@@ -2190,7 +2208,7 @@ class _MainScreenState extends State<MainScreen>
                 if (searchResult == KeyEventResult.handled) return searchResult;
                 final settingsResult = _handleSettingsShortcut(event);
                 if (settingsResult == KeyEventResult.handled) return settingsResult;
-                return _handleBackKey(event);
+                return _handleBackKey(event, remoteTopBar: remoteTopBar);
               },
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -2206,8 +2224,8 @@ class _MainScreenState extends State<MainScreen>
                     reservedSideNavigationWidth: reservedContentOffset,
                   );
                   return MainScreenFocusScope(
-                    focusSidebar: PlatformDetector.isFireTV() && useTopBar ? _focusRemoteTopNavigation : _focusSidebar,
-                    focusTopNavigation: PlatformDetector.isFireTV() && useTopBar ? _focusRemoteTopNavigation : null,
+                    focusSidebar: remoteTopBar ? _focusRemoteTopNavigation : _focusSidebar,
+                    focusTopNavigation: remoteTopBar ? _focusRemoteTopNavigation : null,
                     sideNavigationWidth: targetContentOffset,
                     reservedSideNavigationWidth: reservedContentOffset,
                     foregroundLeft: contentLayout.left,
@@ -2218,7 +2236,7 @@ class _MainScreenState extends State<MainScreen>
                     child: Column(
                       children: [
                         if (useTopBar && _currentTab != NavigationTabId.discover &&
-                            !(PlatformDetector.isFireTV() && (_currentTab == NavigationTabId.libraries || _currentTab == NavigationTabId.explore))) _buildDesktopNavigationBar(),
+                            !(remoteTopBar && (_currentTab == NavigationTabId.libraries || _currentTab == NavigationTabId.explore))) _buildDesktopNavigationBar(),
                         Expanded(
                           child: SideNavigationScope(
                             child: Stack(
@@ -2243,11 +2261,11 @@ class _MainScreenState extends State<MainScreen>
                                             ? (actions) => _buildDesktopNavigationBar(homeActions: actions)
                                             : null,
                                         child: Provider<LibraryShellHeaderBuilder?>.value(
-                                          value: useTopBar && PlatformDetector.isFireTV() && _currentTab == NavigationTabId.libraries
+                                          value: remoteTopBar && _currentTab == NavigationTabId.libraries
                                               ? (overlay) => _buildDesktopNavigationBar(overlayArtwork: overlay)
                                               : null,
                                           child: Provider<ExploreShellHeaderBuilder?>.value(
-                                            value: useTopBar && PlatformDetector.isFireTV() && _currentTab == NavigationTabId.explore
+                                            value: remoteTopBar && _currentTab == NavigationTabId.explore
                                                 ? () => _buildDesktopNavigationBar(overlayArtwork: true)
                                                 : null,
                                             child: _buildTickerAwareStack(),
@@ -2314,7 +2332,7 @@ class _MainScreenState extends State<MainScreen>
                                           _selectLibrary(key);
                                           _focusContent(restorePreviousFocus: false);
                                         },
-                                        onNavigateToContent: PlatformDetector.isFireTV() && useTopBar ? _focusRemoteTopNavigation : _focusContent,
+                                        onNavigateToContent: remoteTopBar ? _focusRemoteTopNavigation : _focusContent,
                                         onFloatingPanelChanged: (floating) {
                                           if (_isSidebarFloatingPanel == floating) return;
                                           setState(() => _isSidebarFloatingPanel = floating);

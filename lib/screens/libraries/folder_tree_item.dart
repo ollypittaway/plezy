@@ -216,7 +216,7 @@ class _FolderTreeItemState extends State<FolderTreeItem> with ContextMenuTapMixi
     final expandIcon = widget.isExpanded ? Symbols.keyboard_arrow_down_rounded : Symbols.keyboard_arrow_right_rounded;
 
     return Container(
-      padding: .only(left: 16.0 + indentation, right: 8.0, top: 8.0, bottom: 8.0),
+      padding: .only(left: indentation, right: 8.0, top: 8.0, bottom: 8.0),
       child: Row(
         children: [
           SizedBox(
@@ -255,7 +255,7 @@ class _FolderTreeItemState extends State<FolderTreeItem> with ContextMenuTapMixi
     final metadataLine = _buildMetadataLine();
 
     return Container(
-      padding: .only(left: 16.0 + indentation, right: 16.0, top: 6.0, bottom: 6.0),
+      padding: .only(left: indentation, right: 16.0, top: 6.0, bottom: 6.0),
       child: Row(
         crossAxisAlignment: .center,
         children: [

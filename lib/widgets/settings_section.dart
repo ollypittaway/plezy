@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/mono_tokens.dart';
 import '../utils/platform_detector.dart';
+import '../utils/layout_constants.dart';
 import 'app_icon.dart';
 import 'profile_settings_layout.dart';
 import 'expressive_button_group.dart';
@@ -24,7 +25,7 @@ class SettingsSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      padding: PageLayout.padding(context, top: 24, bottom: 8),
       child: Text(
         title,
         style: Theme.of(context).textTheme.labelLarge?.copyWith(color: tokens(context).textMuted, fontWeight: .w600),
@@ -53,46 +54,40 @@ class SettingsSectionHeader extends StatelessWidget {
 class SettingsGroup extends StatelessWidget {
   final String? title;
   final List<Widget> children;
-  final EdgeInsetsGeometry margin;
+  final EdgeInsetsGeometry? margin;
 
   const SettingsGroup({
     super.key,
     this.title,
     required this.children,
-    this.margin = const EdgeInsets.symmetric(horizontal: 16),
+    this.margin,
   });
 
   @override
   Widget build(BuildContext context) {
     if (ProfileSettingsLayout.applies(context)) {
-      return Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: ProfileSettingsLayout.maxWidth),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: ProfileSettingsLayout.outerInset),
-            child: Material(
-              type: MaterialType.transparency,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (title != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: ProfileSettingsLayout.contentInset, vertical: 14),
-                      child: Text(title!, style: Theme.of(context).textTheme.titleMedium),
-                    ),
-                  for (final row in children) ...[
-                    row,
-                    const Divider(
-                      height: 1,
-                      thickness: 0.5,
-                      indent: ProfileSettingsLayout.contentInset,
-                      endIndent: ProfileSettingsLayout.contentInset,
-                    ),
-                  ],
-                ],
-              ),
-            ),
+      return Padding(
+        padding: ProfileSettingsLayout.outerPadding(context),
+        child: Material(
+          type: MaterialType.transparency,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (title != null)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: ProfileSettingsLayout.contentInset, vertical: 14),
+                  child: Text(title!, style: Theme.of(context).textTheme.titleMedium),
+                ),
+              for (final row in children) ...[
+                row,
+                const Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  indent: ProfileSettingsLayout.contentInset,
+                  endIndent: ProfileSettingsLayout.contentInset,
+                ),
+              ],
+            ],
           ),
         ),
       );
@@ -103,7 +98,7 @@ class SettingsGroup extends StatelessWidget {
       children: [
         if (title != null) SettingsSectionHeader(title!),
         Padding(
-          padding: margin,
+          padding: margin ?? PageLayout.padding(context),
           child: ListTileTheme.merge(
             visualDensity: PlatformDetector.isAutomotive() ? VisualDensity.standard : const VisualDensity(vertical: -3),
             child: Column(

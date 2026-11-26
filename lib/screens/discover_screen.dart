@@ -886,7 +886,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final colorScheme = Theme.of(context).colorScheme;
     final foregroundColor = colorScheme.onSurface;
     final actions = ExcludeFocusTraversal(
-      excluding: !PlatformDetector.isFireTV(),
+      excluding: !PlatformDetector.usesRemoteTopNavigation(),
       child: Consumer2<WatchTogetherProvider, CompanionRemoteProvider>(
         builder: (context, watchTogether, companionRemote, _) {
           final isDesktop = PlatformDetector.shouldActAsRemoteHost(context);
@@ -1112,7 +1112,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   for (int i = 0; i < 3; i++)
                     SliverToBoxAdapter(
                       child: Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: PageLayout.padding(context, top: 16, bottom: 16),
                         child: Column(
                           crossAxisAlignment: .start,
                           children: [
@@ -1643,11 +1643,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                   bottom: false,
                   child: Padding(
                     padding: .symmetric(
-                      horizontal: isTv
-                          ? TvLayoutConstants.horizontalInset
-                          : isLargeScreen
-                          ? 40
-                          : 24,
+                      horizontal: PageLayout.horizontalOf(context),
                     ),
                     child: Align(
                       alignment: alignLeft ? Alignment.centerLeft : Alignment.center,

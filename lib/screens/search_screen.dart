@@ -21,6 +21,7 @@ import '../providers/libraries_provider.dart';
 import '../providers/multi_server_provider.dart';
 import '../services/data_aggregation_service.dart';
 import '../services/settings_service.dart';
+import '../utils/layout_constants.dart';
 import '../utils/app_logger.dart';
 import '../utils/platform_detector.dart';
 import '../utils/snackbar_helper.dart';
@@ -479,7 +480,7 @@ class _SearchScreenState extends State<SearchScreen>
         // The search field's own bottom padding provides the gap above; the
         // results sliver below shrinks its top padding to match (16/16 visual
         // rhythm around the strip instead of the default 24/24).
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: PageLayout.padding(context),
         child: TabChipStrip(
           children: [
             for (final (index, filter) in filters.indexed) ...[
@@ -536,7 +537,7 @@ class _SearchScreenState extends State<SearchScreen>
       childCount: visible.length,
       // Half the default top padding when the chip strip sits directly above:
       // the strip already separates results from the search field.
-      padding: showChips ? const EdgeInsets.fromLTRB(16, 8, 16, 16) : const EdgeInsets.all(16),
+      topPadding: showChips ? 8 : 16,
       (context, index) {
         final isFirst = index == 0;
         final onNavigateUp = isFirst ? (showChips ? _focusFilterChips : focusSearchInput) : null;

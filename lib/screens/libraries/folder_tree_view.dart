@@ -8,6 +8,7 @@ import '../../media/media_server_client.dart';
 import '../../services/jellyfin_sequential_launcher.dart';
 import '../../services/media_list_playback_launcher.dart';
 import '../../services/play_queue_launcher.dart';
+import '../../utils/layout_constants.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/error_message_utils.dart';
 import '../../utils/media_navigation_helper.dart';
@@ -370,7 +371,7 @@ class FolderTreeViewState extends State<FolderTreeView> {
     _flattenTreeItems(_rootFolders, 0, '', null, flattened);
 
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: PageLayout.padding(context, top: PageLayout.tabContentTop),
       sliver: SliverList.builder(
         itemCount: flattened.length,
         itemBuilder: (context, index) {

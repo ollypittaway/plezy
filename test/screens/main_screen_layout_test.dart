@@ -57,13 +57,13 @@ void main() {
     expect(expanded.left + expanded.width, viewportWidth);
   });
 
-  test('tvOS Menu pass-through only enables at root with sidebar focus', () {
+  test('tvOS Menu pass-through only enables at root with navigation focus', () {
     bool shouldPass({
       bool isAppleTV = true,
       bool isShowingProfileSelection = false,
       bool isOverlaySheetOpen = false,
       bool isRouteCurrent = true,
-      bool isSidebarFocused = true,
+      bool isNavigationRootFocused = true,
       bool hasVisibleTabs = true,
       bool isCurrentTabRoot = true,
     }) {
@@ -72,14 +72,14 @@ void main() {
         isShowingProfileSelection: isShowingProfileSelection,
         isOverlaySheetOpen: isOverlaySheetOpen,
         isRouteCurrent: isRouteCurrent,
-        isSidebarFocused: isSidebarFocused,
+        isNavigationRootFocused: isNavigationRootFocused,
         hasVisibleTabs: hasVisibleTabs,
         isCurrentTabRoot: isCurrentTabRoot,
       );
     }
 
     expect(shouldPass(), isTrue);
-    expect(shouldPass(isSidebarFocused: false), isFalse);
+    expect(shouldPass(isNavigationRootFocused: false), isFalse);
     expect(shouldPass(isCurrentTabRoot: false), isFalse);
     expect(shouldPass(isOverlaySheetOpen: true), isFalse);
     expect(shouldPass(isRouteCurrent: false), isFalse);

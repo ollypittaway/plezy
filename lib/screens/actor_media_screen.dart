@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../utils/layout_constants.dart';
 import 'package:intl/intl.dart';
 import '../media/ids.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -183,7 +184,7 @@ class _ActorMediaScreenState extends BaseMediaListDetailScreen<ActorMediaScreen>
     final biography = _details.biography;
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: PageLayout.padding(context, top: 8, bottom: 8),
         child: Column(
           crossAxisAlignment: .start,
           children: [

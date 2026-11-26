@@ -1,3 +1,4 @@
+import '../utils/layout_constants.dart';
 import 'package:flutter/material.dart';
 
 import 'focusable_filter_chip.dart';
@@ -97,7 +98,7 @@ class OptionsChipsBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Theme.of(context).scaffoldBackgroundColor,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: PageLayout.padding(context),
       alignment: .centerLeft,
       child: Row(
         mainAxisSize: .min,

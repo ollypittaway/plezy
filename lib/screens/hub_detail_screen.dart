@@ -15,6 +15,7 @@ import '../media/media_sort.dart';
 import '../services/settings_service.dart';
 import '../widgets/settings_builder.dart';
 import '../widgets/system_bottom_inset.dart';
+import '../utils/layout_constants.dart';
 import '../utils/app_logger.dart';
 import '../utils/continuation_pagination_coordinator.dart';
 import '../utils/error_message_utils.dart';
@@ -596,7 +597,7 @@ class _HubDetailScreenState extends State<HubDetailScreen>
                           return index < 0 ? null : index;
                         },
                         density: libraryDensity,
-                        padding: const EdgeInsets.all(8),
+                        padding: PageLayout.padding(context, top: 8, bottom: 8),
                         useWideAspectRatio: useWideLayout,
                         fullBleedImage: fullCardLayout,
                         shape: isSquareHub ? CardShape.square : null,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import '../../../media/ids.dart';
 
 import 'package:flutter/foundation.dart';
@@ -12,6 +13,7 @@ import '../../../media/media_item.dart';
 import '../../../media/media_kind.dart';
 import '../../../media/media_library.dart';
 import '../../../providers/multi_server_provider.dart';
+import '../../../utils/layout_constants.dart';
 import '../../../utils/media_server_http_client.dart';
 import '../../../focus/dpad_navigator.dart';
 import '../../../focus/input_mode_tracker.dart';
@@ -345,7 +347,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaItem, LibraryBrows
   /// Shared by focus-node eviction and card-memo pruning so the memo can
   /// never outlive the focus nodes its cached cards capture.
   static const int _focusNodeKeepCount = 200;
-  double _effectiveTopPadding = _gridTopPadding;
+
   double? _measuredListRowHeight;
   int? _listMetricsDensity;
   bool? _listMetricsUsesWideRatio;
@@ -1606,7 +1608,7 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaItem, LibraryBrows
     );
   }
 
-  double get _contentStartScrollOffset => (_usesMobileBrowseOptions ? 0.0 : _chipsBarHeight) + _effectiveTopPadding;
+  double get _contentStartScrollOffset => (_usesMobileBrowseOptions ? 0.0 : _chipsBarHeight) + PageLayout.tabContentTop;
 
   /// Handle a tap on the letter at [targetIndex] in the alpha bar. The
   /// active [LibraryAlphaBarStrategy] owns the per-backend behaviour and
@@ -2048,12 +2050,6 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaItem, LibraryBrows
     ];
   }
 
-  // Top padding for grid content. Chips are inline above the grid now, so this
-  // is purely focus-decoration clearance on desktop. Phone has no D-pad
-  // focus ring so no extra clearance is needed.
-  static const double _gridTopPadding = 6.0;
-  static const double _gridTopPaddingPhone = 0.0;
-
   /// Width of the alpha jump bar widget
   static const double _alphaJumpBarWidth = 20.0;
 
@@ -2124,9 +2120,10 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaItem, LibraryBrows
     final fullCardLayout = PlatformDetector.isTV() && svc.read(SettingsService.tvFullCardLayout);
     final itemCount = totalSize;
     final isPhone = _isPhone(context);
-    final topPadding = isPhone ? _gridTopPaddingPhone : _gridTopPadding;
-    _effectiveTopPadding = topPadding;
-    final rightPadding = _shouldShowAlphaJumpBar && !isPhone ? _alphaJumpBarLaneWidth + _alphaJumpBarFocusGap : 8.0;
+    final side = PageLayout.horizontalOf(context);
+    final rightPadding = _shouldShowAlphaJumpBar && !isPhone
+        ? math.max(side, _alphaJumpBarLaneWidth + _alphaJumpBarFocusGap)
+        : side;
 
     final useWideRatio = _selectedGrouping == 'episodes' && episodePosterMode == EpisodePosterMode.episodeThumbnail;
     // Music groupings are homogeneous, so the whole grid shares the square
@@ -2153,18 +2150,18 @@ class _LibraryBrowseTabState extends BaseLibraryTabState<MediaItem, LibraryBrows
       _setListScrollMetrics(density: libraryDensity, usesWideAspectRatio: useWideRatio, shape: browseShape);
     }
 
-    final hasAlphaBarReservation = rightPadding > 8.0;
+    final hasAlphaBarReservation = rightPadding > side;
     return MediaCardSliverLayout(
       findChildIndexCallback: (key) => _loadedIndexOfId((key as ValueKey<String>).value),
       viewMode: viewMode,
       itemCount: itemCount,
       density: libraryDensity,
-      padding: EdgeInsets.fromLTRB(8, topPadding, rightPadding, 8),
+      padding: EdgeInsets.fromLTRB(side, PageLayout.tabContentTop, rightPadding, 8),
       useWideAspectRatio: useWideRatio,
       shape: browseShape,
       fullBleedImage: useFullCardLayout,
       crossAxisExtentForColumnCount: hasAlphaBarReservation
-          ? (crossAxisExtent) => crossAxisExtent + (rightPadding - 8.0)
+          ? (crossAxisExtent) => crossAxisExtent + (rightPadding - side)
           : null,
       onGridGeometry: (geometry) {
         _scrollMetrics = LibraryAlphaScrollMetrics(

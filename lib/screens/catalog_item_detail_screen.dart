@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import '../utils/layout_constants.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -1450,7 +1451,7 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
                         top: false,
                         bottom: false,
                         child: Padding(
-                          padding: EdgeInsets.fromLTRB(24, viewInsets.top + 120, 24, viewInsets.bottom + 32),
+                          padding: PageLayout.padding(context, top: viewInsets.top + 120, bottom: viewInsets.bottom + 32),
                           child: Column(
                             crossAxisAlignment: .start,
                             children: [

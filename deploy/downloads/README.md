@@ -2,9 +2,11 @@
 
 The **GucciPlexa packages** workflow builds a GitHub Release when a maintainer pushes a tag matching the version in the project’s pubspec. The Coolify service redirects each platform hostname to an asset in the latest public release. GitHub serves the files, so Coolify does not need storage for packages or a GitHub token.
 
+Fire TV updater requests to `firestick.offstage.download/releases/latest` redirect to the GitHub release metadata. The app then downloads the version it verified via `/releases/download/vX.Y.Z/GucciPlexa-Firestick.apk`. The bare hostname remains the Downloader install link.
+
 | Download hostname | Release asset |
 | --- | --- |
-| `firestick.pittaway.dev` | `GucciPlexa-Firestick.apk`, one package for 32-bit and 64-bit ARM Fire OS devices |
+| `firestick.offstage.download` (also `firestick.pittaway.dev`) | `GucciPlexa-Firestick.apk`, one package for 32-bit and 64-bit ARM Fire OS devices |
 | `android.pittaway.dev` | `GucciPlexa-Android-arm64-v8a.apk`, for current ARM64 phones |
 | `ios.pittaway.dev` | `GucciPlexa-iOS-unsigned.ipa`, for importing into an iOS signing service |
 | `windows.pittaway.dev` | `GucciPlexa-Windows-Setup.exe`, one installer for x64 and ARM64 |

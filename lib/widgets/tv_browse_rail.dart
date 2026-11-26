@@ -117,7 +117,7 @@ class TvBrowseRailLayout {
 
   static double scaleForSize(Size size) => TvLayoutConstants.scaleForSize(size);
 
-  static double horizontalInsetForScale(double scale) => (24 * scale).clamp(18, 40).toDouble();
+  static double horizontalInsetForScale(double scale) => TvLayoutConstants.contentInsetForScale(scale);
 
   static double railTopPaddingForScale(double scale) => 12 * scale;
 

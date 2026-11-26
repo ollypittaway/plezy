@@ -8,6 +8,7 @@ import '../media/media_item.dart';
 import '../mixins/grid_focus_node_mixin.dart';
 import '../navigation/desktop_escape.dart';
 import '../services/settings_service.dart';
+import '../utils/layout_constants.dart';
 import '../utils/platform_detector.dart';
 import '../widgets/settings_builder.dart';
 import '../widgets/focusable_media_card.dart';
@@ -300,7 +301,7 @@ mixin FocusableDetailScreenMixin<T extends StatefulWidget> on State<T>, GridFocu
           viewMode: viewMode,
           itemCount: totalItems,
           density: libraryDensity,
-          padding: const EdgeInsets.all(8),
+          padding: PageLayout.padding(context, top: 8, bottom: 8),
           fullBleedImage: useFullCardLayout,
           shape: shape,
           itemBuilder: (context, position) => buildTile(position),

@@ -11,6 +11,7 @@ import 'package:plezy/database/app_database.dart';
 import 'package:plezy/database/download_operations.dart';
 import 'package:plezy/database/tvos_database_recovery_store.dart';
 import 'package:plezy/i18n/strings.g.dart';
+import 'package:plezy/focus/covered_route_focus_boundary.dart';
 import 'package:plezy/main.dart';
 import 'package:plezy/media/ids.dart';
 import 'package:plezy/models/download_models.dart';
@@ -285,11 +286,13 @@ void main() {
       final completion = Completer<int>();
       late VoidCallback finishArtwork;
       final appKey = GlobalKey();
+      final home = FocusNode();
+      addTearDown(home.dispose);
       State? connectingApp;
       await tester.pumpWidget(
         StartupBootstrap<int>(
           initialize: () => completion.future,
-          buildApp: (_, value) => MaterialApp(key: appKey, home: Text('ready $value')),
+          buildApp: (_, value) => MaterialApp(key: appKey, home: Focus(focusNode: home, child: Text('ready $value'))),
           buildLaunchArtwork: (_, finish) {
             finishArtwork = finish;
             return const Text('launch artwork');
@@ -310,6 +313,9 @@ void main() {
         connectingApp = appKey.currentState;
         expect(connectingApp, isNotNull);
         expect(find.text('ready 7', skipOffstage: false), findsOneWidget);
+        CoveredRouteFocusBoundary.requestInitialFocus(home.context!, home);
+        await tester.pump();
+        expect(home.hasFocus, isFalse);
       }
       if (artworkFirst) {
         completion.complete(7);
@@ -318,7 +324,10 @@ void main() {
       }
       await tester.pumpAndSettle();
       expect(find.text('ready 7'), findsOneWidget);
-      if (!artworkFirst) expect(appKey.currentState, same(connectingApp));
+      if (!artworkFirst) {
+        expect(appKey.currentState, same(connectingApp));
+        expect(home.hasPrimaryFocus, isTrue);
+      }
     });
   }
 

@@ -169,14 +169,14 @@ void main() {
   setUp(() {
     resetSharedPreferencesForTest();
     SettingsService.resetForTesting();
-    TvDetectionService.debugSetAppleTVOverride(null);
+    TvDetectionService.debugSetTVOverride(null);
     TvDetectionService.setForceTVSync(false);
     LocaleSettings.setLocaleSync(AppLocale.en);
   });
 
   testWidgets('closed TV rail is slim and keeps primary icons centered', (tester) async {
-    TvDetectionService.debugSetAppleTVOverride(true);
-    addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
+    TvDetectionService.debugSetTVOverride(true);
+    addTearDown(() => TvDetectionService.debugSetTVOverride(null));
     await SettingsService.getInstance();
 
     final librariesProvider = LibrariesProvider();
@@ -276,8 +276,8 @@ void main() {
   });
 
   testWidgets('expanded TV rail keeps a transparent surface', (tester) async {
-    TvDetectionService.debugSetAppleTVOverride(true);
-    addTearDown(() => TvDetectionService.debugSetAppleTVOverride(null));
+    TvDetectionService.debugSetTVOverride(true);
+    addTearDown(() => TvDetectionService.debugSetTVOverride(null));
     await SettingsService.getInstance();
 
     final librariesProvider = LibrariesProvider();

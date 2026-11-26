@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import '../exceptions/media_server_exceptions.dart';
 
+import '../utils/layout_constants.dart';
 import '../utils/app_logger.dart';
 import '../utils/scroll_utils.dart';
 
@@ -186,10 +187,10 @@ mixin DebouncedMediaSearch<T extends StatefulWidget, R> on State<T> {
   Widget buildResultsSliver(
     NullableIndexedWidgetBuilder itemBuilder, {
     int? childCount,
-    EdgeInsetsGeometry padding = const EdgeInsets.all(16),
+    double topPadding = 16,
   }) {
     return SliverPadding(
-      padding: padding,
+      padding: PageLayout.padding(context, top: topPadding, bottom: 16),
       sliver: SliverList(
         delegate: SliverChildBuilderDelegate(
           itemBuilder,

@@ -16,6 +16,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'connection/connection.dart';
 import 'connection/connection_bootstrap.dart';
 import 'connection/connection_registry.dart';
+import 'focus/covered_route_focus_boundary.dart';
 import 'navigation/profile_navigation_scope.dart';
 import 'navigation/profile_session_screen.dart';
 import 'profiles/active_profile_binder.dart';
@@ -861,8 +862,8 @@ class _StartupBootstrapState<T> extends State<StartupBootstrap<T>> {
           // profile-aware server binding can run during the curtain opening.
           Offstage(
             offstage: covered,
-            child: ExcludeFocus(
-              excluding: covered,
+            child: CoveredRouteFocusBoundary(
+              coveredByOverlay: covered,
               child: _completed ? widget.buildApp(context, _value as T) : const SizedBox.shrink(),
             ),
           ),
@@ -2112,17 +2113,18 @@ class FormFactorScale extends StatelessWidget {
   final Widget? child;
   const FormFactorScale({super.key, required this.child});
 
-  static const double _appleTvScale = 2.0;
+  static const double _appleTvLayoutWidth = 1280;
 
   @override
   Widget build(BuildContext context) {
     final child = this.child;
     if (child == null) return const SizedBox.shrink();
 
-    // Keep the existing Apple TV path independent of settings so its 2×
-    // behavior and overscan handling remain unchanged.
+    // Give the shared TV header and hero the same 720p design viewport on Apple TV.
     if (PlatformDetector.isAppleTV()) {
-      return _scaledSurface(child: child, scale: _appleTvScale, zeroInsets: true);
+      final width = MediaQuery.sizeOf(context).width;
+      if (width <= 0) return child;
+      return _scaledSurface(child: child, scale: width / _appleTvLayoutWidth, zeroInsets: true);
     }
     if (Platform.isAndroid && PlatformDetector.isTV()) {
       // Give fixed-size controls a usable logical viewport on low-density
@@ -2132,7 +2134,9 @@ class FormFactorScale extends StatelessWidget {
         builder: (context, constraints) {
           final outer = MediaQuery.of(context);
           if (!constraints.hasBoundedWidth || !constraints.hasBoundedHeight ||
-              constraints.maxWidth <= 0 || constraints.maxHeight <= 0) return child;
+              constraints.maxWidth <= 0 || constraints.maxHeight <= 0) {
+            return child;
+          }
           final widthScale = constraints.maxWidth / 1280;
           final heightScale = constraints.maxHeight / 720;
           final scale = (widthScale < heightScale ? widthScale : heightScale).clamp(0.01, 1.0).toDouble();

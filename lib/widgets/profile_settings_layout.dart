@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../utils/layout_constants.dart';
+
 /// Use the profile page's flat rows for the settings in this subtree.
 class ProfileSettingsLayout extends InheritedWidget {
   const ProfileSettingsLayout({super.key, required super.child});
 
-  static const maxWidth = 960.0;
-  static const outerInset = 8.0;
+  static EdgeInsets outerPadding(BuildContext context, {double bottom = 0}) {
+    final side = PageLayout.horizontalOf(context) - contentInset;
+    return EdgeInsets.fromLTRB(side, 0, side, bottom);
+  }
+
   static const contentInset = 12.0;
   static const rowPadding = EdgeInsets.symmetric(horizontal: contentInset);
 

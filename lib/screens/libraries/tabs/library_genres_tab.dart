@@ -11,6 +11,7 @@ import '../../../media/media_server_client.dart';
 import '../../../mixins/grid_focus_node_mixin.dart';
 import '../../../mixins/library_tab_focus_mixin.dart';
 import '../../../theme/mono_tokens.dart';
+import '../../../utils/layout_constants.dart';
 import '../../../utils/media_image_helper.dart';
 import '../../../utils/platform_detector.dart';
 import '../../../utils/provider_extensions.dart';
@@ -42,12 +43,6 @@ class LibraryGenresTab extends BaseLibraryTab<LibraryGenre> {
 class _LibraryGenresTabState extends BaseLibraryTabState<LibraryGenre, LibraryGenresTab>
     with GridFocusNodeMixin, LibraryTabFocusMixin {
   static const double _gap = 12;
-
-  /// Matches the Browse chips bar, so tiles line up with the tab chips.
-  static const double _horizontalInset = 16;
-
-  /// Room above the first row for the focus border and scale.
-  static const double _focusDecorationPadding = 8;
 
   /// Widest a tile grows before the grid adds a column.
   static const double _maxTileWidth = 320;
@@ -113,7 +108,7 @@ class _LibraryGenresTabState extends BaseLibraryTabState<LibraryGenre, LibraryGe
         slivers: [
           SliverOverlapInjector(handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context)),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(_horizontalInset, _focusDecorationPadding, _horizontalInset, 16),
+            padding: PageLayout.padding(context, top: PageLayout.tabContentTop, bottom: 16),
             sliver: SliverLayoutBuilder(
               builder: (context, constraints) {
                 final width = constraints.crossAxisExtent;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/layout_constants.dart';
 import '../utils/desktop_window_padding.dart';
 import '../services/fullscreen_state_manager.dart';
 import 'app_bar_back_button.dart';
@@ -55,6 +56,7 @@ class DesktopSliverAppBar extends StatelessWidget {
     );
 
     return SliverAppBar(
+      titleSpacing: effectiveLeading == null ? PageLayout.horizontalOf(context) : null,
       title: title == null
           ? null
           : DesktopTitleBarPadding(leftPadding: effectiveLeading != null ? 0 : null, child: title!),

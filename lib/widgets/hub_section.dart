@@ -146,14 +146,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
   final SliverChildMemo<MediaItem> _cardMemo = SliverChildMemo<MediaItem>();
 
   double _itemExtent = 0;
-  double _leadingPaddingFor(bool isTv) => widget.inset
-      ? 0.0
-      : isTv
-      ? TvLayoutConstants.shelfHorizontalInset
-      : ScreenBreakpoints.isWideTabletOrLarger(MediaQuery.sizeOf(context).width)
-      ? 36.0
-      : 12.0;
-  double get _leadingPadding => _leadingPaddingFor(PlatformDetector.usesTvPresentation());
+  double get _leadingPadding => widget.inset ? 0.0 : PageLayout.horizontalOf(context);
   String get _focusMemoryKey {
     final serverId = widget.hub.serverId;
     return serverId == null ? widget.hub.id : '$serverId:${widget.hub.id}';
@@ -497,7 +490,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
     final hasFocus = _hubFocusNode.hasFocus;
     final isKeyboardMode = InputModeTracker.isKeyboardMode(context);
     final isTv = PlatformDetector.usesTvPresentation();
-    final leadingPadding = _leadingPaddingFor(isTv);
+    final leadingPadding = _leadingPadding;
     return Padding(
       padding: .only(
         bottom: isTv && !widget.inset && widget.cardSizing == HubCardSizing.shelf
@@ -512,7 +505,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
           Padding(
             padding: widget.inset
                 ? EdgeInsets.symmetric(vertical: isTv ? 6 : 2)
-                : EdgeInsets.fromLTRB(leadingPadding - 4, isTv ? 6 : 2, 8, isTv ? 8 : 6),
+                : EdgeInsets.fromLTRB(leadingPadding - 4, isTv ? 6 : 2, leadingPadding - 4, isTv ? 8 : 6),
             child: ExcludeFocus(
               child: InkWell(
                 mouseCursor: widget.hub.more ? SystemMouseCursors.click : MouseCursor.defer,
@@ -805,7 +798,7 @@ class HubSectionState extends State<HubSection> with MountedSetStateMixin, Skele
             Padding(
               padding: widget.inset
                   ? const EdgeInsets.symmetric(vertical: 8)
-                  : const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  : PageLayout.padding(context, top: 8, bottom: 8),
               child: Text(t.messages.noItemsAvailable, style: Theme.of(context).textTheme.bodySmall),
             ),
         ],

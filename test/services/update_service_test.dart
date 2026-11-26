@@ -20,7 +20,10 @@ void main() {
       'browser_download_url': 'https://github.com/ollypittaway/plezy/releases/download/v0.0.2/GucciPlexa-Firestick.apk',
       'digest': 'sha256:$digest',
     };
-    expect(UpdateService.firestickAssetForRelease({'assets': [asset]}, version)?['sha256'], digest);
+    expect(UpdateService.firestickAssetForRelease({'assets': [asset]}, version), {
+      'url': 'https://firestick.offstage.download/releases/download/v0.0.2/GucciPlexa-Firestick.apk',
+      'sha256': digest,
+    });
     expect(UpdateService.firestickAssetForRelease({'assets': []}, version), isNull);
     expect(UpdateService.firestickAssetForRelease({'assets': [{...asset, 'digest': null}]}, version), isNull);
     expect(UpdateService.firestickAssetForRelease({'assets': [{...asset, 'browser_download_url': 'https://example.com/update.apk'}]}, version), isNull);
@@ -68,6 +71,14 @@ void main() {
 
     expect(await UpdateService.shouldCheckForUpdates(), isTrue);
     expect(prefs.getString(lastCheckKey), old);
+  });
+
+  test('release checks use the Offstage feed', () async {
+    final client = MediaServerHttpClient(client: MockClient((request) async {
+      expect(request.url.toString(), 'https://firestick.offstage.download/releases/latest');
+      return http.Response('{"tag_name":"v1.0.0"}', 200, headers: {'content-type': 'application/json'});
+    }));
+    await UpdateService.debugPerformUpdateCheck(respectCooldown: false, client: client, throwOnFailure: true);
   });
 
   final failedResponses = <String, Future<http.Response> Function()>{

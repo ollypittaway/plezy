@@ -12,13 +12,14 @@ import 'package:plezy/utils/media_server_http_client.dart';
 import 'package:plezy/utils/platform_detector.dart';
 import 'base_shared_preferences_service.dart';
 
-/// Service to check for new versions on GitHub
+/// Checks the Offstage release feed for new versions published on GitHub.
 /// Only enabled when ENABLE_UPDATE_CHECK build flag is set
 ///
 /// On macOS (non-Homebrew) and installed Windows: delegates to Sparkle/WinSparkle
 /// via auto_updater for native update dialogs and in-app installs.
-/// On all other platforms: falls back to GitHub API check + browser link dialog.
+/// The Offstage feed supplies the release page and version-pinned Fire TV APK.
 class UpdateService {
+  static const String _releaseHost = 'https://firestick.offstage.download';
   static const String _githubRepo = 'ollypittaway/plezy';
   static const bool _firestickBuild = bool.fromEnvironment('GUCCIPLEXA_FIRESTICK');
   static const String _firestickAsset = 'GucciPlexa-Firestick.apk';
@@ -139,7 +140,7 @@ class UpdateService {
       }
 
       final response = await (client ?? httpClient).get(
-        'https://api.github.com/repos/$_githubRepo/releases/latest',
+        '$_releaseHost/releases/latest',
         headers: {'Accept': 'application/vnd.github+json'},
       );
 
@@ -195,11 +196,13 @@ class UpdateService {
       if (asset is! Map || asset['name'] != _firestickAsset || asset['browser_download_url'] != expected) continue;
       final digest = asset['digest'];
       if (digest is String && RegExp(r'^sha256:[a-f0-9]{64}$').hasMatch(digest)) {
-        return {'url': expected, 'sha256': digest.substring(7)};
+        return {'url': _firestickDownloadUrl(version), 'sha256': digest.substring(7)};
       }
     }
     return null;
   }
+
+  static String _firestickDownloadUrl(String version) => '$_releaseHost/releases/download/v$version/$_firestickAsset';
 
   static bool _installing = false;
 
@@ -209,7 +212,7 @@ class UpdateService {
     final digest = info['apkSha256'];
     if (version is! String || !RegExp(r'^\d+\.\d+\.\d+$').hasMatch(version) ||
         digest is! String || !RegExp(r'^[a-f0-9]{64}$').hasMatch(digest) ||
-        info['apkUrl'] != 'https://github.com/$_githubRepo/releases/download/v$version/$_firestickAsset') {
+        info['apkUrl'] != _firestickDownloadUrl(version)) {
       throw StateError('Invalid update metadata');
     }
     _installing = true;
@@ -222,12 +225,12 @@ class UpdateService {
         return false;
       }
       final cache = await getTemporaryDirectory();
-      final directory = await Directory(cache.path + '/gucciplexa-update').create(recursive: true);
-      final target = File(directory.path + '/update.apk');
+      final directory = await Directory('${cache.path}/gucciplexa-update').create(recursive: true);
+      final target = File('${directory.path}/update.apk');
       file = target;
       final response = await client.send(http.Request('GET', Uri.parse(info['apkUrl'] as String)))
           .timeout(const Duration(seconds: 45));
-      if (response.statusCode != 200) throw StateError('Download failed: HTTP ' + response.statusCode.toString());
+      if (response.statusCode != 200) throw StateError('Download failed: HTTP ${response.statusCode}');
       const maxBytes = 500 * 1024 * 1024;
       if ((response.contentLength ?? 0) > maxBytes) throw StateError('Update is too large');
       final sink = target.openWrite();

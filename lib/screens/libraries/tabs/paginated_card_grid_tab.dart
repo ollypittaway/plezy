@@ -34,7 +34,6 @@ abstract class PaginatedCardGridTabState<T extends Object, W extends BaseLibrary
         PaginatedItemLoader<T, W>,
         StandardPaginatedView<T, W>,
         SkeletonUpgradeScheduler<W> {
-  static const double _focusDecorationPadding = 3.0;
 
   /// Reuses card widgets across delegate swaps so tab-level setStates
   /// (pagination, refreshes) don't rebuild every realized card inside layout.
@@ -125,11 +124,6 @@ abstract class PaginatedCardGridTabState<T extends Object, W extends BaseLibrary
     );
   }
 
-  EdgeInsets get _effectivePadding {
-    final base = GridLayoutConstants.gridPadding;
-    return base.copyWith(top: base.top + _focusDecorationPadding);
-  }
-
   Widget _buildItemsSliver(ViewMode viewMode, int density, {required bool fullCardLayout}) {
     final shape = usesSquareCards ? CardShape.square : null;
     final useFullCardLayout = fullCardLayout && shape != CardShape.square;
@@ -138,7 +132,7 @@ abstract class PaginatedCardGridTabState<T extends Object, W extends BaseLibrary
       itemCount: totalSize,
       density: density,
       findChildIndexCallback: (key) => _loadedIndexOfId((key as ValueKey<String>).value),
-      padding: _effectivePadding,
+      padding: PageLayout.padding(context, top: PageLayout.tabContentTop, bottom: 8),
       fullBleedImage: useFullCardLayout,
       shape: shape,
       listEpoch: (ViewMode.list, totalSize, density, shape),

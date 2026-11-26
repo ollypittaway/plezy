@@ -133,7 +133,9 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
       final pending = _pendingEpisodeLibraryFocus;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!_canUseDetail || _pendingEpisodeLibraryFocus != pending ||
-            !_playButtonFocusNode.hasFocus || _libraryMenuFocusNode.context == null) return;
+            !_playButtonFocusNode.hasFocus || _libraryMenuFocusNode.context == null) {
+          return;
+        }
         _pendingEpisodeLibraryFocus = null;
         _libraryMenuFocusNode.requestFocus();
       });
@@ -600,8 +602,7 @@ extension _MediaDetailActionButtons on _MediaDetailScreenState {
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxWidth = constraints.maxWidth;
-        // Keep the usual TV shortcuts unless the library controls need space.
-        final actions = (isTv && library == null && !hasLibraryMenu) || estimatedRowWidth(allActions) <= maxWidth
+        final actions = estimatedRowWidth(allActions) <= maxWidth
             ? allActions
             : compactActionsFor(maxWidth);
         final otherActionsWidth = estimatedRowWidth(actions) - estimatedPlayWidth;

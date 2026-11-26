@@ -19,6 +19,7 @@ import '../../mixins/tab_navigation_mixin.dart';
 import '../../providers/multi_server_provider.dart';
 import '../../services/settings_service.dart';
 import '../../widgets/settings_builder.dart';
+import '../../utils/layout_constants.dart';
 import '../../utils/app_logger.dart';
 import '../../utils/error_message_utils.dart';
 import '../../utils/desktop_window_padding.dart';
@@ -887,7 +888,7 @@ class _LiveTvScreenState extends State<LiveTvScreen>
       children: [
         if (!useSideNav)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: PageLayout.padding(context, top: 8, bottom: 8),
             alignment: .centerLeft,
             child: TabChipStrip(children: _buildTabChipItems()),
           ),

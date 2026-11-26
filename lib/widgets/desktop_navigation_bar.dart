@@ -9,6 +9,7 @@ import '../focus/focusable_action_bar.dart';
 import '../media/media_library.dart';
 import '../navigation/navigation_tabs.dart';
 import '../theme/mono_tokens.dart';
+import '../utils/layout_constants.dart';
 import '../utils/desktop_window_padding.dart';
 import 'app_icon.dart';
 import 'splash_logo.dart';
@@ -243,7 +244,6 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final width = MediaQuery.sizeOf(context).width;
     final floating = homeActions != null || widget.overlayArtwork;
     final activeProvider = context.watch<ActiveProfileProvider?>();
     final profile = activeProvider?.active;
@@ -275,7 +275,7 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
           child: DesktopTitleBarPadding(
             reserveWindowControls: true,
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: width >= 1200 ? 26 : 12, vertical: 10),
+              padding: PageLayout.padding(context, top: 10, bottom: 10),
               child: Row(
                 children: [
                   Tooltip(

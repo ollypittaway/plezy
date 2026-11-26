@@ -132,7 +132,6 @@ const double _heroLogoHeight = 120;
 const double _heroLogoGap = 12;
 const double _heroActionHeight = 48;
 const double _heroBottomInset = 16;
-const double _heroSideInset = 16;
 
 /// Whether a non-TV hero whose content is [contentWidth] wide uses the phone
 /// layout: everything on the centre line, and the scores on a chip row of
@@ -2981,7 +2980,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
           localPosterPath: localPosterPath,
           isSelected: _remoteSelectedEpisode?.globalKey == episode.globalKey,
           tileLayout: desktop,
-          onRemoteSelect: PlatformDetector.isFireTV() && !widget.isOffline
+          onRemoteSelect: PlatformDetector.usesRemoteTopNavigation() && !widget.isOffline
               ? () => _selectEpisodeForRemotePlayback(episode)
               : null,
           onTap: () async {
@@ -3532,7 +3531,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
     final size = MediaQuery.sizeOf(context);
     final viewPadding = MediaQuery.paddingOf(context);
     final heroChipRows =
-        _isCompactHero(size.width - viewPadding.horizontal - _heroSideInset * 2) && _titleRatings(metadata).isNotEmpty
+        _isCompactHero(size.width - viewPadding.horizontal - PageLayout.horizontalOf(context) * 2) && _titleRatings(metadata).isNotEmpty
         ? 3
         : 2;
     final heroFloor = isTv
@@ -3581,7 +3580,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                     ),
 
                     // Main content. The side insets add the horizontal safe
-                    // area on top of the 16px margin so landscape phones keep
+                    // area on top of the page margin so landscape phones keep
                     // the text clear of the cutout, like the hero above.
                     SliverSafeArea(
                       top: false,
@@ -3591,12 +3590,7 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
                           // Reduced top inset keeps the Overview/first section
                           // tight under the hero's action row (the hero already
                           // contributes its own bottom inset above this).
-                          padding: .fromLTRB(
-                            isTv ? TvLayoutConstants.horizontalInset : 16,
-                            isTv ? 8 : 4,
-                            isTv ? TvLayoutConstants.horizontalInset : 16,
-                            isTv ? 8 : 16,
-                          ),
+                          padding: PageLayout.padding(context, top: isTv ? 8 : 4, bottom: isTv ? 8 : 16),
                           child: Column(
                             crossAxisAlignment: .start,
                             children: [
@@ -4815,11 +4809,10 @@ class _MediaDetailScreenState extends State<MediaDetailScreen>
       top: false,
       bottom: false,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          _heroSideInset,
-          MediaQuery.paddingOf(context).top + _heroChromeHeight,
-          _heroSideInset,
-          _heroBottomInset,
+        padding: PageLayout.padding(
+          context,
+          top: MediaQuery.paddingOf(context).top + _heroChromeHeight,
+          bottom: _heroBottomInset,
         ),
         child: _buildHeroHeaderContent(context, metadata),
       ),

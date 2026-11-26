@@ -127,7 +127,7 @@ class TvSpotlightBackground extends StatelessWidget {
             ),
             if (media != null && showInfo)
               Positioned(
-                left: contentLeft ?? TvLayoutConstants.horizontalInset,
+                left: contentLeft ?? PageLayout.horizontalOf(context),
                 right: MediaQuery.sizeOf(context).width * (lightweightTransitions ? 0.35 : 0.43),
                 top: contentTop,
                 bottom: contentBottom,

@@ -50,9 +50,12 @@ import 'package:flutter/widgets.dart';
 /// the boundary gives up that parked focus once the exclusion is in place, and
 /// the navigator hands it to the route on top.
 class CoveredRouteFocusBoundary extends StatefulWidget {
-  const CoveredRouteFocusBoundary({super.key, required this.child});
+  const CoveredRouteFocusBoundary({super.key, required this.child, this.coveredByOverlay = false});
 
   final Widget child;
+
+  /// Holds initial focus while an overlay outside the navigator covers this subtree.
+  final bool coveredByOverlay;
 
   /// Requests focus for [node] as the first focus of the subtree it lives in:
   /// a screen's entry focus after it mounts or first loads.
@@ -166,9 +169,9 @@ class _CoveredRouteFocusBoundaryState extends State<CoveredRouteFocusBoundary> {
   @override
   Widget build(BuildContext context) {
     // ModalRoute.of subscribes to the route's status, so this rebuilds on
-    // every isCurrent flip. Outside any route the subtree is never covered.
+    // every isCurrent flip. The launch curtain can also cover the root navigator.
     final route = ModalRoute.of(context);
-    final covered = !(route?.isCurrent ?? true);
+    final covered = widget.coveredByOverlay || !(route?.isCurrent ?? true);
     if (!_covered && covered) {
       // This build runs before any descendant rebuilt in the same frame can
       // unmount the focused node, so the path is still whole here.
