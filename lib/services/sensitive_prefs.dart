@@ -51,6 +51,7 @@ const List<String> trackerSessionBaseKeys = <String>[
 const String seerrSessionBaseKey = 'seerr_session';
 
 /// Device pairing and its private read key.
+const String announcementPendingUnregisterPref = 'gucciplexa_pending_push_revocation';
 const String announcementPairPref = 'gucciplexa_notification_pair_v1';
 
 /// Every credential slot that is profile-scoped through `profileScopedPrefsKey`,
@@ -78,6 +79,7 @@ bool isSeerrSessionPrefKey(String key) => profileScopedCredentialBaseKey(key) ==
 /// without an explicit, informed user decision.
 bool isSensitivePrefKey(String key) =>
     key == announcementPairPref ||
+    key == announcementPendingUnregisterPref ||
     key == credentialVaultKeyPref ||
     key == legacyPlexTokenPref ||
     profileScopedCredentialBaseKey(key) != null;

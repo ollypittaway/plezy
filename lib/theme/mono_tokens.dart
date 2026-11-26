@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 
 MonoTokens tokens(BuildContext context) => Theme.of(context).extension<MonoTokens>()!;
 
+const navigationPillTypography = TextStyle(fontSize: 14, fontWeight: FontWeight.w400, letterSpacing: -0.15);
+TextStyle navigationPillLabelStyle(ThemeData theme) =>
+    theme.textTheme.bodyMedium!.merge(navigationPillTypography).copyWith(color: theme.colorScheme.onSurface);
+BorderSide pillOutlineFor(Color text) => BorderSide(color: text.withValues(alpha: 0.14));
+BorderSide navigationPillOutline(ColorScheme colors) => pillOutlineFor(colors.onSurface);
+
 /// M3E connected-group geometry for item [index] of a [count]-item group:
 /// large radii on the group's outer corners, small radii between adjacent
 /// items. Pair with `MonoTokens.groupGap` spacing for the hairline gaps.

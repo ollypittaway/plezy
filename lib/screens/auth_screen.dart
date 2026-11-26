@@ -585,7 +585,6 @@ class _DebugTokenDialogState extends State<_DebugTokenDialog> with ControllerDis
               labelText: 'Plex Auth Token',
               hintText: 'Enter your Plex.tv token',
               errorText: _errorMessage,
-              border: const OutlineInputBorder(),
             ),
             obscureText: true,
             maxLines: 1,

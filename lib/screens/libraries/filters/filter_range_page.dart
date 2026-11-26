@@ -97,7 +97,6 @@ class _FilterNumberPageState extends State<FilterNumberPage> {
           // The unit the viewer is typing in, when it differs from storage.
           suffixText: widget.filter.unit.suffix,
           isDense: true,
-          border: const OutlineInputBorder(),
         ),
         onChanged: (_) => _emit(),
         onBack: widget.onBack,

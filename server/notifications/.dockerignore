@@ -1,6 +1,7 @@
 *
 !app.py
+!viewer_settings.py
 !requirements.txt
+!index.html
 !panel.js
 !panel.css
-!index.html

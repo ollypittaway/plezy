@@ -86,6 +86,40 @@ void main() {
     }
   });
 
+  testWidgets('profile settings opens first and changes the live accent', (tester) async {
+    final harness = await _pumpSettingsScreen(tester, openAppSettings: false);
+    addTearDown(() => harness.dispose(tester));
+    expect(find.text(t.viewerSettings.accent), findsOneWidget);
+    await tester.tap(find.byTooltip(t.viewerSettings.violet));
+    await _pumpUi(tester);
+    expect(SettingsService.instance.read(SettingsService.viewerAccent), 'violet');
+    expect(harness.theme.darkTheme.colorScheme.primary, ViewerAccent.violet.dark);
+    await tester.tap(find.byTooltip(t.viewerSettings.themeDefault));
+    await _pumpUi(tester);
+    expect(harness.theme.darkTheme.colorScheme.primary, MonoPalette.dark.accent);
+  });
+
+  testWidgets('Playback groups audio, tracks, subtitles and video in one tab', (tester) async {
+    final harness = await _pumpSettingsScreen(tester);
+    addTearDown(() => harness.dispose(tester));
+    expect(find.text(t.settings.videoPlayback), findsNothing);
+    await tester.tap(find.text(t.viewerSettings.playback));
+    await _pumpUi(tester);
+    for (final title in [
+      t.settings.videoPlayback,
+      t.settings.audio,
+      t.viewerSettings.languages,
+      t.settings.subtitles,
+      t.viewerSettings.playerBehavior,
+    ]) {
+      expect(_navigationTileFor(title), findsOneWidget);
+    }
+    await tester.tap(find.text(t.settings.audio));
+    await _pumpUi(tester);
+    expect(find.text(t.settings.quality), findsNothing);
+    expect(find.text(t.settings.audio), findsWidgets);
+  });
+
   testWidgets('system back closes Manage Libraries without popping pushed settings', (tester) async {
     final harness = await _pumpSettingsScreen(
       tester,
@@ -144,7 +178,7 @@ void main() {
       ),
     ];
 
-    final referenceHeight = tester.getSize(_focusableTileFor(t.settings.viewLogs)).height;
+    final referenceLeft = tester.getTopLeft(find.text(t.settings.viewLogs)).dx;
 
     for (final row in rows) {
       final navigationTile = _navigationTileFor(row.title);
@@ -181,9 +215,10 @@ void main() {
       }
 
       if (row.hasSubtitle) {
-        // Subtitle rows occupy the same vertical space as an existing standard
-        // SettingNavigationTile in this screen.
-        expect(tester.getSize(focusableFinder).height, referenceHeight);
+        // The two-column layout allows longer descriptions to wrap.
+        expect(materialTile.leading, isNull);
+        expect(tester.getTopLeft(find.text(row.title)).dx, referenceLeft);
+        expect(tester.getSize(focusableFinder).height, greaterThanOrEqualTo(48));
       }
     }
 
@@ -678,6 +713,7 @@ Future<_SettingsHarness> _pumpSettingsScreen(
   Future<ImportResult?> Function()? settingsImporter,
   BackgroundWorkDiagnosticsService? backgroundWorkDiagnosticsService,
   bool pushSettingsRoute = false,
+  bool openAppSettings = true,
   List<MediaLibrary> initialLibraries = const [],
   Future<bool> Function(RequireWiFi requirement)? requireWiFiOverride,
 }) async {
@@ -812,6 +848,10 @@ Future<_SettingsHarness> _pumpSettingsScreen(
   await tester.pump(const Duration(milliseconds: 300));
   if (pushSettingsRoute) {
     await tester.tap(find.text('Settings launcher'));
+    await _pumpUi(tester);
+  }
+  if (openAppSettings) {
+    await tester.tap(find.text(t.viewerSettings.appSettings));
     await _pumpUi(tester);
   }
   return harness;

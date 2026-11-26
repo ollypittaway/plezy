@@ -3,6 +3,8 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../focus/focusable_button.dart';
 import '../focus/focusable_text_field.dart';
+import '../i18n/strings.g.dart';
+import '../theme/mono_tokens.dart';
 import 'app_icon.dart';
 import 'pill_input_decoration.dart';
 
@@ -59,37 +61,59 @@ class _SearchInputFieldState extends State<SearchInputField> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final labelStyle = navigationPillLabelStyle(theme);
+    final height = theme.materialTapTargetSize == MaterialTapTargetSize.padded ? kMinInteractiveDimension : 42.0;
     final hasText = widget.controller.text.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
       child: Stack(
-        alignment: Alignment.centerRight,
         children: [
           FocusableTextField(
             controller: widget.controller,
             focusNode: widget.focusNode,
             tvTextInputController: widget.tvTextInputController,
+            style: labelStyle,
             textInputAction: TextInputAction.search,
             onNavigateLeft: widget.onNavigateLeft,
             onNavigateRight: hasText ? _clearFocusNode.requestFocus : null,
             onNavigateDown: widget.onNavigateDown,
             onEditingComplete: widget.onEditingComplete,
             onBack: widget.onBack,
-            decoration: pillInputDecoration(
-              context,
-              hintText: widget.hintText,
-              prefixIcon: const AppIcon(Symbols.search_rounded, fill: 1),
-              suffixIcon: hasText ? const SizedBox(width: 48) : null,
+            decoration: pillInputDecoration(context, hintText: widget.hintText).copyWith(
+              prefixIcon: AppIcon(
+                Symbols.search_rounded,
+                size: 18,
+                weight: 400,
+                fill: 0,
+                color: colors.onSurfaceVariant,
+              ),
+              prefixIconConstraints: BoxConstraints.tightFor(width: 40, height: height),
+              suffixIcon: hasText ? const SizedBox.shrink() : null,
+              suffixIconConstraints: BoxConstraints.tightFor(width: kMinInteractiveDimension, height: height),
             ),
           ),
           if (hasText)
-            FocusableButton(
-              focusNode: _clearFocusNode,
-              onPressed: _clearSearch,
-              onNavigateLeft: widget.focusNode.requestFocus,
-              onNavigateDown: widget.onNavigateDown,
-              autoScroll: false,
-              child: IconButton(icon: const AppIcon(Symbols.clear_rounded, fill: 1), onPressed: _clearSearch),
+            PositionedDirectional(
+              end: 0,
+              top: 0,
+              bottom: 0,
+              width: kMinInteractiveDimension,
+              child: Center(
+                child: FocusableButton(
+                  focusNode: _clearFocusNode,
+                  onPressed: _clearSearch,
+                  onNavigateLeft: widget.focusNode.requestFocus,
+                  onNavigateDown: widget.onNavigateDown,
+                  autoScroll: false,
+                  child: IconButton(
+                    tooltip: t.common.clear,
+                    icon: const AppIcon(Symbols.clear_rounded, size: 18, weight: 400, fill: 0),
+                    onPressed: _clearSearch,
+                  ),
+                ),
+              ),
             ),
         ],
       ),

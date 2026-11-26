@@ -9,7 +9,7 @@ import '../../services/discord_rpc_service.dart';
 import '../../services/settings_service.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/catalog_source_logo.dart';
-import '../../widgets/focused_scroll_scaffold.dart';
+import '../../widgets/settings_page.dart';
 import '../../widgets/focusable_list_tile.dart';
 import '../../widgets/setting_tile.dart';
 import '../../widgets/settings_section.dart';
@@ -25,7 +25,8 @@ class ServicesSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FocusedScrollScaffold(
+    return SettingsPage.slivers(
+      profileLayout: true,
       title: Text(t.services.title),
       slivers: [
         SliverList(

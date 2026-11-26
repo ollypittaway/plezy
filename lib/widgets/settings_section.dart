@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/mono_tokens.dart';
 import '../utils/platform_detector.dart';
 import 'app_icon.dart';
+import 'profile_settings_layout.dart';
 import 'expressive_button_group.dart';
 
 /// Standard settings-option title style, for group children that are not a
@@ -63,6 +64,31 @@ class SettingsGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (ProfileSettingsLayout.applies(context)) {
+      return Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 960),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (title != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: Text(title!, style: Theme.of(context).textTheme.titleMedium),
+                    ),
+                  for (final row in children) ...[row, const Divider(height: 1, thickness: 0.5)],
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     final t = tokens(context);
     return Column(
       crossAxisAlignment: .start,

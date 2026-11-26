@@ -1,6 +1,10 @@
 {
   "announcements": {
     "title": "Notifications",
+    "automaticPairing": "Automatic device pairing",
+    "automaticHint": "Connect this device to panel.pittaway.dev for announcements and optional settings sync.",
+    "connecting": "Connecting to the GucciPlexa panel…",
+    "autoRetry": "Waiting for the GucciPlexa panel. This device will retry automatically.",
     "pairHint": "In your web panel, choose Pair a device and paste the link here.",
     "link": "Private pairing link",
     "pair": "Pair device",
@@ -202,6 +206,41 @@
       "restoreFailed": "Couldn't reach the store to restore your purchase. Try again.",
       "nothingToRestore": "No Theme & Icon Pack purchase was found for this store account."
     }
+  },
+  "viewerSettings": {
+    "myProfile": "My profile",
+    "appSettings": "App settings",
+    "playback": "Playback",
+    "maintenance": "Backup & maintenance",
+    "playerBehavior": "Playback behavior",
+    "behaviorHint": "Autoplay, skipping, gestures and changes made in the player",
+    "audioHint": "Audio output, channel mixing, volume and music quality",
+    "languages": "Audio & subtitle languages",
+    "languageHint": "Choose the preferred tracks for your media-server account",
+    "diagnostics": "Diagnostics",
+    "connections": "Connections & services",
+    "subtitle": "Manage your profile and app preferences.",
+    "viewer": "Viewer",
+    "accent": "Accent color",
+    "accentHint": "Used for buttons, selection and focus.",
+    "themeDefault": "Theme default",
+    "teal": "Teal",
+    "blue": "Blue",
+    "violet": "Violet",
+    "rose": "Rose",
+    "amber": "Amber",
+    "sync": "Settings sync",
+    "syncDescription": "Sync your accent, libraries, playback preferences and subtitle styling across devices.",
+    "pair": "Connect a panel",
+    "plexRequired": "Select a profile with a signed-in Plex account to enable sync.",
+    "enable": "Enable sync",
+    "disable": "Turn off sync",
+    "syncNow": "Sync now",
+    "consent": "Allow ${host} to verify this viewer’s Plex session and sync personal settings?",
+    "syncing": "Syncing…",
+    "upToDate": "Up to date",
+    "retry": "Couldn’t sync. Your settings are saved on this device.",
+    "localOnly": "Saved on this device"
   },
   "settings": {
     "title": "Settings",
@@ -586,6 +625,7 @@
     "previewMutedText": "Secondary text reads like this"
   },
   "search": {
+    "versionCount": { "one": "${n} version", "other": "${n} versions" },
     "hint": "Search movies, shows, music...",
     "tryDifferentTerm": "Try a different search term",
     "searchYourMedia": "Search your media",
@@ -1064,6 +1104,7 @@
     "confirmAction": "Confirm Action"
   },
   "profiles": {
+    "whoIsWatching": "Who’s watching?",
     "addPlezyProfile": "Add GucciPlexa profile",
     "switchingProfile": "Switching profile…",
     "deleteThisProfileTitle": "Delete this profile?",

@@ -36,6 +36,8 @@ import '../services/music/music_playback_service_impl.dart';
 import '../services/music/music_session_store.dart';
 import '../services/offline_watch_sync_service.dart';
 import '../services/settings_service.dart';
+import '../services/announcement_service.dart';
+import '../services/viewer_settings_sync.dart';
 import '../services/storage_service.dart';
 import '../services/system_shelf_service.dart';
 import '../utils/app_logger.dart';
@@ -169,6 +171,7 @@ class _ProfileSessionScreenState extends State<ProfileSessionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasPanelService = context.read<AnnouncementService?>() != null;
     return Selector<ActiveProfileProvider, String?>(
       selector: (_, activeProfile) => activeProfile.activeId,
       builder: (context, activeId, _) {
@@ -269,6 +272,19 @@ class _ProfileSessionScreenState extends State<ProfileSessionScreen> {
                   );
                 },
               ),
+              if (activeId != null && hasPanelService)
+                ChangeNotifierProvider(
+                  lazy: false,
+                  create: (context) => ViewerSettingsSync(
+                    activeId,
+                    context.read<ActiveProfileProvider>(),
+                    context.read<AnnouncementService>(),
+                    context.read<SettingsService>(),
+                    context.read<StorageService>(),
+                    context.read<HiddenLibrariesProvider>(),
+                    context.read<LibrariesProvider>(),
+                  ),
+                ),
               ChangeNotifierProvider(
                 create: (context) {
                   final activeProfile = context.read<ActiveProfileProvider>();

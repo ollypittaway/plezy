@@ -21,6 +21,7 @@ class ThemeProvider extends ChangeNotifier with DisposableChangeNotifierMixin, W
   late final SettingsBindingOwner _settingsBinding;
   settings.ThemeMode _storedMode = settings.SettingsService.themeMode.resolvedDefault;
   MonoPalette? _customPalette;
+  String _accent = 'default';
   late ThemeChoice _choice;
   late Brightness _systemBrightness;
   bool? _windowChromeDark;
@@ -37,13 +38,17 @@ class ThemeProvider extends ChangeNotifier with DisposableChangeNotifierMixin, W
     _choice = _resolve();
     _supporter.addListener(_apply);
     _settingsBinding = SettingsBindingOwner(
-      prefs: [settings.SettingsService.themeMode, settings.SettingsService.customThemePalette],
+      prefs: [
+        settings.SettingsService.themeMode,
+        settings.SettingsService.customThemePalette,
+        settings.SettingsService.viewerAccent,
+      ],
       onRefresh: (service) {
-        final previous = (_storedMode, _customPalette);
+        final previous = (_storedMode, _customPalette, _accent);
         _readStored(service);
         // A stored change that paints the same still changes what the picker
         // shows (the saved-but-locked marker, the Custom swatch).
-        _apply(pushSplash: true, forceNotify: (_storedMode, _customPalette) != previous);
+        _apply(pushSplash: true, forceNotify: (_storedMode, _customPalette, _accent) != previous);
       },
     );
     unawaited(_settingsBinding.bind());
@@ -70,6 +75,7 @@ class ThemeProvider extends ChangeNotifier with DisposableChangeNotifierMixin, W
 
   void _readStored(settings.SettingsService service) {
     _storedMode = service.read(settings.SettingsService.themeMode);
+    _accent = service.read(settings.SettingsService.viewerAccent);
     _customPalette = service.read(settings.SettingsService.customThemePalette);
   }
 
@@ -149,8 +155,8 @@ class ThemeProvider extends ChangeNotifier with DisposableChangeNotifierMixin, W
   ///
   /// Static, like [darkThemeFor], so the pre-provider startup frame resolves
   /// the same theme this provider will settle on (#1833).
-  static ThemeData lightThemeFor(MonoPalette? palette) =>
-      monoTheme(palette?.brightness == Brightness.light ? palette! : MonoPalette.light);
+  static ThemeData lightThemeFor(MonoPalette? palette, {String accent = 'default'}) =>
+      _viewerTheme(palette, MonoPalette.light, accent);
 
   /// Dark-slot theme for [palette]: the palette itself when it is dark,
   /// otherwise Dark (the System theme's dark half).
@@ -158,8 +164,8 @@ class ThemeProvider extends ChangeNotifier with DisposableChangeNotifierMixin, W
   /// Static so the pre-provider startup frame can resolve the same theme this
   /// provider will settle on, instead of guessing from platform brightness
   /// and flashing when the two disagree (#1833).
-  static ThemeData darkThemeFor(MonoPalette? palette) =>
-      monoTheme(palette?.brightness == Brightness.dark ? palette! : MonoPalette.dark);
+  static ThemeData darkThemeFor(MonoPalette? palette, {String accent = 'default'}) =>
+      _viewerTheme(palette, MonoPalette.dark, accent);
 
   /// Material equivalent of [palette]: system for System (null), otherwise
   /// the palette's brightness.
@@ -169,8 +175,16 @@ class ThemeProvider extends ChangeNotifier with DisposableChangeNotifierMixin, W
     Brightness.dark => ThemeMode.dark,
   };
 
-  ThemeData get lightTheme => lightThemeFor(_choice.palette);
-  ThemeData get darkTheme => darkThemeFor(_choice.palette);
+  static ThemeData _viewerTheme(MonoPalette? selected, MonoPalette fallback, String name) {
+    final palette = selected?.brightness == fallback.brightness ? selected! : fallback;
+    final accent = ViewerAccent.values.where((a) => a.name == name).firstOrNull;
+    return monoTheme(
+      accent == null ? palette : palette.withColor(MonoPaletteSlot.accent, accent.forBrightness(palette.brightness)),
+    );
+  }
+
+  ThemeData get lightTheme => lightThemeFor(_choice.palette, accent: _accent);
+  ThemeData get darkTheme => darkThemeFor(_choice.palette, accent: _accent);
 
   ThemeMode get materialThemeMode => materialThemeModeFor(_choice.palette);
 

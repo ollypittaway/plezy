@@ -48,16 +48,20 @@ final _languageOptions = <DialogOption<String>>[
 /// it answers a query (see [AccountPreferenceKey.appliedByServer]): storing the
 /// value is the whole job. Do not add client-side enforcement on top of them,
 /// or the preference gets applied twice.
+enum AccountSettingsGroup { all, tracks, library }
+
 class AccountPreferencesDetailScreen extends StatelessWidget {
   final AccountPreferenceTarget target;
 
-  const AccountPreferencesDetailScreen({super.key, required this.target});
+  final AccountSettingsGroup group;
+  const AccountPreferencesDetailScreen({super.key, required this.target, this.group = AccountSettingsGroup.all});
 
   @override
   Widget build(BuildContext context) {
     return SettingsPage.slivers(
+      profileLayout: true,
       title: Text(target.label),
-      slivers: [AccountPreferencesBody(key: ValueKey(target.ref), target: target)],
+      slivers: [AccountPreferencesBody(key: ValueKey(target.ref), target: target, group: group)],
     );
   }
 }
@@ -68,7 +72,8 @@ class AccountPreferencesDetailScreen extends StatelessWidget {
 class AccountPreferencesBody extends StatefulWidget {
   final AccountPreferenceTarget target;
 
-  const AccountPreferencesBody({super.key, required this.target});
+  final AccountSettingsGroup group;
+  const AccountPreferencesBody({super.key, required this.target, this.group = AccountSettingsGroup.all});
 
   @override
   State<AccountPreferencesBody> createState() => _AccountPreferencesBodyState();
@@ -211,9 +216,12 @@ class _AccountPreferencesBodyState extends State<AccountPreferencesBody> {
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
         ),
-        if (audio.isNotEmpty) SettingsGroup(title: t.accountPreferences.groups.audioAndSubtitles, children: audio),
-        if (library.isNotEmpty) SettingsGroup(title: t.accountPreferences.groups.libraryDisplay, children: library),
-        if (personal.isNotEmpty) SettingsGroup(title: t.accountPreferences.groups.personalMedia, children: personal),
+        if (widget.group != AccountSettingsGroup.library && audio.isNotEmpty)
+          SettingsGroup(title: t.accountPreferences.groups.audioAndSubtitles, children: audio),
+        if (widget.group != AccountSettingsGroup.tracks && library.isNotEmpty)
+          SettingsGroup(title: t.accountPreferences.groups.libraryDisplay, children: library),
+        if (widget.group != AccountSettingsGroup.tracks && personal.isNotEmpty)
+          SettingsGroup(title: t.accountPreferences.groups.personalMedia, children: personal),
         const SizedBox(height: 24),
       ]),
     );

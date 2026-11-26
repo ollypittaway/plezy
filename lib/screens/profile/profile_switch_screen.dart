@@ -23,20 +23,15 @@ import '../../widgets/app_menu.dart';
 import '../../widgets/backend_badge.dart';
 import '../../widgets/focusable_popup_menu_button.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
+import '../../widgets/profile_chooser.dart';
 import '../../widgets/profile_switching_overlay.dart';
 import '../../widgets/deep_link_dialog.dart';
-import '../libraries/state_messages.dart';
 import 'add_local_profile_screen.dart';
 import 'pin_entry_dialog.dart';
 import 'profile_teardown.dart';
 import 'profile_detail_screen.dart';
 
-/// Flat picker showing every [Profile] in the system — Plex Home users
-/// auto-surfaced from connected accounts, plus user-created locals.
-///
-/// Each tile shows avatar, name, an Active badge for the current profile,
-/// and one backend chip per connection bound to the profile (parent Plex
-/// account + any borrowed connections for Plex Home users).
+/// Selects a viewer or opens the management list for connected and local profiles.
 class ProfileSwitchScreen extends StatefulWidget {
   final bool requireSelection;
 
@@ -52,6 +47,7 @@ class _ProfileSwitchScreenState extends State<ProfileSwitchScreen> with MountedS
   final Map<String, FocusNode> _profileMenuFocusNodes = {};
   final Map<String, GlobalKey<AppMenuButtonState<_TileAction>>> _profileMenuKeys = {};
   bool _switching = false;
+  bool _editing = false;
 
   @override
   void dispose() {
@@ -77,50 +73,39 @@ class _ProfileSwitchScreenState extends State<ProfileSwitchScreen> with MountedS
     _pruneProfileFocusResources(profiles.map((p) => p.id).toSet());
     final activeId = activeProvider.activeId;
     return PopScope(
-      canPop: !widget.requireSelection || _allowPop,
+      canPop: !_editing && (!widget.requireSelection || _allowPop),
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && widget.requireSelection) {
+        if (didPop) return;
+        if (_editing) {
+          setState(() => _editing = false);
+        } else if (widget.requireSelection) {
           unawaited(AppExitService.requestExit());
         }
       },
       child: Stack(
         children: [
-          FocusedScrollScaffold(
-            title: Text(t.screens.switchProfile),
-            automaticallyImplyLeading: !widget.requireSelection,
-            onBackPressed: widget.requireSelection ? () => unawaited(AppExitService.requestExit()) : null,
-            slivers: [
-              if (profiles.isEmpty)
-                SliverFillRemaining(
-                  child: loading
-                      ? const Center(child: CircularProgressIndicator())
-                      : EmptyStateWidget(
-                          message: t.messages.noProfilesAvailable,
-                          subtitle: t.messages.contactAdminForProfiles,
-                          icon: Symbols.person_off_rounded,
-                        ),
-                )
-              else
-                ..._buildSections(activeProvider, activeId),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                sliver: SliverToBoxAdapter(
-                  child: FocusableWrapper(
-                    disableScale: true,
-                    borderRadius: 100,
-                    useBackgroundFocus: true,
-                    descendantsAreFocusable: false,
-                    onSelect: _switching ? null : _addLocalProfile,
-                    child: OutlinedButton.icon(
-                      onPressed: _switching ? null : _addLocalProfile,
-                      icon: const AppIcon(Symbols.person_add_rounded, fill: 1),
-                      label: Text(t.profiles.addPlezyProfile),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          if (_editing)
+            FocusedScrollScaffold(
+              title: Text(t.profiles.sectionTitle),
+              onBackPressed: () => setState(() => _editing = false),
+              actions: [
+                TextButton(onPressed: () => setState(() => _editing = false), child: Text(t.common.close)),
+              ],
+              slivers: [_profileList(profiles, activeProvider, activeId, autofocusFirst: true)],
+            )
+          else
+            ProfileChooser(
+              profiles: profiles,
+              activeId: activeId,
+              loading: loading,
+              focusNodeFor: _profileFocusNode,
+              avatarUrlFor: activeProvider.avatarUrlFor,
+              onSelect: _switching ? null : _switchTo,
+              onAdd: _switching ? null : _addLocalProfile,
+              onEdit: widget.requireSelection || profiles.isEmpty || _switching ? null : () => setState(() => _editing = true),
+              onBack: widget.requireSelection ? () => unawaited(AppExitService.requestExit()) : () => Navigator.maybePop(context),
+              showBack: !widget.requireSelection && Navigator.canPop(context),
+            ),
           if (_switching) const ProfileSwitchingOverlay(),
         ],
       ),
@@ -175,49 +160,6 @@ class _ProfileSwitchScreenState extends State<ProfileSwitchScreen> with MountedS
 
   void _openProfileMenu(Profile profile) {
     _profileMenuKeys[profile.id]?.currentState?.showButtonMenu();
-  }
-
-  List<Widget> _buildSections(ActiveProfileProvider activeProvider, String? activeId) {
-    if (PlatformDetector.usesDesktopPresentation()) {
-      return [SliverPadding(
-        padding: const EdgeInsets.fromLTRB(32, 72, 32, 24),
-        sliver: SliverToBoxAdapter(child: Center(child: Wrap(
-          alignment: WrapAlignment.center, spacing: 28, runSpacing: 24,
-          children: [for (final (index, profile) in activeProvider.profiles.indexed)
-            SizedBox(width: 160, child: Column(mainAxisSize: MainAxisSize.min, children: [
-              FocusableWrapper(
-                focusNode: _profileFocusNode(profile),
-                autofocus: index == 0,
-                disableScale: false,
-                borderRadius: 100,
-                onSelect: _switching ? null : () => _switchTo(profile),
-                child: InkWell(
-                  canRequestFocus: false,
-                  borderRadius: BorderRadius.circular(100),
-                  onTap: _switching ? null : () => _switchTo(profile),
-                  child: Padding(padding: const EdgeInsets.all(6), child: ProfileAvatar(profile: profile, size: 116, avatarUrl: activeProvider.avatarUrlFor(profile.id))),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(profile.displayName, maxLines: 2, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
-              if (profile.id == activeId) Text(t.profiles.active, style: TextStyle(color: Theme.of(context).colorScheme.primary)),
-              if (!widget.requireSelection && !_switching) _ProfileActionsButton(
-                menuKey: _profileMenuKey(profile), focusNode: _profileMenuFocusNode(profile),
-                onNavigateLeft: () => _profileFocusNode(profile).requestFocus(),
-                onSelected: (action) { switch (action) {
-                  case _TileAction.manage: _manageProfile(profile); break;
-                  case _TileAction.showLink: _showProfileLink(profile); break;
-                  case _TileAction.delete: _deleteProfile(profile); break;
-                  case _TileAction.signOut: _signOutPlexAccount(profile); break;
-                } },
-                actions: [_TileAction.manage, _TileAction.showLink, if (profile.isLocal) _TileAction.delete, if (profile.isPlexHome && profile.parentConnectionId != null) _TileAction.signOut],
-              ),
-            ])),
-          ],
-        ))),
-      )];
-    }
-    return [_profileList(activeProvider.profiles, activeProvider, activeId, autofocusFirst: true)];
   }
 
   SliverList _profileList(
@@ -282,7 +224,7 @@ class _ProfileSwitchScreenState extends State<ProfileSwitchScreen> with MountedS
                 enableLongPress: hasMenu,
                 onLongPress: hasMenu ? () => _openProfileMenu(profile) : null,
                 onNavigateRight: hasMenu ? () => menuFocusNode.requestFocus() : null,
-                onSelect: _switching || (isActive && !widget.requireSelection) ? null : () => _switchTo(profile),
+                onSelect: onManage,
                 child: _ProfileTile(
                   borderRadius: tileRadii,
                   profile: profile,
@@ -290,7 +232,7 @@ class _ProfileSwitchScreenState extends State<ProfileSwitchScreen> with MountedS
                   isActive: isActive && !widget.requireSelection,
                   chips: connections.chips,
                   hasConnections: connections.hasConnections,
-                  onTap: () => _switchTo(profile),
+                  onTap: () => _manageProfile(profile),
                   onLongPress: hasMenu ? () => _openProfileMenu(profile) : null,
                   // Manage available for any profile — adding/removing
                   // borrowed connections is supported on plex_home too. Delete
@@ -521,7 +463,7 @@ class _ProfileTile extends StatelessWidget {
     final hasMenu = onManage != null || onShowLink != null || onDelete != null || onSignOut != null;
     return InkWell(
       canRequestFocus: false,
-      onTap: isActive ? null : onTap,
+      onTap: onTap,
       onLongPress: onLongPress,
       borderRadius: borderRadius,
       child: Padding(

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../widgets/pill_input_decoration.dart';
+import '../../theme/mono_tokens.dart';
 import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../focus/dpad_navigator.dart';
-import '../../focus/focus_theme.dart';
 import '../../focus/key_event_utils.dart';
 import '../../focus/focusable_button.dart';
 import '../../i18n/strings.g.dart';
@@ -580,7 +581,7 @@ class _TvPinInputState extends State<_TvPinInput> with ControllerDisposerMixin {
           SizedBox(
             width: 222,
             height: 56,
-            child: IgnorePointer(
+            child: Opacity(opacity: 0, child: IgnorePointer(
               child: TextField(
                 controller: _mobileController,
                 focusNode: _mobileFocusNode,
@@ -599,7 +600,7 @@ class _TvPinInputState extends State<_TvPinInput> with ControllerDisposerMixin {
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)],
                 onChanged: _onMobilePinChanged,
                 onSubmitted: (_) => _trySubmit(),
-              ),
+              )),
             ),
           ),
           _buildDigitRow(context),
@@ -618,7 +619,7 @@ class _DigitBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final focusColor = FocusTheme.getFocusBorderColor(context);
+    final colors = theme.colorScheme;
 
     return Column(
       mainAxisSize: .min,
@@ -629,14 +630,8 @@ class _DigitBox extends StatelessWidget {
           height: 56,
           alignment: .center,
           decoration: BoxDecoration(
-            borderRadius: const BorderRadius.all(Radius.circular(FocusTheme.defaultBorderRadius)),
-            border: Border.fromBorderSide(
-              BorderSide(
-                color: isActive ? focusColor : theme.colorScheme.outlineVariant,
-                width: isActive ? FocusTheme.focusBorderWidth : 1.5,
-              ),
-            ),
-            color: isActive ? focusColor.withValues(alpha: 0.08) : Colors.transparent,
+            borderRadius: pillInputRadius,
+            border: Border.fromBorderSide(isActive ? BorderSide(color: colors.onSurface.withValues(alpha: .75), width: 2) : navigationPillOutline(colors)),
           ),
           child: Text(
             digit != null ? '•' : '–',

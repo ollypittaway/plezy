@@ -350,7 +350,6 @@ class _MpvConfigScreenState extends State<MpvConfigScreen> with ListenableBindin
         minLines: 12,
         decoration: InputDecoration(
           hintText: t.mpvConfig.configPlaceholder,
-          border: const OutlineInputBorder(),
           contentPadding: const EdgeInsets.all(12),
         ),
         style: _editorStyle,

@@ -21,14 +21,18 @@ import 'account_preferences_detail_screen.dart';
 class AccountPreferencesScreen extends StatelessWidget {
   final List<AccountPreferenceTarget> targets;
 
-  const AccountPreferencesScreen({super.key, required this.targets});
+  final AccountSettingsGroup group;
+  const AccountPreferencesScreen({super.key, required this.targets, this.group = AccountSettingsGroup.all});
 
   @override
   Widget build(BuildContext context) {
-    final title = Text(t.accountPreferences.sectionTitle);
+    final title = Text(
+      group == AccountSettingsGroup.tracks ? t.viewerSettings.languages : t.accountPreferences.sectionTitle,
+    );
 
     if (targets.isEmpty) {
       return SettingsPage.slivers(
+        profileLayout: true,
         title: title,
         slivers: [
           SliverFillRemaining(
@@ -45,14 +49,16 @@ class AccountPreferencesScreen extends StatelessWidget {
 
     if (targets.length == 1) {
       return SettingsPage.slivers(
+        profileLayout: true,
         title: title,
-        slivers: [AccountPreferencesBody(key: ValueKey(targets.first.ref), target: targets.first)],
+        slivers: [AccountPreferencesBody(key: ValueKey(targets.first.ref), target: targets.first, group: group)],
       );
     }
 
     final theme = Theme.of(context);
 
     return SettingsPage(
+      profileLayout: true,
       title: title,
       children: [
         Padding(
@@ -73,7 +79,9 @@ class AccountPreferencesScreen extends StatelessWidget {
                 trailing: const AppIcon(Symbols.chevron_right_rounded, fill: 1),
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => AccountPreferencesDetailScreen(target: target)),
+                  MaterialPageRoute(
+                    builder: (_) => AccountPreferencesDetailScreen(target: target, group: group),
+                  ),
                 ),
               ),
           ],

@@ -8,8 +8,10 @@ import '../i18n/strings.g.dart';
 import '../focus/focusable_action_bar.dart';
 import '../media/media_library.dart';
 import '../navigation/navigation_tabs.dart';
+import '../theme/mono_tokens.dart';
 import '../utils/desktop_window_padding.dart';
 import 'app_icon.dart';
+import '../screens/settings/announcement_settings_screen.dart';
 import 'app_menu.dart';
 
 /// Home supplies its existing profile and session controls to the shell's header.
@@ -117,12 +119,7 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
   Widget _destinations(BuildContext context, {VoidCallback? onNavigateRight, GlobalKey<FocusableActionBarState>? remoteKey}) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final style = theme.textTheme.bodyMedium!.copyWith(
-      color: colors.onSurface,
-      fontSize: 14,
-      fontWeight: .w400,
-      letterSpacing: -0.15,
-    );
+    final style = navigationPillLabelStyle(theme);
     final primaryTabs = tabs.where((tab) => !_utilities.contains(tab.id)).toList();
     if (primaryTabs.isEmpty) return const SizedBox.shrink();
     if (remoteNavigation) {
@@ -133,7 +130,7 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
           child: DecoratedBox(
             decoration: ShapeDecoration(
               color: theme.scaffoldBackgroundColor.withValues(alpha: 0.68),
-              shape: StadiumBorder(side: BorderSide(color: colors.onSurface.withValues(alpha: 0.14))),
+              shape: StadiumBorder(side: navigationPillOutline(colors)),
             ),
             child: Padding(
               padding: const EdgeInsets.all(3),
@@ -191,7 +188,7 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
         child: DecoratedBox(
           decoration: ShapeDecoration(
             color: theme.scaffoldBackgroundColor.withValues(alpha: 0.68),
-            shape: StadiumBorder(side: BorderSide(color: colors.onSurface.withValues(alpha: 0.14))),
+            shape: StadiumBorder(side: navigationPillOutline(colors)),
           ),
           child: Padding(
             padding: const EdgeInsets.all(3),
@@ -250,7 +247,15 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
     final activeProvider = context.watch<ActiveProfileProvider?>();
     final profile = activeProvider?.active;
     final background = theme.scaffoldBackgroundColor;
-    final utilityTabs = [for (final id in [NavigationTabId.search, NavigationTabId.downloads, NavigationTabId.settings]) ...tabs.where((tab) => tab.id == id)];
+    final utilities = <({String id, String label, IconData icon, VoidCallback open, bool selected})>[
+      for (final id in [NavigationTabId.search, NavigationTabId.downloads, NavigationTabId.settings]) ...[
+        if (id == NavigationTabId.settings)
+          (id: 'notifications', label: t.announcements.title, icon: Symbols.notifications_rounded,
+           open: () => AnnouncementSettingsScreen.open(context), selected: false),
+        for (final tab in tabs.where((tab) => tab.id == id))
+          (id: id.name, label: tab.getLabel(), icon: tab.icon, open: () => onSelect(id), selected: selected == id),
+      ],
+    ];
     return Material(
       type: MaterialType.transparency,
       child: DecoratedBox(
@@ -314,8 +319,8 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
                       onNavigateDown: onNavigateDown,
                       onNavigateRight: homeActions == null || remoteNavigation ? null : _focusProfileActions,
                       actions: [
-                        for (final tab in utilityTabs)
-                          FocusableAction(debugLabel: 'desktop_utility_${tab.id.name}', icon: tab.icon, iconSize: 20, iconFill: 0, tooltip: tab.getLabel(), onPressed: () => onSelect(tab.id)),
+                        for (final action in utilities)
+                          FocusableAction(debugLabel: 'desktop_utility_${action.id}', icon: action.icon, iconSize: 20, iconFill: 0, tooltip: action.label, onPressed: action.open),
                         if (widget.onOpenProfile != null)
                           FocusableAction(
                             debugLabel: 'desktop_profile',
@@ -333,19 +338,19 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
                       ],
                     ),
                   if (!remoteNavigation)
-                  for (final tab in tabs.where((tab) => _utilities.contains(tab.id)))
+                  for (final action in utilities)
                     Semantics(
-                      label: tab.getLabel(),
-                      selected: tab.id == selected,
+                      label: action.label,
+                      selected: action.selected,
                       child: IconButton(
-                        onPressed: () => onSelect(tab.id),
-                        tooltip: tab.getLabel(),
+                        onPressed: action.open,
+                        tooltip: action.label,
                         icon: AppIcon(
-                          tab.icon,
+                          action.icon,
                           size: 20,
                           fill: 0,
                           weight: 400,
-                          color: tab.id == selected ? colors.primary : colors.onSurface,
+                          color: action.selected ? colors.primary : colors.onSurface,
                         ),
                       ),
                     ),
@@ -353,7 +358,7 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
                     const SizedBox(width: 6),
                     if (remoteNavigation)
                       DesktopRemoteHeaderBridge(
-                        focusUtilities: () => utilityKey.currentState?.getFocusNode(utilityTabs.length - 1)?.requestFocus(),
+                        focusUtilities: () => utilityKey.currentState?.getFocusNode(utilities.length - 1)?.requestFocus(),
                         child: FocusScope(node: _profileActionsScope, child: homeActions!),
                       )
                     else homeActions!,

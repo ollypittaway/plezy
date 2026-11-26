@@ -46,6 +46,40 @@ class PanelTests(unittest.TestCase):
         self.assertEqual(feed.json['messages'][0]['title'], 'Film night')
         self.assertEqual(feed.headers['Cache-Control'], 'no-store')
 
+    def test_automatic_pairing_is_opt_in_and_credentials_are_device_scoped(self):
+        self.assertEqual(self.client.post('/api/pair').status_code, 404)
+        app, _ = create_app(self.directory.name, 'a' * 32, automatic_pairing=True, sender=lambda *args: None)
+        client = app.test_client()
+        first = client.post('/api/pair')
+        self.assertEqual(first.status_code, 201)
+        self.assertEqual(first.headers['Cache-Control'], 'no-store')
+        second = client.post('/api/pair').json
+        self.assertNotEqual(first.json['key'], second['key'])
+        auth = {'Authorization': 'Bearer ' + first.json['key']}
+        self.assertEqual(client.get('/api/feed', headers=auth).status_code, 200)
+        self.assertEqual(client.get('/api/admin', headers=auth).status_code, 401)
+        self.assertEqual(client.get('/api/settings', headers=auth).status_code, 401)
+        self.assertEqual(client.post('/api/settings/session', headers=auth).status_code, 401)
+        self.assertEqual(client.post('/api/notifications', headers=auth, json={}).status_code, 401)
+        for installation, expected in [(first.json['installation'], 204), (second['installation'], 403)]:
+            response = client.put('/api/device', headers=auth, json={'installation': installation, 'fid': None})
+            self.assertEqual(response.status_code, expected)
+        forged = second['installation'] + '_' + first.json['key'].split('_')[1]
+        self.assertEqual(client.get('/api/feed', headers={'Authorization':'Bearer '+forged}).status_code, 401)
+        self.assertEqual(self.client.get('/api/feed', headers=auth).status_code, 401)
+        restarted, _ = create_app(self.directory.name, 'a' * 32, automatic_pairing=True)
+        self.assertEqual(restarted.test_client().get('/api/feed', headers=auth).status_code, 200)
+
+    def test_admin_can_remove_an_announcement_and_queued_push(self):
+        self.device('phone-id')
+        notice = self.publish().json['id']
+        route = '/api/admin/announcements/' + str(notice)
+        self.assertEqual(self.client.delete(route, headers=self.pair).status_code, 401)
+        self.assertEqual(self.client.delete(route, headers=self.admin).status_code, 200)
+        self.assertEqual(self.dashboard()['messages'], [])
+        self.assertEqual(self.client.get('/api/feed', headers=self.pair).json['messages'], [])
+        self.assertFalse(self.work())
+
     def test_disable_removes_pending_push(self):
         self.device('first-device')
         self.publish()

@@ -5,6 +5,8 @@ import '../focus/dpad_select_long_press_controller.dart';
 import '../focus/focusable_tile_mixin.dart';
 import '../utils/platform_detector.dart';
 import 'clickable_cursor.dart';
+import 'app_icon.dart';
+import 'profile_settings_layout.dart';
 
 /// A ListTile that accepts a FocusNode for keyboard/controller navigation.
 ///
@@ -128,21 +130,24 @@ class _FocusableListTileState extends State<FocusableListTile> with FocusableTil
   }
 
   Widget _buildTile(bool automotive) {
+    final flat = ProfileSettingsLayout.applies(context);
     return MouseRegion(
       cursor: widget.enabled && (widget.onTap != null || widget.onLongPress != null)
           ? SystemMouseCursors.click
           : MouseCursor.defer,
       child: ListTile(
-        title: widget.title,
-        subtitle: widget.subtitle,
-        leading: widget.leading,
+        title: flat && widget.title != null
+            ? SettingsRowText(title: widget.title!, subtitle: widget.subtitle)
+            : widget.title,
+        subtitle: flat ? null : widget.subtitle,
+        leading: flat && widget.leading is AppIcon ? null : widget.leading,
         trailing: widget.trailing,
         onTap: widget.onTap,
         onLongPress: widget.onLongPress,
         dense: automotive ? false : widget.dense,
         enabled: widget.enabled,
         selected: widget.selected,
-        contentPadding: widget.contentPadding,
+        contentPadding: flat ? EdgeInsets.zero : widget.contentPadding,
         visualDensity: automotive ? VisualDensity.standard : widget.visualDensity,
         focusNode: effectiveFocusNode,
         autofocus: widget.autofocus,
@@ -222,17 +227,20 @@ class _FocusableSwitchListTileState extends State<FocusableSwitchListTile>
   @override
   Widget build(BuildContext context) {
     final automotive = PlatformDetector.isAutomotive();
+    final flat = ProfileSettingsLayout.applies(context);
     return ClickableCursor(
       enabled: widget.onChanged != null,
       child: SwitchListTile(
-        title: widget.title,
-        subtitle: widget.subtitle,
-        secondary: widget.secondary,
+        title: flat && widget.title != null
+            ? SettingsRowText(title: widget.title!, subtitle: widget.subtitle)
+            : widget.title,
+        subtitle: flat ? null : widget.subtitle,
+        secondary: flat ? null : widget.secondary,
         value: widget.value,
         onChanged: widget.onChanged,
         dense: automotive ? false : widget.dense,
         visualDensity: automotive ? VisualDensity.standard : widget.visualDensity,
-        contentPadding: widget.contentPadding,
+        contentPadding: flat ? EdgeInsets.zero : widget.contentPadding,
         focusNode: effectiveFocusNode,
         autofocus: widget.autofocus,
         horizontalTitleGap: widget.horizontalTitleGap,

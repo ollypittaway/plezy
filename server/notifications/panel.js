@@ -23,6 +23,24 @@ async function api(path, options = {}) {
     );
   return response.json();
 }
+function removeButton(label, question, path) {
+  const button = document.createElement('button');
+  button.className = 'remove';
+  button.textContent = label;
+  button.type = 'button';
+  button.onclick = async () => {
+    if (!window.confirm(question)) return;
+    button.disabled = true;
+    try {
+      await api(path, { method: 'DELETE' });
+      await refresh();
+    } catch (e) {
+      el('status').textContent = e.message;
+      button.disabled = false;
+    }
+  };
+  return button;
+}
 async function refresh() {
   const active = key;
   const data = await api('/api/admin');
@@ -31,6 +49,22 @@ async function refresh() {
   el('phones').textContent = data.push
     ? 'In-app delivery enabled · ' + data.phones + ' paired for mobile push'
     : 'In-app delivery enabled. Add Firebase credentials to enable mobile push.';
+  const viewers = data.viewers.map((viewer) => {
+    const row = document.createElement('li');
+    const name = document.createElement('span');
+    name.textContent = viewer.label;
+    const date = document.createElement('time');
+    date.dateTime = new Date(viewer.updated * 1000).toISOString();
+    date.textContent = new Date(viewer.updated * 1000).toLocaleString();
+    const identity = document.createElement('small');
+    identity.textContent = viewer.id.slice(0, 10);
+    row.append(name, identity, date, removeButton('Delete settings',
+      'Delete synced settings for ' + viewer.label + ' (' + identity.textContent + ')? Devices keep their local settings.',
+      '/api/admin/viewers/' + encodeURIComponent(viewer.id)));
+    return row;
+  });
+  el('viewers').replaceChildren(...viewers);
+  if (!viewers.length) el('viewers').textContent = 'No viewer has synced yet.';
   const rows = data.messages.map((message) => {
     const row = document.createElement('li');
     for (const [tag, value] of [
@@ -50,6 +84,8 @@ async function refresh() {
       node.textContent = value;
       row.append(node);
     }
+    row.append(removeButton('Remove', 'Remove “' + message.title + '” from every device’s recent announcements?',
+      '/api/admin/announcements/' + message.id));
     return row;
   });
   el('history').replaceChildren(...rows);
@@ -110,3 +146,12 @@ el('compose').onsubmit = async (event) => {
     el('send').disabled = false;
   }
 };
+
+for (const name of ['settings', 'notifications']) {
+  el(name + '-tab').onclick = () => {
+    for (const page of ['settings', 'notifications']) {
+      el(page + '-tab').setAttribute('aria-pressed', String(page === name));
+      el(page + '-page').hidden = page !== name;
+    }
+  };
+}

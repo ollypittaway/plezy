@@ -392,6 +392,13 @@ class LibrariesProvider extends ChangeNotifier with DisposableChangeNotifierMixi
     await loadLibraries();
   }
 
+  void reloadStoredOrder() {
+    final storage = _storageService;
+    if (storage == null || isDisposed) return;
+    _libraries = _applyLibraryOrder(_libraries, storage.getLibraryOrder());
+    safeNotifyListeners();
+  }
+
   /// Update the library order and persist it.
   Future<void> updateLibraryOrder(
     List<MediaLibrary> orderedLibraries, {

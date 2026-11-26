@@ -183,7 +183,14 @@ class SettingsExportService {
       }
 
       final policy = _policyFor(baseKey);
-      if (policy == null || policy.userScoped != sourceIsUserScoped) continue;
+      if (policy == null) continue;
+      if (SettingsService.viewerPrefs.containsKey(baseKey)) {
+        if (!sourceIsUserScoped && currentUserPrefix != null && prefs.containsKey('$currentUserPrefix$baseKey')) {
+          continue;
+        }
+      } else if (policy.userScoped != sourceIsUserScoped) {
+        continue;
+      }
 
       final entry = _encodeValue(_portableExportValue(baseKey, prefs.get(fullKey)), policy.type);
       if (entry != null) prefsOut[baseKey] = entry;
@@ -311,7 +318,12 @@ class SettingsExportService {
 
       pending.add(
         _PendingImport(
-          targetKey: policy.userScoped ? '$userPrefix$baseKey' : baseKey,
+          targetKey:
+              (policy.userScoped ||
+                  (SettingsService.viewerPrefs.containsKey(baseKey) &&
+                      prefs.containsKey(StorageService.activeProfileKey)))
+              ? '$userPrefix$baseKey'
+              : baseKey,
           type: type,
           value: value,
           obsoleteKey: _obsoleteLegacyBoolKeys[baseKey],

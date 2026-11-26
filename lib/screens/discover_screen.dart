@@ -30,7 +30,6 @@ import '../widgets/rasterized_gradient.dart';
 import '../widgets/toolbar_scrim.dart';
 import '../widgets/system_clock.dart';
 import '../providers/discover_provider.dart';
-import '../providers/multi_server_provider.dart';
 import '../providers/watch_state_store.dart';
 import '../widgets/hub_section.dart';
 import '../widgets/app_menu.dart';
@@ -67,6 +66,7 @@ import 'libraries/content_state_builder.dart';
 import 'libraries/state_messages.dart';
 import 'main_screen.dart';
 import '../navigation/settings_shortcut.dart';
+import 'settings/announcement_settings_screen.dart';
 import '../watch_together/watch_together.dart';
 import '../providers/companion_remote_provider.dart';
 import '../widgets/companion_remote/remote_session_dialog.dart';
@@ -906,6 +906,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               onNavigateLeft: DesktopRemoteHeaderBridge.of(context)?.focusUtilities ?? _navigateToSidebar,
               onNavigateDown: _focusContentFromAppBar,
               actions: [
+                if (context.read<DesktopHomeHeaderBuilder?>() == null)
+                  FocusableAction(debugLabel: 'home_notifications', icon: Symbols.notifications_rounded,
+                    tooltip: t.announcements.title, onPressed: () => AnnouncementSettingsScreen.open(context)),
+
                 FocusableAction(debugLabel: 'desktop_header_refresh', icon: Symbols.refresh_rounded, iconColor: foregroundColor, onPressed: manualRefresh),
                 // Watch Together
                 FocusableAction(

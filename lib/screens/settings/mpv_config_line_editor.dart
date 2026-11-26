@@ -179,7 +179,6 @@ class _MpvConfigLineEditorState extends State<MpvConfigLineEditor> {
                     decoration: InputDecoration(
                       isDense: true,
                       hintText: t.mpvConfig.lineHint,
-                      border: const OutlineInputBorder(),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
                     onChanged: (value) => _handleLineChanged(i, value),

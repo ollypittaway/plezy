@@ -1,6 +1,8 @@
 """GucciPlexa's private broadcast panel and device feed."""
 import hashlib
+import hmac
 import os
+import re
 import secrets
 import sqlite3
 import threading
@@ -8,10 +10,12 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
+from viewer_settings import register_settings, verify_plex
+
 from flask import Flask, abort, request, send_from_directory
 
 
-def create_app(directory, admin_key, *, sender=None):
+def create_app(directory, admin_key, *, sender=None, verifier=verify_plex, automatic_pairing=False):
     if not admin_key or len(admin_key.encode()) < 24:
         raise ValueError("Set ADMIN_KEY to a random secret of at least 24 characters")
     directory = Path(directory)
@@ -40,11 +44,33 @@ def create_app(directory, admin_key, *, sender=None):
         pair_key = conn.execute("SELECT value FROM config WHERE key='pair'").fetchone()[0]
 
     app = Flask(__name__, static_folder=None)
-    app.config['MAX_CONTENT_LENGTH'] = 8192
+    app.config['MAX_CONTENT_LENGTH'] = 256 * 1024
+    app.config['SYNC_SIGNING_KEY'] = admin_key
 
     def authorize(key):
         if not secrets.compare_digest(request.headers.get('Authorization', '').encode(), ('Bearer ' + key).encode()):
             abort(401)
+
+    def device_signature(installation):
+        return hmac.new(pair_key.encode(), ('device:' + installation).encode(), hashlib.sha256).hexdigest()
+
+    def authorize_installation():
+        auth = request.headers.get('Authorization', '')
+        if secrets.compare_digest(auth.encode(), ('Bearer ' + pair_key).encode()):
+            return None  # Manually paired clients share the original private link.
+        match = re.fullmatch(r'Bearer ([0-9a-f]{32})_([0-9a-f]{64})', auth)
+        if not automatic_pairing or not match or not secrets.compare_digest(device_signature(match[1]), match[2]):
+            abort(401)
+        return match[1]
+
+    @app.post('/api/pair')
+    def pair_installation():
+        if not automatic_pairing:
+            abort(404)
+        installation = secrets.token_hex(16)
+        return {'installation': installation, 'key': installation + '_' + device_signature(installation)}, 201
+
+    register_settings(app, db, authorize_installation, verifier)
 
     @app.after_request
     def headers(response):
@@ -70,17 +96,19 @@ def create_app(directory, admin_key, *, sender=None):
 
     @app.get('/api/feed')
     def feed():
-        authorize(pair_key)
+        authorize_installation()
         with db() as conn:
             notices = conn.execute('SELECT id,title,body,created FROM notices ORDER BY id DESC LIMIT 50')
             return {'push': sender is not None, 'messages': [dict(row) for row in notices]}
 
     @app.put('/api/device')
     def device():
-        authorize(pair_key)
+        bound_installation = authorize_installation()
         data = request.get_json()
         if not isinstance(data, dict) or not isinstance(data.get('installation'), str) or not 32 <= len(data['installation']) <= 128 or 'fid' not in data:
             abort(400)
+        if bound_installation is not None and bound_installation != data['installation']:
+            abort(403)
         device_id = hashlib.sha256(data['installation'].encode()).hexdigest()
         token = data['fid']
         if token is not None and (not isinstance(token, str) or not 1 <= len(token) <= 4096):
@@ -112,7 +140,25 @@ def create_app(directory, admin_key, *, sender=None):
                 GROUP BY n.id ORDER BY n.id DESC LIMIT 30
             """)
             return {'pairKey': pair_key, 'push': sender is not None, 'phones': conn.execute('SELECT COUNT(*) FROM devices').fetchone()[0],
+                    'viewers': [dict(r) for r in conn.execute('SELECT subject AS id,label,updated FROM viewer_settings WHERE updated>0 ORDER BY updated DESC LIMIT 100')],
                     'messages': [dict(row) for row in rows]}
+
+    @app.delete('/api/admin/announcements/<int:notice>')
+    def delete_announcement(notice):
+        authorize(admin_key)
+        with db() as conn:
+            conn.execute('DELETE FROM deliveries WHERE notice=?', (notice,))
+            conn.execute('DELETE FROM notices WHERE id=?', (notice,))
+        return {'deleted': True}
+
+    @app.delete('/api/admin/viewers/<subject>')
+    def delete_viewer_settings(subject):
+        authorize(admin_key)
+        with db() as conn:
+            # Keep only a revision marker so an older, still-enabled device
+            # cannot silently put the deleted preferences back on its next poll.
+            conn.execute("UPDATE viewer_settings SET prefs='{}',label='',updated=0,revision=revision+1 WHERE subject=? AND updated>0", (subject,))
+        return {'deleted': True}
 
     @app.post('/api/notifications')
     def publish():
@@ -199,7 +245,8 @@ if __name__ == '__main__':
     from waitress import serve
 
     sender = firebase_sender() if os.getenv('GOOGLE_APPLICATION_CREDENTIALS') else None
-    app, deliver = create_app(os.getenv('DATA_DIR', '/data'), os.environ.get('ADMIN_KEY'), sender=sender)
+    app, deliver = create_app(os.getenv('DATA_DIR', '/data'), os.environ.get('ADMIN_KEY'), sender=sender,
+                              automatic_pairing=os.getenv('GUCCIPLEXA_AUTO_PAIR', '').lower() == 'true')
     if sender:
         def worker():
             while True:
@@ -210,4 +257,4 @@ if __name__ == '__main__':
                     app.logger.exception('Could not read push queue')
                 time.sleep(2)
         threading.Thread(target=worker, daemon=True).start()
-    serve(app, host=os.getenv('BIND_ADDRESS', '0.0.0.0'), port=int(os.getenv('PORT', '8080')), max_request_body_size=8192)
+    serve(app, host=os.getenv('BIND_ADDRESS', '0.0.0.0'), port=int(os.getenv('PORT', '8080')), max_request_body_size=256 * 1024)

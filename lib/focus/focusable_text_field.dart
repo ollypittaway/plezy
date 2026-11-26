@@ -9,6 +9,8 @@ import '../services/gamepad_service.dart';
 import '../utils/platform_detector.dart';
 import '../utils/text_input_diagnostics.dart';
 import '../widgets/tv_virtual_keyboard.dart';
+import '../widgets/pill_input_decoration.dart';
+import '../theme/mono_tokens.dart';
 import 'dpad_navigator.dart';
 import 'key_event_utils.dart';
 import 'owned_focus_node_binding.dart';
@@ -649,6 +651,13 @@ abstract class _FocusableTextInputBase extends StatelessWidget {
   final TextAlign textAlign;
   final TextCapitalization textCapitalization;
   final TextStyle? style;
+
+  InputDecoration fieldDecoration(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return (decoration ?? const InputDecoration()).applyDefaults(
+      searchFieldTheme(colors.onSurface, colors.onSurfaceVariant, colors.error, multiline: maxLines != 1),
+    );
+  }
 
   final VoidCallback? onNavigateLeft;
   final VoidCallback? onNavigateRight;
@@ -1602,7 +1611,7 @@ class FocusableTextField extends _FocusableTextInputBase {
         controller: controller,
         focusNode: focusNode,
         enabled: enabled,
-        decoration: decoration,
+        decoration: fieldDecoration(context),
         keyboardType: tvInput.keyboardType,
         textInputAction: textInputAction,
         inputFormatters: inputFormatters,
@@ -1621,7 +1630,7 @@ class FocusableTextField extends _FocusableTextInputBase {
         minLines: minLines,
         textAlign: textAlign,
         textCapitalization: textCapitalization,
-        style: style,
+        style: navigationPillLabelStyle(Theme.of(context)).merge(style),
         readOnly: tvInput.readOnly,
         showCursor: tvInput.showCursor,
         enableInteractiveSelection: tvInput.enableInteractiveSelection,
@@ -1694,7 +1703,7 @@ class FocusableTextFormField extends _FocusableTextInputBase {
         controller: controller,
         focusNode: focusNode,
         enabled: enabled,
-        decoration: decoration,
+        decoration: fieldDecoration(context),
         keyboardType: tvInput.keyboardType,
         textInputAction: textInputAction,
         inputFormatters: inputFormatters,
@@ -1714,7 +1723,7 @@ class FocusableTextFormField extends _FocusableTextInputBase {
         minLines: minLines,
         textAlign: textAlign,
         textCapitalization: textCapitalization,
-        style: style,
+        style: navigationPillLabelStyle(Theme.of(context)).merge(style),
         readOnly: tvInput.readOnly,
         showCursor: tvInput.showCursor,
         enableInteractiveSelection: tvInput.enableInteractiveSelection,

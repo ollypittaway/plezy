@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'gapped_track_shape.dart';
 import 'mono_tokens.dart';
+import '../widgets/pill_input_decoration.dart';
 
 /// One of the six colours a [MonoPalette] holds. [id] is the key the custom
 /// theme persists the colour under.
@@ -33,6 +34,19 @@ Color? tryParseHexColor(String input) {
   final digits = match.group(1)!;
   final value = int.parse(digits, radix: 16);
   return Color(digits.length == 6 ? 0xFF000000 | value : value);
+}
+
+enum ViewerAccent {
+  teal(Color(0xff2dd4bf), Color(0xff006c62)),
+  blue(Color(0xff83bcff), Color(0xff1558a7)),
+  violet(Color(0xffb7a3ff), Color(0xff6844ac)),
+  rose(Color(0xffff99b6), Color(0xffa02758)),
+  amber(Color(0xffffba68), Color(0xff895000));
+
+  const ViewerAccent(this.dark, this.light);
+  final Color dark;
+  final Color light;
+  Color forBrightness(Brightness brightness) => brightness == Brightness.dark ? dark : light;
 }
 
 /// The six colours a theme is built from.
@@ -334,7 +348,7 @@ ThemeData _buildMonoTheme(MonoPalette c, {required TargetPlatform platform}) {
       margin: .zero,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(14))),
     ),
-    inputDecorationTheme: _inputDecorationTheme(c.text, c.textMuted),
+    inputDecorationTheme: searchFieldTheme(c.text, c.textMuted, const Color(0xFFB00020)),
     elevatedButtonTheme: ElevatedButtonThemeData(style: buttonStyle),
     filledButtonTheme: FilledButtonThemeData(style: buttonStyle),
     textButtonTheme: TextButtonThemeData(style: ButtonStyle(mouseCursor: clickableCursor)),
@@ -408,24 +422,5 @@ ThemeData _buildMonoTheme(MonoPalette c, {required TargetPlatform platform}) {
         accent: c.accent,
       ),
     ],
-  );
-}
-
-/// Brighter fill on focus so input focus is visible inside TV overscan.
-InputDecorationTheme _inputDecorationTheme(Color text, Color textMuted) {
-  final unfocusedFill = text.withValues(alpha: 0.08);
-  final focusedFill = text.withValues(alpha: 0.18);
-  const border = OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12)), borderSide: BorderSide.none);
-  return InputDecorationTheme(
-    filled: true,
-    fillColor: WidgetStateColor.resolveWith(
-      (states) => states.contains(WidgetState.focused) ? focusedFill : unfocusedFill,
-    ),
-    isDense: true,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-    border: border,
-    enabledBorder: border,
-    focusedBorder: border,
-    hintStyle: TextStyle(color: textMuted),
   );
 }

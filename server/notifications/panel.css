@@ -166,3 +166,30 @@ textarea:focus-visible {
     padding: 18px;
   }
 }
+:root {background:#19191b;color:#f1f0f4;font:14px/1.5 Inter,system-ui,sans-serif}
+header,main {max-width:960px}
+header {border-color:#303034}
+header span,p,time,small {color:#aaa8b0}
+h1 {font-size:28px;letter-spacing:-.045em;margin:0}
+.heading p {margin:3px 0}
+h2 {font-size:16px;letter-spacing:-.02em;margin:26px 0 12px}
+nav {display:flex;gap:4px;margin:20px 0 12px;border-bottom:1px solid #37363b;padding-bottom:10px}
+nav button,button {border-color:#434149}
+nav button {border:1px solid transparent;color:#b9b7c0}
+nav button[aria-pressed="true"] {background:#2b2a2e;border-color:#46444b;color:white}
+button:hover {border-color:#a69ac6}
+input,textarea,dialog {background:#202023;border-color:#49464f}
+form button {background:#d1c0f5;color:#271d39}
+dl {display:grid;grid-template-columns:minmax(140px,38%) 1fr;margin:0}
+dt,dd,#viewers li {margin:0;padding:14px 0;border-bottom:1px solid #353438}
+dd {color:#c5c2cc}
+#viewers {list-style:none;padding:0}
+#viewers li {display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.columns {gap:32px}
+.card {border:0;background:transparent;border-radius:0;padding:0}
+#login h1 {margin:12px 0 22px}
+@media(max-width:480px){dl{grid-template-columns:1fr}dt{border:0;padding-bottom:0}dd{padding-top:4px}}
+
+button.remove { justify-self: start; background: transparent; color: #e7b3b3; border: 1px solid currentColor; }
+#viewers li { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+#viewers time { margin-inline-start: auto; }

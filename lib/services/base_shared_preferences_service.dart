@@ -309,6 +309,8 @@ abstract class BaseSharedPreferencesService {
     }
   }
 
+  String preferenceWriteKey(String key) => key;
+
   /// Read a value typed by [pref]; falls back to its `defaultValue`.
   T read<T>(Pref<T> pref) => pref.readFrom(this);
 
@@ -390,7 +392,7 @@ abstract class Pref<T> {
 
   Future<void> removeFrom(BaseSharedPreferencesService svc, {void Function()? checkCurrent}) async {
     checkCurrent?.call();
-    await svc.prefs.remove(key);
+    await svc.prefs.remove(svc.preferenceWriteKey(key));
   }
 
   /// Get-or-create the [ValueNotifier] for this pref. Virtual-dispatched via

@@ -255,7 +255,7 @@ void main() {
     final observer = _SearchObserver();
     final (client, key) = await _pumpTvSearchScreen(
       tester,
-      items: [other, movie],
+      items: [other, movie, movie.copyWith(id: 'm2')],
       libraries: [movies, kids],
       observer: observer,
     );
@@ -263,6 +263,7 @@ void main() {
     await tester.pumpAndSettle();
     FocusableMediaCard card() => tester.widget(find.byType(FocusableMediaCard));
     expect(card().item, same(movie));
+    expect(card().libraryName, '2 versions');
     final context = tester.element(find.byType(SearchScreen));
     await context.read<LibrariesProvider>().updateLibraryOrder([kids, movies]);
     await tester.pumpAndSettle();
@@ -272,7 +273,7 @@ void main() {
     final route = observer.latest as PageRouteBuilder;
     final detail = route.pageBuilder(context, route.animation!, route.secondaryAnimation!) as MediaDetailScreen;
     expect(detail.metadata.id, 'k1');
-    expect(detail.initialPlaybackCopies!.map((item) => item.id), unorderedEquals(['m1', 'k1']));
+    expect(detail.initialPlaybackCopies!.map((item) => item.id), unorderedEquals(['m1', 'k1', 'm2']));
     Navigator.of(context).pop();
     await tester.pumpAndSettle();
   });
@@ -473,7 +474,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('search rows show the library name when the server has several libraries', (tester) async {
+  testWidgets('search rows show the number of libraries for each result', (tester) async {
     final (client, key) = await _pumpTvSearchScreen(
       tester,
       items: [
@@ -507,13 +508,12 @@ void main() {
 
     expect(client.queries, ['movie']);
     // The source line always carries the full provenance: backend icon,
-    // server name, then library name.
-    expect(find.text('Server • Movies'), findsOneWidget);
-    expect(find.text('Server • Anime'), findsOneWidget);
+    // server name, then the number of distinct libraries.
+    expect(find.text('Server • 1 version'), findsNWidgets(2));
     expect(find.byType(BackendBadge), findsNWidgets(2));
   });
 
-  testWidgets('library name back-fills from loaded libraries when the row only carries an id', (tester) async {
+  testWidgets('version counts work with a library ID and no title', (tester) async {
     // Plex search rows name their section only by librarySectionKey; the
     // title must resolve against the loaded libraries without a request.
     final (_, key) = await _pumpTvSearchScreen(
@@ -526,11 +526,10 @@ void main() {
     (key.currentState! as SearchInputFocusable).submitSearchQuery('movie');
     await tester.pumpAndSettle();
 
-    expect(find.text('Server • Movies'), findsOneWidget);
-    expect(find.text('Server • Anime'), findsOneWidget);
+    expect(find.text('Server • 1 version'), findsNWidgets(2));
   });
 
-  testWidgets('no library label on a single-library server', (tester) async {
+  testWidgets('a single-library result shows one version', (tester) async {
     final (_, key) = await _pumpTvSearchScreen(
       tester,
       items: [
@@ -553,8 +552,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Movie 1'), findsOneWidget);
-    expect(find.text('Server • Movies'), findsNothing);
-    expect(find.byType(BackendBadge), findsNothing);
+    expect(find.text('Server • 1 version'), findsOneWidget);
+    expect(find.byType(BackendBadge), findsOneWidget);
   });
 
   testWidgets('card refresh keeps the library stamp', (tester) async {
@@ -577,7 +576,7 @@ void main() {
 
     (key.currentState! as SearchInputFocusable).submitSearchQuery('movie');
     await tester.pumpAndSettle();
-    expect(find.text('Server • Movies'), findsOneWidget);
+    expect(find.text('Server • 1 version'), findsOneWidget);
 
     // A fresh fetchItem carries no library context (a Jellyfin /Items/{id}
     // response has none); the merge must keep the stamp search applied.
@@ -595,7 +594,7 @@ void main() {
 
     expect(client.fetchedItemIds, ['movie_1']);
     expect(find.text('Movie 1 (Refreshed)'), findsOneWidget);
-    expect(find.text('Server • Movies'), findsOneWidget);
+    expect(find.text('Server • 1 version'), findsOneWidget);
     final refreshed = tester.widget<FocusableMediaCard>(cardFinder).item as MediaItem;
     expect(refreshed.libraryId, '1');
     expect(refreshed.libraryTitle, 'Movies');

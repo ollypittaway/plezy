@@ -230,8 +230,8 @@ Future<StartupThemeResolution> _resolveStartupTheme() async {
   );
   return (
     themeMode: ThemeProvider.materialThemeModeFor(palette),
-    lightTheme: ThemeProvider.lightThemeFor(palette),
-    darkTheme: ThemeProvider.darkThemeFor(palette),
+    lightTheme: ThemeProvider.lightThemeFor(palette, accent: settings.read(SettingsService.viewerAccent)),
+    darkTheme: ThemeProvider.darkThemeFor(palette, accent: settings.read(SettingsService.viewerAccent)),
   );
 }
 

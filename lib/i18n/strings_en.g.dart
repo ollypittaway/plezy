@@ -48,6 +48,7 @@ class Translations with BaseTranslations<AppLocale, Translations> {
 	late final Translations$screens$en screens = Translations$screens$en.internal(_root);
 	late final Translations$update$en update = Translations$update$en.internal(_root);
 	late final Translations$supporter$en supporter = Translations$supporter$en.internal(_root);
+	late final Translations$viewerSettings$en viewerSettings = Translations$viewerSettings$en.internal(_root);
 	late final Translations$settings$en settings = Translations$settings$en.internal(_root);
 	late final Translations$themeEditor$en themeEditor = Translations$themeEditor$en.internal(_root);
 	late final Translations$search$en search = Translations$search$en.internal(_root);
@@ -109,6 +110,18 @@ class Translations$announcements$en {
 
 	/// en: 'Notifications'
 	String get title => 'Notifications';
+
+	/// en: 'Automatic device pairing'
+	String get automaticPairing => 'Automatic device pairing';
+
+	/// en: 'Connect this device to panel.pittaway.dev for announcements and optional settings sync.'
+	String get automaticHint => 'Connect this device to panel.pittaway.dev for announcements and optional settings sync.';
+
+	/// en: 'Connecting to the GucciPlexa panel…'
+	String get connecting => 'Connecting to the GucciPlexa panel…';
+
+	/// en: 'Waiting for the GucciPlexa panel. This device will retry automatically.'
+	String get autoRetry => 'Waiting for the GucciPlexa panel. This device will retry automatically.';
 
 	/// en: 'In your web panel, choose Pair a device and paste the link here.'
 	String get pairHint => 'In your web panel, choose Pair a device and paste the link here.';
@@ -555,6 +568,114 @@ class Translations$supporter$en {
 	String get tileUnlocked => 'Unlocked — thanks for your purchase';
 
 	late final Translations$supporter$errors$en errors = Translations$supporter$errors$en.internal(_root);
+}
+
+// Path: viewerSettings
+class Translations$viewerSettings$en {
+	Translations$viewerSettings$en.internal(this._root);
+
+	final Translations _root; // ignore: unused_field
+
+	// Translations
+
+	/// en: 'My profile'
+	String get myProfile => 'My profile';
+
+	/// en: 'App settings'
+	String get appSettings => 'App settings';
+
+	/// en: 'Playback'
+	String get playback => 'Playback';
+
+	/// en: 'Backup & maintenance'
+	String get maintenance => 'Backup & maintenance';
+
+	/// en: 'Playback behavior'
+	String get playerBehavior => 'Playback behavior';
+
+	/// en: 'Autoplay, skipping, gestures and changes made in the player'
+	String get behaviorHint => 'Autoplay, skipping, gestures and changes made in the player';
+
+	/// en: 'Audio output, channel mixing, volume and music quality'
+	String get audioHint => 'Audio output, channel mixing, volume and music quality';
+
+	/// en: 'Audio & subtitle languages'
+	String get languages => 'Audio & subtitle languages';
+
+	/// en: 'Choose the preferred tracks for your media-server account'
+	String get languageHint => 'Choose the preferred tracks for your media-server account';
+
+	/// en: 'Diagnostics'
+	String get diagnostics => 'Diagnostics';
+
+	/// en: 'Connections & services'
+	String get connections => 'Connections & services';
+
+	/// en: 'Manage your profile and app preferences.'
+	String get subtitle => 'Manage your profile and app preferences.';
+
+	/// en: 'Viewer'
+	String get viewer => 'Viewer';
+
+	/// en: 'Accent color'
+	String get accent => 'Accent color';
+
+	/// en: 'Used for buttons, selection and focus.'
+	String get accentHint => 'Used for buttons, selection and focus.';
+
+	/// en: 'Theme default'
+	String get themeDefault => 'Theme default';
+
+	/// en: 'Teal'
+	String get teal => 'Teal';
+
+	/// en: 'Blue'
+	String get blue => 'Blue';
+
+	/// en: 'Violet'
+	String get violet => 'Violet';
+
+	/// en: 'Rose'
+	String get rose => 'Rose';
+
+	/// en: 'Amber'
+	String get amber => 'Amber';
+
+	/// en: 'Settings sync'
+	String get sync => 'Settings sync';
+
+	/// en: 'Sync your accent, libraries, playback preferences and subtitle styling across devices.'
+	String get syncDescription => 'Sync your accent, libraries, playback preferences and subtitle styling across devices.';
+
+	/// en: 'Connect a panel'
+	String get pair => 'Connect a panel';
+
+	/// en: 'Select a profile with a signed-in Plex account to enable sync.'
+	String get plexRequired => 'Select a profile with a signed-in Plex account to enable sync.';
+
+	/// en: 'Enable sync'
+	String get enable => 'Enable sync';
+
+	/// en: 'Turn off sync'
+	String get disable => 'Turn off sync';
+
+	/// en: 'Sync now'
+	String get syncNow => 'Sync now';
+
+	/// en: 'Allow ${host} to verify this viewer’s Plex session and sync personal settings?'
+	String consent({required Object host}) => 'Allow ${host} to verify this viewer’s Plex session and sync personal settings?';
+
+	/// en: 'Syncing…'
+	String get syncing => 'Syncing…';
+
+	/// en: 'Up to date'
+	String get upToDate => 'Up to date';
+
+	/// en: 'Couldn’t sync. Your settings are saved on this device.'
+	String get retry => 'Couldn’t sync. Your settings are saved on this device.';
+
+	/// en: 'Saved on this device'
+	String get localOnly => 'Saved on this device';
 }
 
 // Path: settings
@@ -1669,6 +1790,12 @@ class Translations$search$en {
 	final Translations _root; // ignore: unused_field
 
 	// Translations
+
+	/// en: '(one) {${n} version} (other) {${n} versions}'
+	String versionCount({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n,
+		one: '${n} version',
+		other: '${n} versions',
+	);
 
 	/// en: 'Search movies, shows, music...'
 	String get hint => 'Search movies, shows, music...';
@@ -3008,6 +3135,9 @@ class Translations$profiles$en {
 	final Translations _root; // ignore: unused_field
 
 	// Translations
+
+	/// en: 'Who’s watching?'
+	String get whoIsWatching => 'Who’s watching?';
 
 	/// en: 'Add GucciPlexa profile'
 	String get addPlezyProfile => 'Add GucciPlexa profile';
@@ -8257,6 +8387,10 @@ extension on Translations {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
 			'announcements.title' => 'Notifications',
+			'announcements.automaticPairing' => 'Automatic device pairing',
+			'announcements.automaticHint' => 'Connect this device to panel.pittaway.dev for announcements and optional settings sync.',
+			'announcements.connecting' => 'Connecting to the GucciPlexa panel…',
+			'announcements.autoRetry' => 'Waiting for the GucciPlexa panel. This device will retry automatically.',
 			'announcements.pairHint' => 'In your web panel, choose Pair a device and paste the link here.',
 			'announcements.link' => 'Private pairing link',
 			'announcements.pair' => 'Pair device',
@@ -8436,6 +8570,39 @@ extension on Translations {
 			'supporter.errors.purchaseFailed' => 'The purchase didn\'t go through. Try again.',
 			'supporter.errors.restoreFailed' => 'Couldn\'t reach the store to restore your purchase. Try again.',
 			'supporter.errors.nothingToRestore' => 'No Theme & Icon Pack purchase was found for this store account.',
+			'viewerSettings.myProfile' => 'My profile',
+			'viewerSettings.appSettings' => 'App settings',
+			'viewerSettings.playback' => 'Playback',
+			'viewerSettings.maintenance' => 'Backup & maintenance',
+			'viewerSettings.playerBehavior' => 'Playback behavior',
+			'viewerSettings.behaviorHint' => 'Autoplay, skipping, gestures and changes made in the player',
+			'viewerSettings.audioHint' => 'Audio output, channel mixing, volume and music quality',
+			'viewerSettings.languages' => 'Audio & subtitle languages',
+			'viewerSettings.languageHint' => 'Choose the preferred tracks for your media-server account',
+			'viewerSettings.diagnostics' => 'Diagnostics',
+			'viewerSettings.connections' => 'Connections & services',
+			'viewerSettings.subtitle' => 'Manage your profile and app preferences.',
+			'viewerSettings.viewer' => 'Viewer',
+			'viewerSettings.accent' => 'Accent color',
+			'viewerSettings.accentHint' => 'Used for buttons, selection and focus.',
+			'viewerSettings.themeDefault' => 'Theme default',
+			'viewerSettings.teal' => 'Teal',
+			'viewerSettings.blue' => 'Blue',
+			'viewerSettings.violet' => 'Violet',
+			'viewerSettings.rose' => 'Rose',
+			'viewerSettings.amber' => 'Amber',
+			'viewerSettings.sync' => 'Settings sync',
+			'viewerSettings.syncDescription' => 'Sync your accent, libraries, playback preferences and subtitle styling across devices.',
+			'viewerSettings.pair' => 'Connect a panel',
+			'viewerSettings.plexRequired' => 'Select a profile with a signed-in Plex account to enable sync.',
+			'viewerSettings.enable' => 'Enable sync',
+			'viewerSettings.disable' => 'Turn off sync',
+			'viewerSettings.syncNow' => 'Sync now',
+			'viewerSettings.consent' => ({required Object host}) => 'Allow ${host} to verify this viewer’s Plex session and sync personal settings?',
+			'viewerSettings.syncing' => 'Syncing…',
+			'viewerSettings.upToDate' => 'Up to date',
+			'viewerSettings.retry' => 'Couldn’t sync. Your settings are saved on this device.',
+			'viewerSettings.localOnly' => 'Saved on this device',
 			'settings.title' => 'Settings',
 			'settings.supportDeveloper' => 'Support Plezy',
 			'settings.supportDeveloperDescription' => 'Donate via Liberapay to fund development',
@@ -8731,6 +8898,8 @@ extension on Translations {
 			'settings.startupSection' => 'Startup Section',
 			'settings.showExploreTab' => 'Show Explore Tab',
 			'settings.showExploreTabDescription' => 'Display the Explore tab with content from Plex Discover and connected trackers',
+			_ => null,
+		} ?? switch (path) {
 			'settings.liveTvDefaultFavorites' => 'Default to Favorite Channels',
 			'settings.liveTvDefaultFavoritesDescription' => 'Show only favorite channels when opening Live TV',
 			'settings.general' => 'General',
@@ -8768,8 +8937,6 @@ extension on Translations {
 			'settings.scopeZoom' => 'Zoom',
 			'settings.scopeSyncOffsets' => 'Audio & Subtitle Sync',
 			'settings.playerScopeOff' => 'Don\'t save',
-			_ => null,
-		} ?? switch (path) {
 			'settings.playerScopeGlobal' => 'Everywhere',
 			'settings.playerScopeLibrary' => 'Per library',
 			'settings.playerScopeTitle' => 'Per show or movie',
@@ -8812,6 +8979,7 @@ extension on Translations {
 			'themeEditor.previewCardSubtitle' => ({required Object minutes}) => '${minutes} min left',
 			'themeEditor.previewSwitch' => 'Autoplay',
 			'themeEditor.previewMutedText' => 'Secondary text reads like this',
+			'search.versionCount' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} version', other: '${n} versions', ),
 			'search.hint' => 'Search movies, shows, music...',
 			'search.tryDifferentTerm' => 'Try a different search term',
 			'search.searchYourMedia' => 'Search your media',
@@ -9244,9 +9412,12 @@ extension on Translations {
 			'mpvConfig.configPlaceholder' => 'gpu-api=vulkan\nhwdec=auto\n# comment',
 			'mpvConfig.lineHint' => 'option=value',
 			'mpvConfig.addLine' => 'Add line',
+			_ => null,
+		} ?? switch (path) {
 			'mpvConfig.removeLine' => 'Remove line',
 			'mpvConfig.embeddedVoHint' => 'vo, gpu-context and gpu-api are ignored on Linux: embedded video always renders through vo=libmpv on the video plane, and gpu-next (which compute shaders like ArtCNN need) cannot run embedded.',
 			'dialog.confirmAction' => 'Confirm Action',
+			'profiles.whoIsWatching' => 'Who’s watching?',
 			'profiles.addPlezyProfile' => 'Add GucciPlexa profile',
 			'profiles.switchingProfile' => 'Switching profile…',
 			'profiles.deleteThisProfileTitle' => 'Delete this profile?',
@@ -9282,8 +9453,6 @@ extension on Translations {
 			'profiles.connectionsLabel' => 'Connections',
 			'profiles.add' => 'Add',
 			'profiles.deleteProfileButton' => 'Delete profile',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.noConnectionsHint' => 'No connections — add one to use this profile.',
 			'profiles.noConnections' => 'No connections',
 			'profiles.plexHomeAccount' => 'Plex Home account',
@@ -9757,6 +9926,8 @@ extension on Translations {
 			'explore.detail.recommendedByPercent' => ({required Object percent}) => 'Recommended by ${percent} of viewers',
 			'explore.detail.relatedTitles' => 'Related titles',
 			'explore.detail.background' => 'Background',
+			_ => null,
+		} ?? switch (path) {
 			'explore.totalResults' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('en'))(n, one: '${n} result', other: '${n} results', ), 
 			'liveTv.title' => 'Live TV',
 			'liveTv.guide' => 'Guide',
@@ -9796,8 +9967,6 @@ extension on Translations {
 			'liveTv.noFavoriteChannelsHint' => 'Show all channels, then long-press a channel to add it to your favorites.',
 			'liveTv.showAllChannels' => 'Show All Channels',
 			'liveTv.favoritesLoadFailed' => 'Could not load favorites. Check your connection and try again.',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.favoritesUpdateFailed' => 'Could not update favorites. Check your connection and try again.',
 			'liveTv.joinSession' => 'Join Session in Progress',
 			'liveTv.watchFromStart' => ({required Object minutes}) => 'Watch from start (${minutes} min ago)',
@@ -10271,6 +10440,8 @@ extension on Translations {
 			'companionRemote.remote.volumeDown' => 'Down',
 			'companionRemote.remote.volumeUp' => 'Up',
 			'companionRemote.remote.fullscreen' => 'Fullscreen',
+			_ => null,
+		} ?? switch (path) {
 			'companionRemote.remote.subtitles' => 'Subtitles',
 			'companionRemote.remote.audio' => 'Audio',
 			'companionRemote.remote.searchHint' => 'Search on desktop...',
@@ -10310,8 +10481,6 @@ extension on Translations {
 			'performanceOverlay.color' => 'Color',
 			'performanceOverlay.performance' => 'Performance',
 			'performanceOverlay.buffer' => 'Buffer',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.app' => 'App',
 			'performanceOverlay.decoder' => 'Decoder',
 			'performanceOverlay.rawDecoder' => 'Raw Decoder',

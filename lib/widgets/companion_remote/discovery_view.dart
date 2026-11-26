@@ -396,7 +396,6 @@ class _DiscoveryViewState extends State<DiscoveryView> with ControllerDisposerMi
                   decoration: InputDecoration(
                     labelText: t.companionRemote.session.hostAddress,
                     hintText: t.companionRemote.pairing.hostAddressHint,
-                    border: const OutlineInputBorder(),
                     prefixIcon: const AppIcon(Symbols.computer_rounded),
                   ),
                   validator: (value) {

@@ -3,18 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>GucciPlexa Notifications</title>
+    <title>GucciPlexa Admin</title>
     <link rel="stylesheet" href="/panel.css" />
     <script src="/panel.js" defer></script>
   </head>
   <body>
     <header>
-      <strong>GucciPlexa</strong><span>Notifications</span
+      <strong>GucciPlexa</strong><span>Admin</span
       ><button id="signout" hidden>Sign out</button>
     </header>
     <main>
       <section id="login">
-        <h1>Notification panel</h1>
+        <h1>Admin panel</h1>
         <form id="signin">
           <label for="admin">Admin key</label
           ><input id="admin" type="password" autocomplete="current-password" required /><button>
@@ -24,18 +24,31 @@
       </section>
       <div id="workspace" hidden>
         <div class="heading">
-          <h1>Notifications</h1>
+          <div><h1>Settings</h1><p>Manage viewer sync and app notifications.</p></div>
           <button id="pair">Pair a device</button>
         </div>
+        <nav aria-label="Admin sections">
+          <button id="settings-tab" aria-pressed="true" aria-controls="settings-page">Settings sync</button>
+          <button id="notifications-tab" aria-pressed="false" aria-controls="notifications-page">Notifications</button>
+        </nav>
+        <section id="settings-page">
+          <h2>Settings sync</h2>
+          <dl>
+            <dt>Viewer identity</dt><dd>Verified by Plex</dd>
+            <dt>Synced preferences</dt><dd>Accent color, library order and visibility, playback preferences and subtitle styling</dd>
+          </dl>
+          <h2>Synced viewers</h2>
+          <ul id="viewers" aria-label="Viewers and last settings update"></ul>
+        </section>
         <dialog id="pairing">
           <h2>Pair a device</h2>
-          <p>In GucciPlexa, open Settings → General → Notifications and paste this link.</p>
+          <p>In GucciPlexa, open Settings → Notifications and paste this link.</p>
           <input id="link" aria-label="Private device pairing link" readonly />
           <div class="actions">
             <button id="copy">Copy link</button><button id="close">Done</button>
           </div>
         </dialog>
-        <div class="columns">
+        <div class="columns" id="notifications-page" hidden>
           <section class="card">
             <h2>New announcement</h2>
             <p id="phones"></p>

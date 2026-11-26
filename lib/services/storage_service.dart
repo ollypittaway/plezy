@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../profiles/profile.dart';
 import '../utils/log_redaction_manager.dart';
 import 'base_shared_preferences_service.dart';
+import 'settings_service.dart';
 
 enum LibraryPreference { filters, sort, grouping, tab }
 
@@ -21,7 +22,7 @@ class StorageService extends BaseSharedPreferencesService {
   static const String _keyHiddenLibraries = 'hidden_libraries';
   static const String _keyServersList = 'servers_list';
   static const String _keyServerOrder = 'server_order';
-  static const String _keyActiveProfileId = 'active_app_profile_id';
+  static const String activeProfileKey = 'active_app_profile_id';
 
   // Key prefixes for per-id storage
   static const String _prefixServerEndpoint = 'server_endpoint_';
@@ -496,14 +497,16 @@ class StorageService extends BaseSharedPreferencesService {
 
   // Active app-level profile (kids mode / multi-user gating)
 
-  String? getActiveProfileId() => readNullableString(_keyActiveProfileId);
+  String? getActiveProfileId() => readNullableString(activeProfileKey);
 
   Future<void> setActiveProfileId(String id) async {
-    await prefs.setString(_keyActiveProfileId, id);
+    await prefs.setString(activeProfileKey, id);
+    SettingsService.instanceOrNull?.refreshActiveListenables();
   }
 
   Future<void> clearActiveProfileId() async {
-    await prefs.remove(_keyActiveProfileId);
+    await prefs.remove(activeProfileKey);
+    SettingsService.instanceOrNull?.refreshActiveListenables();
   }
 
   // Per-connection Plex Home users cache. Plex Home profiles are not

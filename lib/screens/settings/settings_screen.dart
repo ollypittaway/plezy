@@ -47,13 +47,18 @@ import '../../widgets/overlay_sheet.dart';
 import '../../widgets/setting_tile.dart';
 import '../../widgets/settings_builder.dart';
 import '../../widgets/settings_section.dart';
+import '../../widgets/profile_settings_layout.dart';
 import '../../widgets/system_bottom_inset.dart';
 import '../../profiles/active_profile_provider.dart';
 import '../../profiles/profile.dart';
 import '../../watch_together/services/watch_party_relays.dart';
 import 'about_screen.dart';
+import 'announcement_settings_screen.dart';
+import 'viewer_settings_body.dart';
 import 'add_connection_screen.dart';
 import 'account_preferences_screen.dart';
+import 'account_preferences_detail_screen.dart';
+import 'subtitle_styling_screen.dart';
 import 'appearance_settings_screen.dart';
 import 'general_settings_screen.dart';
 import 'keyboard_shortcuts_screen.dart';
@@ -94,6 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
   BackgroundWorkDiagnosticsService get _backgroundWorkDiagnostics =>
       widget.backgroundWorkDiagnosticsService ?? BackgroundWorkDiagnosticsService.instance;
   late final FocusMemoryTracker _focusTracker;
+  int _tab = 0;
 
   // Focus tracking keys
   static const _kDonate = 'donate';
@@ -151,23 +157,29 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
   @override
   void focusActiveTabIfReady() {
     if (InputModeTracker.isKeyboardMode(context, listen: false)) {
-      _focusTracker.restoreFocus(fallbackKey: _topTileKey);
+      _focusTracker.get('tab_$_tab').requestFocus();
     }
   }
-
-  /// Focus key of the first tile: Supporter in purchasable builds, the
-  /// Liberapay link in donation builds (never both), else General.
-  static String get _topTileKey => supporterBuildMode == SupporterMode.iap
-      ? _kSupporter
-      : DonationService.isEnabled
-      ? _kDonate
-      : _kGeneral;
 
   void _navigateToSidebar() {
     MainScreenFocusScope.focusSidebarOf(context);
   }
 
   KeyEventResult _handleKeyEvent(FocusNode _, KeyEvent event) {
+    if (event is KeyDownEvent) {
+      final focused = List.generate(3, (i) => _focusTracker.get('tab_$i')).indexWhere((node) => node.hasFocus);
+      if (focused >= 0) {
+        final next = event.logicalKey == LogicalKeyboardKey.arrowRight
+            ? focused + 1
+            : event.logicalKey == LogicalKeyboardKey.arrowLeft
+            ? focused - 1
+            : -1;
+        if (next >= 0 && next < 3) {
+          _focusTracker.get('tab_$next').requestFocus();
+          return KeyEventResult.handled;
+        }
+      }
+    }
     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowLeft) {
       _navigateToSidebar();
       return KeyEventResult.handled;
@@ -207,54 +219,158 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
           child: CustomScrollView(
             primary: false,
             slivers: [
-              ExcludeFocus(child: CustomAppBar(title: Text(t.settings.title), pinned: true)),
-              SliverList(
-                delegate: SliverChildListDelegate([
-                  const SizedBox(height: 8),
-                  SettingsGroup(
-                    children: [
-                      if (supporterBuildMode == SupporterMode.iap)
-                        SupporterSettingsTile(focusNode: _focusTracker.get(_kSupporter))
-                      else if (DonationService.isEnabled)
-                        _buildDonateTile(),
-                      _buildGeneralTile(),
-                      _buildAppearanceTile(),
-                      _buildPlaybackTile(),
-                      if (hasLibraries) _buildManageLibrariesTile(sheetContext),
-                      _buildServicesTile(),
-                    ],
+              ExcludeFocus(
+                child: CustomAppBar(
+                  title: Text(
+                    t.settings.title,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w500),
                   ),
-
-                  _buildConnectionsSection(sheetContext),
-
-                  if (!PlatformDetector.isAppleTV()) _buildDownloadsSection(),
-
-                  if (_keyboardShortcutsSupported || PlatformDetector.shouldActAsRemoteHost(sheetContext))
-                    _buildControlsSection(sheetContext),
-
-                  _buildAdvancedSection(),
-
-                  if (UpdateService.isUpdateCheckAvailable) ...[_buildUpdateSection()],
-
-                  // Hidden on Android TV / tvOS (no document picker); desktop in
-                  // force-TV mode keeps it — FilePickerService works there.
-                  if (!PlatformDetector.isTV() || PlatformDetector.isDesktopOS()) _buildBackupSection(),
-
-                  const SizedBox(height: 24),
-                  SettingsGroup(
-                    children: [
-                      SettingNavigationTile(
-                        focusNode: _focusTracker.get(_kAbout),
-                        icon: Symbols.info_rounded,
-                        title: t.settings.about,
-                        subtitle: t.settings.aboutDescription,
-                        destinationBuilder: (context) => const AboutScreen(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                ]),
+                  pinned: true,
+                ),
               ),
+              SliverToBoxAdapter(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 960),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            t.viewerSettings.subtitle,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 18),
+                          SizedBox(
+                            width: double.infinity,
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  for (final (i, label) in [
+                                    t.viewerSettings.myProfile,
+                                    t.viewerSettings.appSettings,
+                                    t.viewerSettings.playback,
+                                  ].indexed)
+                                    Semantics(
+                                      selected: _tab == i,
+                                      child: TextButton(
+                                        focusNode: _focusTracker.get('tab_$i'),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: _tab == i
+                                              ? Theme.of(context).colorScheme.onSurface
+                                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                          backgroundColor: _tab == i
+                                              ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.09)
+                                              : Colors.transparent,
+                                        ),
+                                        onPressed: () => setState(() => _tab = i),
+                                        child: Text(label),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const Divider(),
+                          if (_tab == 0)
+                            ViewerSettingsBody(
+                              onPair: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const AnnouncementSettingsScreen()),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              if (_tab == 2)
+                ProfileSettingsLayout(
+                  child: SliverList.list(
+                    children: [
+                      SettingsGroup(
+                        title: t.viewerSettings.playback,
+                        children: [
+                          _buildPlaybackTile(),
+                          SettingNavigationTile(
+                            icon: Symbols.speaker_rounded,
+                            title: t.settings.audio,
+                            subtitle: t.viewerSettings.audioHint,
+                            destinationBuilder: (_) => const PlaybackSettingsScreen(section: PlaybackSection.audio),
+                          ),
+                          _buildAccountPreferencesTile(sheetContext, tracks: true),
+                          SettingNavigationTile(
+                            icon: Symbols.subtitles_rounded,
+                            title: t.settings.subtitles,
+                            subtitle: t.settings.subtitleStylingDescription,
+                            destinationBuilder: (_) => const SubtitleStylingScreen(),
+                          ),
+                          SettingNavigationTile(
+                            icon: Symbols.skip_next_rounded,
+                            title: t.viewerSettings.playerBehavior,
+                            subtitle: t.viewerSettings.behaviorHint,
+                            destinationBuilder: (_) => const PlaybackSettingsScreen(section: PlaybackSection.behavior),
+                          ),
+                        ],
+                      ),
+                      if (_keyboardShortcutsSupported || PlatformDetector.shouldActAsRemoteHost(sheetContext))
+                        _buildControlsSection(sheetContext),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              if (_tab == 1)
+                ProfileSettingsLayout(
+                  child: SliverList(
+                    delegate: SliverChildListDelegate([
+                      SettingsGroup(
+                        title: t.viewerSettings.appSettings,
+                        children: [
+                          if (supporterBuildMode == SupporterMode.iap)
+                            SupporterSettingsTile(focusNode: _focusTracker.get(_kSupporter))
+                          else if (DonationService.isEnabled)
+                            _buildDonateTile(),
+                          _buildGeneralTile(),
+                          _buildAppearanceTile(),
+                          if (hasLibraries) _buildManageLibrariesTile(sheetContext),
+                        ],
+                      ),
+
+                      _buildConnectionsSection(sheetContext),
+
+                      if (!PlatformDetector.isAppleTV()) _buildDownloadsSection(),
+
+                      _buildAdvancedSection(),
+
+                      if (UpdateService.isUpdateCheckAvailable) ...[_buildUpdateSection()],
+
+                      // Hidden on Android TV / tvOS (no document picker); desktop in
+                      // force-TV mode keeps it — FilePickerService works there.
+                      _buildBackupSection(),
+
+                      const SizedBox(height: 24),
+                      SettingsGroup(
+                        children: [
+                          SettingNavigationTile(
+                            focusNode: _focusTracker.get(_kAbout),
+                            icon: Symbols.info_rounded,
+                            title: t.settings.about,
+                            subtitle: t.settings.aboutDescription,
+                            destinationBuilder: (context) => const AboutScreen(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                    ]),
+                  ),
+                ),
               const SliverSystemBottomInset(),
             ],
           ),
@@ -313,7 +429,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
       icon: Symbols.play_circle_rounded,
       title: t.settings.videoPlayback,
       subtitle: t.settings.videoPlaybackDescription,
-      destinationBuilder: (context) => const PlaybackSettingsScreen(),
+      destinationBuilder: (context) => const PlaybackSettingsScreen(section: PlaybackSection.video),
     );
   }
 
@@ -355,7 +471,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
         : t.connections.addConnectionSubtitleScoped(displayName: active.displayName);
 
     return SettingsGroup(
-      title: t.connections.sectionTitle,
+      title: t.viewerSettings.connections,
       children: [
         // Connections are managed per-profile (via the Profiles section
         // and each profile's detail screen). The shortcut here just opens
@@ -371,6 +487,15 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
           },
         ),
         _buildProfilesTile(context),
+        _buildServicesTile(),
+        SettingNavigationTile(
+          focusNode: _focusTracker.get(_kWatchTogetherRelay),
+          icon: Symbols.dns_rounded,
+          title: t.settings.watchTogetherRelay,
+          subtitle: t.settings.watchTogetherRelayDescription,
+          onTap: () => _showRelayUrlDialog(),
+        ),
+
         if (context.select<AccountPreferencesController, bool>((c) => c.accounts.isNotEmpty))
           _buildAccountPreferencesTile(context),
       ],
@@ -379,18 +504,20 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
 
   /// Server-stored preferences for the accounts the active profile signed in
   /// with. Hidden when no account is reachable — an empty picker is noise.
-  Widget _buildAccountPreferencesTile(BuildContext context) {
+  Widget _buildAccountPreferencesTile(BuildContext context, {bool tracks = false}) {
     final accounts = context.select<AccountPreferencesController, List<AccountPreferenceAccount>>((c) => c.accounts);
     final subtitle = accounts.length == 1
         ? t.accountPreferences.hubSubtitleSingle(account: accounts.single.target.label)
         : t.accountPreferences.hubSubtitleMultiple(count: accounts.length);
     return SettingNavigationTile(
-      focusNode: _focusTracker.get(_kAccountPreferences),
+      focusNode: _focusTracker.get(tracks ? 'track_languages' : _kAccountPreferences),
       icon: Symbols.manage_accounts_rounded,
-      title: t.accountPreferences.sectionTitle,
-      subtitle: subtitle,
-      destinationBuilder: (context) =>
-          AccountPreferencesScreen(targets: [for (final account in accounts) account.target]),
+      title: tracks ? t.viewerSettings.languages : t.accountPreferences.sectionTitle,
+      subtitle: tracks ? t.viewerSettings.languageHint : subtitle,
+      destinationBuilder: (context) => AccountPreferencesScreen(
+        group: tracks ? AccountSettingsGroup.tracks : AccountSettingsGroup.library,
+        targets: [for (final account in accounts) account.target],
+      ),
     );
   }
 
@@ -548,15 +675,8 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
 
   Widget _buildAdvancedSection() {
     return SettingsGroup(
-      title: t.settings.advanced,
+      title: t.viewerSettings.diagnostics,
       children: [
-        SettingNavigationTile(
-          focusNode: _focusTracker.get(_kWatchTogetherRelay),
-          icon: Symbols.dns_rounded,
-          title: t.settings.watchTogetherRelay,
-          subtitle: t.settings.watchTogetherRelayDescription,
-          onTap: () => _showRelayUrlDialog(),
-        ),
         SettingSwitchTile(
           focusNode: _focusTracker.get(_kCrashReporting),
           pref: settings.SettingsService.crashReporting,
@@ -585,20 +705,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
           subtitle: t.settings.viewLogsDescription,
           destinationBuilder: (context) => const LogsScreen(),
         ),
-        SettingNavigationTile(
-          focusNode: _focusTracker.get(_kClearImageCache),
-          icon: Symbols.cleaning_services_rounded,
-          title: t.settings.clearImageCache,
-          subtitle: t.settings.clearImageCacheDescription,
-          onTap: () => _showClearImageCacheDialog(),
-        ),
-        SettingNavigationTile(
-          focusNode: _focusTracker.get(_kResetSettings),
-          icon: Symbols.restore_rounded,
-          title: t.settings.resetSettings,
-          subtitle: t.settings.resetSettingsDescription,
-          onTap: () => _showResetSettingsDialog(),
-        ),
         if (kDebugMode)
           SettingNavigationTile(
             icon: Symbols.error_rounded,
@@ -625,24 +731,38 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
 
   Widget _buildBackupSection() {
     return SettingsGroup(
-      title: t.settings.backup,
+      title: t.viewerSettings.maintenance,
       children: [
+        if (!PlatformDetector.isTV() || PlatformDetector.isDesktopOS()) ...[
+          SettingNavigationTile(
+            focusNode: _focusTracker.get(_kExportSettings),
+            icon: Symbols.upload_rounded,
+            title: t.settings.exportSettings,
+            subtitle: t.settings.exportSettingsDescription,
+            onTap: _handleExportSettings,
+          ),
+          SettingNavigationTile(
+            focusNode: _focusTracker.get(_kImportSettings),
+            icon: Symbols.download_rounded,
+            title: t.settings.importSettings,
+            subtitle: t.settings.importSettingsDescription,
+            onTap: _showImportSettingsDialog,
+          ),
+        ],
         SettingNavigationTile(
-          focusNode: _focusTracker.get(_kExportSettings),
-          icon: Symbols.upload_rounded,
-          title: t.settings.exportSettings,
-          subtitle: t.settings.exportSettingsDescription,
-          onTap: _handleExportSettings,
+          focusNode: _focusTracker.get(_kClearImageCache),
+          icon: Symbols.cleaning_services_rounded,
+          title: t.settings.clearImageCache,
+          subtitle: t.settings.clearImageCacheDescription,
+          onTap: () => _showClearImageCacheDialog(),
         ),
         SettingNavigationTile(
-          focusNode: _focusTracker.get(_kImportSettings),
-          icon: Symbols.download_rounded,
-          title: t.settings.importSettings,
-          subtitle: t.settings.importSettingsDescription,
-          onTap: _showImportSettingsDialog,
+          focusNode: _focusTracker.get(_kResetSettings),
+          icon: Symbols.restore_rounded,
+          title: t.settings.resetSettings,
+          subtitle: t.settings.resetSettingsDescription,
+          onTap: () => _showResetSettingsDialog(),
         ),
-        // TODO: Cloud settings sync/backup (#1795, #1979) goes here once a
-        // sync backend exists (iCloud on Apple platforms, or the relay).
       ],
     );
   }

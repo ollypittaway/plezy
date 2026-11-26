@@ -53,6 +53,9 @@ void main() {
     expect(find.bySemanticsLabel(t.common.search), findsOneWidget);
     final search = find.widgetWithIcon(IconButton, Symbols.search_rounded);
     final downloads = find.widgetWithIcon(IconButton, Symbols.download_rounded);
+    final notifications = find.byTooltip(t.announcements.title);
+    expect(tester.getCenter(notifications).dx, greaterThan(tester.getCenter(downloads).dx));
+    expect(tester.getCenter(notifications).dx, lessThan(tester.getCenter(find.byTooltip(t.common.settings)).dx));
     expect(tester.getSize(search), tester.getSize(downloads));
     expect(tester.getSize(find.byIcon(Symbols.search_rounded)), tester.getSize(find.byIcon(Symbols.download_rounded)));
     await tester.tap(find.byTooltip(t.common.search));

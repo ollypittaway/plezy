@@ -130,7 +130,6 @@ class _JoinRoomDialogState extends State<JoinRoomDialog> {
                   errorText: _error,
                   errorMaxLines: 3,
                   prefixIcon: const AppIcon(Symbols.tag_rounded),
-                  border: const OutlineInputBorder(),
                 ),
                 onChanged: (_) {
                   if (_error != null) setState(() => _error = null);

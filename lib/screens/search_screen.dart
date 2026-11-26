@@ -506,6 +506,25 @@ class _SearchScreenState extends State<SearchScreen>
     );
   }
 
+  static int _libraryCount(List<MediaItem> copies) {
+    // Titles are a fallback for backends which omit a library's section ID.
+    final idsByTitle = {
+      for (final copy in copies)
+        if (copy.libraryTitle != null && copy.libraryId != null) (copy.serverId, copy.libraryTitle): copy.libraryId,
+    };
+    final libraries = <(String?, String)>{};
+    for (final copy in copies) {
+      final id = copy.libraryId ?? idsByTitle[(copy.serverId, copy.libraryTitle)];
+      final title = copy.libraryTitle;
+      if (id != null) {
+        libraries.add((copy.serverId, 'id:$id'));
+      } else if (title != null && title.isNotEmpty) {
+        libraries.add((copy.serverId, 'title:$title'));
+      }
+    }
+    return libraries.isEmpty ? 1 : libraries.length;
+  }
+
   Widget _buildResultsList(BuildContext context) {
     final multiServer = context.watch<MultiServerProvider>();
     final libraries = context.watch<LibrariesProvider>();
@@ -541,7 +560,7 @@ class _SearchScreenState extends State<SearchScreen>
             onNavigateLeft: _navigateToSidebar,
             onNavigateUp: onNavigateUp,
             showServerName: showServerName,
-            libraryName: libraries.libraryLabelFor(item),
+            libraryName: t.search.versionCount(n: _libraryCount(copies ?? [item])),
           ),
           PersonSearchHit(:final person) => PersonSearchRow(
             key: Key(person.globalKey),

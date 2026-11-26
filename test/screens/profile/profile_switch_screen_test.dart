@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/native.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,6 +19,7 @@ import 'package:plezy/profiles/profile_avatar.dart';
 import 'package:plezy/profiles/profile_connection.dart';
 import 'package:plezy/profiles/profile_connection_registry.dart';
 import 'package:plezy/profiles/profile_registry.dart';
+import 'package:plezy/screens/profile/add_local_profile_screen.dart';
 import 'package:plezy/screens/profile/pin_entry_dialog.dart';
 import 'package:plezy/screens/profile/profile_detail_screen.dart';
 import 'package:plezy/screens/profile/profile_switch_screen.dart';
@@ -44,6 +46,7 @@ void main() {
       profiles: [Profile.local(id: 'local-owner', displayName: 'Owner', createdAt: DateTime(2026, 1, 1))],
       connections: const [],
     );
+    await _editProfiles(tester);
 
     expect(find.text('Owner'), findsOneWidget);
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'ProfileTile:local-owner');
@@ -66,6 +69,7 @@ void main() {
   testWidgets('D-pad reaches Show profile link in the tile menu and opens the profile link', (tester) async {
     final owner = Profile.local(id: 'local-owner', displayName: 'Owner', createdAt: DateTime(2026, 1, 1));
     await _pumpPicker(tester, profiles: [owner], connections: const []);
+    await _editProfiles(tester);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await tester.pump();
@@ -90,6 +94,89 @@ void main() {
     await tester.pump();
   });
 
+  testWidgets('only the highlighted avatar grows as focus and pointer move', (tester) async {
+    final owner = Profile.local(id: 'owner', displayName: 'Owner', createdAt: DateTime(2026, 1, 1));
+    final kids = Profile.local(id: 'kids', displayName: 'Kids', createdAt: DateTime(2026, 1, 2));
+    await _pumpPicker(tester, profiles: [owner, kids], connections: const [], activeProfileId: kids.id);
+
+    double diameter(String name) {
+      final avatar = find.descendant(of: _tileFor(name), matching: find.byType(ProfileAvatar));
+      final box = tester.renderObject<RenderBox>(avatar);
+      return (box.localToGlobal(Offset(box.size.width, 0)) - box.localToGlobal(Offset.zero)).distance;
+    }
+
+    final normal = diameter('Owner');
+    expect(diameter('Kids'), closeTo(normal * 1.2, 0.01));
+    final kidsPosition = tester.getCenter(find.text('Kids'));
+    final otherIsLeft = tester.getCenter(find.text('Owner')).dx < kidsPosition.dx;
+    await tester.sendKeyEvent(otherIsLeft ? LogicalKeyboardKey.arrowLeft : LogicalKeyboardKey.arrowRight);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 60));
+    expect(diameter('Owner'), inExclusiveRange(normal, normal * 1.2));
+    await tester.pumpAndSettle();
+    expect(diameter('Kids'), closeTo(normal, 0.01));
+    expect(diameter('Owner'), closeTo(normal * 1.2, 0.01));
+    expect(tester.getCenter(find.text('Kids')), kidsPosition);
+
+    final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await pointer.addPointer(location: Offset.zero);
+    await pointer.moveTo(kidsPosition);
+    await tester.pumpAndSettle();
+    expect(diameter('Kids'), closeTo(normal * 1.2, 0.01));
+    expect(diameter('Owner'), closeTo(normal, 0.01));
+    await pointer.removePointer();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('phone keeps Add inline and Edit closes back to the chooser', (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await _pumpPicker(
+      tester,
+      connections: const [],
+      profiles: [
+        Profile.local(id: 'owner', displayName: 'Owner', createdAt: DateTime(2026)),
+        Profile.local(id: 'kids', displayName: 'Kids', createdAt: DateTime(2026)),
+      ],
+    );
+    expect(tester.getCenter(find.text(t.profiles.add)).dy, tester.getCenter(find.text('Kids')).dy);
+    await _editProfiles(tester);
+    expect(find.text(t.profiles.whoIsWatching), findsNothing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text(t.profiles.whoIsWatching), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final reduceMotion in [false, true]) {
+    testWidgets('touch selects once and respects reduced motion ($reduceMotion)', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = FakeAccessibilityFeatures(
+        disableAnimations: reduceMotion,
+      );
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await _pumpPicker(
+        tester,
+        profiles: [Profile.local(id: 'owner', displayName: 'Owner', createdAt: DateTime(2026))],
+        connections: const [],
+      );
+      await tester.tap(find.text(t.profiles.add));
+      await tester.pump();
+      if (!reduceMotion) {
+        expect(_tileIsHighlighted(tester, t.profiles.add), isTrue);
+        expect(find.byType(AddLocalProfileScreen), findsNothing);
+        await tester.tap(find.text(t.profiles.add));
+        await tester.pump(const Duration(milliseconds: 230));
+      }
+      await _pumpBounded(tester);
+      expect(find.byType(AddLocalProfileScreen), findsOneWidget);
+      Navigator.pop(tester.element(find.byType(AddLocalProfileScreen)));
+      await _pumpBounded(tester);
+      expect(find.text(t.profiles.whoIsWatching), findsOneWidget);
+    });
+  }
+
   testWidgets('orders profiles by recent usage from storage', (tester) async {
     await _pumpPicker(
       tester,
@@ -101,7 +188,7 @@ void main() {
       lastUsedAt: {'local-kids': DateTime(2026, 1, 3)},
     );
 
-    expect(tester.getTopLeft(find.text('Kids')).dy, lessThan(tester.getTopLeft(find.text('Owner')).dy));
+    expect(tester.getCenter(find.text('Kids')).dx, lessThan(tester.getCenter(find.text('Owner')).dx));
   });
 
   testWidgets('passes derived Jellyfin avatar URLs only to linked profile tiles', (tester) async {
@@ -283,6 +370,7 @@ void main() {
         _plexAccount('Dana', id: 'plex-account-2'),
       ],
     );
+    await _editProfiles(tester);
 
     expect(find.text('Alice'), findsOneWidget);
     expect(
@@ -313,6 +401,7 @@ void main() {
       ],
       homeUsers: [_homeUser('charlie-uuid', 'Charlie')],
     );
+    await _editProfiles(tester);
 
     expect(
       _relationChip(tester, tile: _tileFor('Alice'), first: 'Charlie', second: 'Bob'),
@@ -337,6 +426,7 @@ void main() {
       ],
       connections: [_plexAccount('Bob')],
     );
+    await _editProfiles(tester);
 
     expect(find.textContaining('Bob'), findsNothing, reason: '"Alice via Bob" would repeat under every tile');
     expect(find.text(t.profiles.noConnections), findsNothing, reason: 'the profile does have a connection');
@@ -360,6 +450,7 @@ void main() {
       ],
       homeUsers: [_homeUser('charlie-uuid', 'Charlie')],
     );
+    await _editProfiles(tester);
 
     expect(find.descendant(of: _tileFor('Alice'), matching: find.text('Charlie')), findsOneWidget);
     expect(find.textContaining('Bob'), findsNothing);
@@ -382,6 +473,7 @@ void main() {
         ),
       ],
     );
+    await _editProfiles(tester);
 
     expect(find.text(t.profiles.plexAccountChip(account: 'Bob')), findsOneWidget);
     expect(find.text('Bob'), findsNothing);
@@ -415,6 +507,7 @@ void main() {
         _plexAccount('Dana', id: 'plex-account-2'),
       ],
     );
+    await _editProfiles(tester);
 
     final label = _relationChip(tester, tile: _tileFor('Alice'), first: 'Alice', second: 'Bob');
     expect(label, t.profiles.plexAccountUserChip(user: 'Alice', account: 'Bob'));
@@ -439,6 +532,7 @@ void main() {
       connections: const [],
       activeProfileId: 'local-owner',
     );
+    await _editProfiles(tester);
 
     // Bounded pumps whenever the PIN dialog is open: its autofocused field's
     // cursor blink keeps scheduling frames, so pumpAndSettle never settles.
@@ -503,6 +597,7 @@ void main() {
       connections: const [],
       activeProfileId: 'local-owner',
     );
+    await _editProfiles(tester);
 
     // Bounded pumps while the PIN dialog is open — see the manage test.
     await _openTileMenu(tester, 'Kids');
@@ -542,6 +637,7 @@ void main() {
       profiles: [Profile.local(id: 'local-owner', displayName: 'Owner', createdAt: DateTime(2026, 1, 1))],
       connections: const [],
     );
+    await _editProfiles(tester);
 
     await _openTileMenu(tester, 'Owner');
     await tester.tap(find.text(t.profiles.manage));
@@ -702,22 +798,14 @@ List<String> _visibleProfileNames(WidgetTester tester) {
       .toList();
 }
 
-/// Whether the tile showing [name] draws its focus border.
-///
-/// [FocusableWrapper] paints an opaque border only while it believes it holds
-/// focus, so this catches the state where primary focus is correct but the
-/// wrapper's chrome was reset by a rebuilt element.
 bool _tileIsHighlighted(WidgetTester tester, String name) {
-  final wrapper = find.ancestor(of: find.text(name), matching: find.byType(FocusableWrapper));
-  final containers = tester.widgetList<AnimatedContainer>(
-    find.descendant(of: wrapper, matching: find.byType(AnimatedContainer)),
-  );
-  return containers.any((container) {
-    final decoration = container.decoration as BoxDecoration?;
-    final border = decoration?.border?.top;
-    final fill = decoration?.color;
-    return (border != null && border.style != BorderStyle.none && border.color.a > 0) || (fill != null && fill.a > 0);
-  });
+  return tester.widget<AnimatedScale>(find.descendant(of: _tileFor(name), matching: find.byType(AnimatedScale))).scale >
+      1;
+}
+
+Future<void> _editProfiles(WidgetTester tester) async {
+  await tester.tap(find.text(t.common.edit));
+  await tester.pumpAndSettle();
 }
 
 class _FakeProfileRegistry extends ProfileRegistry {

@@ -186,7 +186,6 @@ class _TvColorPickerState extends State<TvColorPicker> with ControllerDisposerMi
           decoration: InputDecoration(
             prefixText: '#',
             labelText: Translations.of(context).accessibility.hexColor,
-            border: const OutlineInputBorder(),
           ),
           maxLength: 6,
           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9a-fA-F]'))],

@@ -114,7 +114,6 @@ class _FilterTextPageState extends State<FilterTextPage> {
               labelText: widget.filter.title,
               hintText: t.libraries.advancedFilters.textHint,
               isDense: true,
-              border: const OutlineInputBorder(),
             ),
             onChanged: (_) => _emit(),
             onSubmitted: (_) => _emit(),

@@ -169,7 +169,6 @@ class _FilterValuePageState extends State<FilterValuePage> {
               isDense: true,
               prefixIcon: const AppIcon(Symbols.search_rounded, fill: 1, size: 20),
               hintText: t.libraries.advancedFilters.searchValues,
-              border: const OutlineInputBorder(),
             ),
             onBack: widget.onBack,
           ),

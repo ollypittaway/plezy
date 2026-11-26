@@ -7,8 +7,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../i18n/strings.g.dart';
+import '../profiles/profile.dart';
 import '../utils/platform_detector.dart';
 import '../utils/snackbar_helper.dart';
 import 'base_shared_preferences_service.dart';
@@ -56,11 +58,15 @@ class AnnouncementPush {
   }
 }
 
-/// An installation pairs to one panel. Only that panel's read key travels to it.
+/// An installation pairs with one panel for announcements and optional viewer settings sync.
 class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
   AnnouncementService({http.Client? client, AnnouncementPush? push})
     : _client = client ?? http.Client(),
       _native = push ?? AnnouncementPush();
+  static final officialPanel = Uri.https('panel.pittaway.dev');
+  static const automaticPairingPref = 'gucciplexa_automatic_pairing';
+  bool _automatic = true, _disconnectRequested = false;
+  bool get automaticPairing => _automatic;
   final AnnouncementPush _native;
   final http.Client _client;
   Uri? _url;
@@ -70,7 +76,28 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
   bool pushAvailable = false;
   String? status;
   List<Announcement> messages = const [];
-  Uri? get url => _url;
+  SharedPreferencesWithCache? _prefs;
+
+  String _dismissedKey(String? profileId) =>
+      profileScopedPrefsKey(profileId ?? '', 'dismissed_announcements_${url?.origin}');
+
+  List<Announcement> visibleMessages(String? profileId) {
+    final dismissed = _prefs?.getStringList(_dismissedKey(profileId))?.toSet() ?? const <String>{};
+    return messages.where((notice) => !dismissed.contains(notice.id.toString())).toList();
+  }
+
+  Future<void> dismissMessages(String? profileId, Iterable<int> ids) {
+    final key = _dismissedKey(profileId);
+    final selected = ids.map((id) => id.toString()).toSet();
+    return _serial(() async {
+      final prefs = _prefs ??= await BaseSharedPreferencesService.sharedCache();
+      final dismissed = {...?prefs.getStringList(key), ...selected};
+      await prefs.setStringList(key, dismissed.toList());
+      _notify();
+    });
+  }
+
+  Uri? get url => _disconnectRequested ? null : _url;
   bool get pushEnabled => _push;
   bool get supportsPush => _native.supported;
   Timer? _timer;
@@ -93,9 +120,10 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> start() async {
     WidgetsBinding.instance.addObserver(this);
     await _serial(() async {
-      final prefs = await BaseSharedPreferencesService.sharedCache();
+      final prefs = _prefs = await BaseSharedPreferencesService.sharedCache();
       try {
         final stored = prefs.getString(announcementPairPref);
+        _automatic = prefs.getBool(automaticPairingPref) ?? stored == null;
         if (stored == null) return;
         final config = jsonDecode(stored);
         if (config case {
@@ -106,6 +134,14 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
           'push': final bool push,
         }) {
           final pair = parsePairLink('$url/#$key');
+          // Early app builds paired the official panel through a private link.
+          // Reuse that working credential, seen marker and push registration.
+          final storedAutomatic = config['automatic'] as bool? ?? pair.origin == officialPanel.origin;
+          _automatic = prefs.getBool(automaticPairingPref) ?? storedAutomatic;
+          if (storedAutomatic && !_automatic) {
+            await prefs.remove(announcementPairPref);
+            return;
+          }
           _url = Uri.parse(pair.origin);
           _key = pair.fragment;
           _installation = install;
@@ -119,8 +155,9 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
       } on TypeError {
         status = t.announcements.invalidLink;
       }
-      _notify();
     });
+    await _serial(_retryUnregister);
+    _notify();
     _schedule();
   }
 
@@ -152,6 +189,23 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
     return reply.body.isEmpty ? {} : jsonDecode(utf8.decode(reply.bodyBytes)) as Map<String, dynamic>;
   }
 
+  /// Only an explicitly trusted, still-paired HTTPS origin can receive this
+  /// short exchange. Subsequent preference requests use a settings-only ticket.
+  Future<String> settingsSession(Uri trustedOrigin, String token, String clientId, String? viewerUuid) async {
+    if (trustedOrigin != url || trustedOrigin.scheme != 'https') throw const FormatException();
+    final req = http.Request('POST', trustedOrigin.resolve('/api/settings/session'))
+      ..followRedirects = false
+      ..headers.addAll({
+        'Authorization': 'Bearer $_key',
+        'X-Plex-Token': token,
+        'X-Plex-Client-Identifier': clientId,
+        'X-Viewer-UUID': ?viewerUuid,
+      });
+    final reply = await _client.send(req).then(http.Response.fromStream).timeout(const Duration(seconds: 10));
+    if (reply.statusCode != 200) throw const FormatException();
+    return (jsonDecode(reply.body) as Map)['session'] as String;
+  }
+
   void _readFeed(Map<String, dynamic> feed) {
     final rows = feed['messages'] as List;
     messages = [
@@ -164,7 +218,14 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
     final prefs = await BaseSharedPreferencesService.sharedCache();
     await prefs.setString(
       announcementPairPref,
-      jsonEncode({'url': _url.toString(), 'key': _key, 'installation': _installation, 'seen': _seen, 'push': _push}),
+      jsonEncode({
+        'url': _url.toString(),
+        'key': _key,
+        'installation': _installation,
+        'seen': _seen,
+        'push': _push,
+        'automatic': _automatic,
+      }),
     );
   }
 
@@ -172,18 +233,53 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
     if (_url != null) throw FormatException(t.announcements.alreadyPaired);
     final uri = parsePairLink(link);
     final origin = Uri.parse(uri.origin);
-    final feed = await _request(origin, uri.fragment, '/api/feed');
+    final random = Random.secure();
+    final installation = base64UrlEncode(List.generate(32, (_) => random.nextInt(256)));
+    await _connect(origin, uri.fragment, installation, automatic: false);
+    _schedule();
+  });
+
+  Future<void> _connect(Uri origin, String key, String installation, {required bool automatic}) async {
+    final feed = await _request(origin, key, '/api/feed');
+    if (_disposed || _disconnectRequested) return;
     _readFeed(feed);
     _url = origin;
-    _key = uri.fragment;
-    final random = Random.secure();
-    _installation = base64UrlEncode(List.generate(32, (_) => random.nextInt(256)));
+    _key = key;
+    _installation = installation;
+    _automatic = automatic;
     _seen = messages.firstOrNull?.id ?? 0;
     status = null;
     await _save();
-    _schedule();
+    await (await BaseSharedPreferencesService.sharedCache()).setBool(automaticPairingPref, automatic);
     _notify();
-  });
+  }
+
+  Future<void> _autoPair() async {
+    final request = http.Request('POST', officialPanel.resolve('/api/pair'))..followRedirects = false;
+    final reply = await _client.send(request).then(http.Response.fromStream).timeout(const Duration(seconds: 10));
+    if (reply.statusCode != 201) throw FormatException(t.announcements.unavailable);
+    final data = jsonDecode(reply.body);
+    if (data case {
+      'installation': final String installation,
+      'key': final String key,
+    } when RegExp(r'^[0-9a-f]{32}$').hasMatch(installation)) {
+      parsePairLink('${officialPanel.origin}/#$key');
+      if (!_disposed && !_disconnectRequested) await _connect(officialPanel, key, installation, automatic: true);
+    } else {
+      throw const FormatException();
+    }
+  }
+
+  Future<void> setAutomaticPairing(bool value) {
+    if (!value) return disconnect();
+    return _serial(() async {
+      if (_url != null && !_automatic) throw FormatException(t.announcements.alreadyPaired);
+      _automatic = true;
+      await (await BaseSharedPreferencesService.sharedCache()).setBool(automaticPairingPref, true);
+      _schedule();
+      _notify();
+    });
+  }
 
   Future<void> _register(String? token) =>
       _request(_url!, _key, '/api/device', data: {'installation': _installation, 'fid': token});
@@ -237,6 +333,10 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
     if (value) {
       if (!pushAvailable) throw FormatException(t.announcements.configurePush);
       try {
+        await _retryUnregister();
+        if ((await BaseSharedPreferencesService.sharedCache()).containsKey(announcementPendingUnregisterPref)) {
+          throw FormatException(t.announcements.unavailable);
+        }
         await _bindPush(prompt: true);
       } catch (_) {
         if (!_push) {
@@ -259,6 +359,10 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _unregister() async {
     await _register(null);
+    await _stopNativePush();
+  }
+
+  Future<void> _stopNativePush() async {
     await _tokens?.cancel();
     await _foreground?.cancel();
     _tokens = null;
@@ -271,9 +375,33 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  Future<void> disconnect() => _serial(() async {
-    if (_push) await _unregister();
-    await (await BaseSharedPreferencesService.sharedCache()).remove(announcementPairPref);
+  Future<void> disconnect() async {
+    _disconnectRequested = true;
+    _automatic = false;
+    _timer?.cancel();
+    _notify();
+    // Persist the choice before awaiting a feed request that may be offline.
+    try {
+      await (await BaseSharedPreferencesService.sharedCache()).setBool(automaticPairingPref, false);
+      await _serial(_disconnect);
+    } finally {
+      _disconnectRequested = false;
+      _notify();
+    }
+  }
+
+  Future<void> _disconnect() async {
+    final prefs = await BaseSharedPreferencesService.sharedCache();
+    if (_push) {
+      await prefs.setString(
+        announcementPendingUnregisterPref,
+        jsonEncode({'url': _url!.origin, 'key': _key, 'installation': _installation}),
+      );
+    }
+    // Removing the pairing must also work offline. The only outstanding
+    // request after opt-out is a previously enabled mobile push revocation.
+    await prefs.remove(announcementPairPref);
+    final hadPush = _push;
     _url = null;
     _installation = _key = '';
     _seen = 0;
@@ -282,16 +410,45 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
     messages = const [];
     _timer?.cancel();
     _notify();
-  });
+    if (hadPush) {
+      await _stopNativePush();
+      await _retryUnregister();
+    }
+  }
+
+  Future<void> _retryUnregister() async {
+    final prefs = await BaseSharedPreferencesService.sharedCache();
+    final pending = prefs.getString(announcementPendingUnregisterPref);
+    if (pending == null) return;
+    try {
+      final record = jsonDecode(pending) as Map;
+      final uri = parsePairLink('${record['url']}/#${record['key']}');
+      await _request(
+        Uri.parse(uri.origin),
+        uri.fragment,
+        '/api/device',
+        data: {'installation': record['installation'], 'fid': null},
+      );
+      await prefs.remove(announcementPendingUnregisterPref);
+    } catch (_) {
+      // Retry at the next launch or resume without reconnecting the device.
+    }
+  }
 
   Future<void> refresh() async {
-    if (_refreshPending || _url == null || !_active || _disposed) return;
+    if (_disconnectRequested || _refreshPending || (_url == null && !_automatic) || !_active || _disposed) return;
     _refreshPending = true;
     try {
       await _serial(() async {
-        if (_url == null) return;
+        if (!_active || _disposed) return;
         try {
-          _readFeed(await _request(_url!, _key, '/api/feed'));
+          if (_url == null) {
+            if (_automatic) await _autoPair();
+            return;
+          }
+          final feed = await _request(_url!, _key, '/api/feed');
+          if (_disposed || _disconnectRequested) return;
+          _readFeed(feed);
           final newest = messages.firstOrNull;
           if (newest != null && newest.id > _seen && _active && !_disposed) {
             _seen = newest.id;
@@ -307,7 +464,7 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
             }
           }
         } catch (_) {
-          status = t.announcements.refreshError;
+          status = _url == null ? t.announcements.autoRetry : t.announcements.refreshError;
         }
         _notify();
       });
@@ -318,7 +475,7 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
 
   void _schedule() {
     _timer?.cancel();
-    if (_url == null || !_active || _disposed) return;
+    if ((_url == null && !_automatic) || !_active || _disposed) return;
     unawaited(refresh());
     _timer = Timer.periodic(const Duration(seconds: 20), (_) => refresh());
   }
@@ -326,6 +483,7 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _active = state == AppLifecycleState.resumed;
+    if (_active) unawaited(_serial(_retryUnregister));
     _schedule();
   }
 

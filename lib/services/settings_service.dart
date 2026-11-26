@@ -40,7 +40,8 @@ import '../navigation/navigation_tabs.dart';
 import '../utils/platform_detector.dart';
 import 'trackers/tracker_constants.dart';
 import '../profiles/profile.dart';
-import '../theme/mono_theme.dart' show MonoPalette;
+import 'storage_service.dart';
+import '../theme/mono_theme.dart' show MonoPalette, ViewerAccent;
 import '../watch_together/services/watch_party_relays.dart';
 
 /// The app theme. Value names are the persisted ids. [system] follows the
@@ -401,6 +402,8 @@ class LegacyBoolEnumPref<T extends Enum> extends EnumPref<T> {
   T readFrom(BaseSharedPreferencesService svc) {
     // A committed value is authoritative, including one restored before this
     // preference's first read. A leftover boolean must never replace it.
+    final scoped = svc.preferenceWriteKey(key);
+    if (scoped != key && svc.prefs.containsKey(scoped)) return super.readFrom(svc);
     if (svc.prefs.containsKey(key)) {
       if (svc.prefs.containsKey(legacyKey)) svc.prefs.remove(legacyKey);
       return super.readFrom(svc);
@@ -633,6 +636,68 @@ class _PreferenceGroupListenable extends ChangeNotifier {
 class SettingsService extends BaseSharedPreferencesService {
   static const String defaultIntroPattern = PlaybackExtras.defaultIntroPattern;
   static const String defaultCreditsPattern = PlaybackExtras.defaultCreditsPattern;
+
+  static const viewerAccent = StringPref('viewer_accent', defaultValue: 'default');
+  static final viewerPrefs = <String, Pref<Object?>>{
+    for (final pref in <Pref<Object?>>[
+      viewerAccent,
+      defaultPlaybackSpeed,
+      autoSkipDelay,
+      skipIntroMode,
+      skipCreditsMode,
+      hideSpoilers,
+      autoPlayNextEpisode,
+      playNextCountdown,
+      seekTimeSmall,
+      seekTimeLarge,
+      rewindOnResume,
+      subtitleFontSize,
+      subtitleBorderSize,
+      subtitlePosition,
+      subtitleBackgroundOpacity,
+      subtitleTextColor,
+      subtitleBorderColor,
+      subtitleBackgroundColor,
+      subtitleBold,
+      subtitleItalic,
+      subtitleUseMargins,
+      subtitleAnchorToScreen,
+    ])
+      pref.key: pref,
+  };
+
+  @override
+  String preferenceWriteKey(String key) {
+    if (!viewerPrefs.containsKey(key)) return key;
+    final id = super.readNullableString(StorageService.activeProfileKey);
+    return id == null ? key : profileScopedPrefsKey(id, key);
+  }
+
+  // Older installations have a device-wide value. Inherit it until this viewer
+  // chooses an override, so upgrading preserves their playback preferences.
+  String _viewerReadKey(String key) {
+    final scoped = preferenceWriteKey(key);
+    return scoped != key && prefs.containsKey(scoped) ? scoped : key;
+  }
+
+  @override
+  bool readBool(String key, {bool defaultValue = false}) =>
+      super.readBool(_viewerReadKey(key), defaultValue: defaultValue);
+  @override
+  double readDouble(String key, {double defaultValue = 0}) =>
+      super.readDouble(_viewerReadKey(key), defaultValue: defaultValue);
+  @override
+  Future<void> writeDouble(String key, double value) => super.writeDouble(preferenceWriteKey(key), value);
+  @override
+  int readInt(String key, {int defaultValue = 0}) => super.readInt(_viewerReadKey(key), defaultValue: defaultValue);
+  @override
+  String? readNullableString(String key) => super.readNullableString(_viewerReadKey(key));
+  @override
+  Future<void> writeBool(String key, bool value) => super.writeBool(preferenceWriteKey(key), value);
+  @override
+  Future<void> writeInt(String key, int value) => super.writeInt(preferenceWriteKey(key), value);
+  @override
+  Future<void> writeString(String key, String value) => super.writeString(preferenceWriteKey(key), value);
 
   static const enableDebugLogging = BoolPref('enable_debug_logging', onWrite: setLoggerLevel);
   static const crashReporting = BoolPref('crash_reporting', defaultValue: true);
@@ -1486,6 +1551,7 @@ class SettingsService extends BaseSharedPreferencesService {
   ///
   /// Group one: reset *and* exported — the ordinary case.
   static final List<Pref<Object?>> _resetAndPortablePrefs = [
+    viewerAccent,
     enableDebugLogging,
     enableHardwareDecoding,
     enableHDR,
@@ -1700,6 +1766,9 @@ class SettingsService extends BaseSharedPreferencesService {
   }
 
   static void validateEditableValue(Pref<Object?> pref, Object? value) {
+    if (pref == viewerAccent && value != 'default' && !ViewerAccent.values.any((a) => a.name == value)) {
+      throw const FormatException('Unknown accent');
+    }
     final bounds = numericBounds(pref);
     if (value is num && (!value.isFinite || (bounds != null && (value < bounds.$1 || value > bounds.$2)))) {
       throw const FormatException('Value is outside the supported range');
@@ -1729,6 +1798,15 @@ class SettingsService extends BaseSharedPreferencesService {
     }
   }
 
+  @override
+  Future<void> reset<T>(Pref<T> pref, {void Function()? checkCurrent}) async {
+    if (preferenceWriteKey(pref.key) != pref.key && prefs.containsKey(pref.key)) {
+      await write(pref, pref.resolvedDefault, checkCurrent: checkCurrent);
+      return;
+    }
+    await super.reset(pref, checkCurrent: checkCurrent);
+  }
+
   Future<void> resetAllSettings() async {
     // Materialize an unread legacy choice before retiring its old key, just as
     // if it had already been read — but only where the new preference survives
@@ -1743,7 +1821,11 @@ class SettingsService extends BaseSharedPreferencesService {
       await prefs.remove(entry.key);
     }
     await Future.wait([
-      ..._resettablePrefs.map((p) => prefs.remove(p.key)),
+      ..._resettablePrefs.map(
+        (p) => preferenceWriteKey(p.key) != p.key && prefs.containsKey(p.key)
+            ? p.writeTo(this, p.resolvedDefault)
+            : prefs.remove(preferenceWriteKey(p.key)),
+      ),
       // Legacy migration sentinels — removed alongside the keys they guarded.
       prefs.remove(_legacyUseSeasonPosterKey),
       prefs.remove(_legacyMpvConfigEntriesKey),

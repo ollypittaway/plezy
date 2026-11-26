@@ -17,7 +17,6 @@ import '../../widgets/setting_tile.dart';
 import '../../widgets/settings_page.dart';
 import '../../widgets/settings_section.dart';
 import 'settings_utils.dart';
-import 'announcement_settings_screen.dart';
 
 /// App-level preferences that are not about looks or playback: language,
 /// what happens at startup, and desktop window behavior.
@@ -30,6 +29,7 @@ class GeneralSettingsScreen extends StatelessWidget {
     // a child that renders SizedBox.shrink() would corrupt the group corners.
     final hasMultipleProfiles = context.watch<ActiveProfileProvider>().hasMultipleProfiles;
     return SettingsPage(
+      profileLayout: true,
       title: Text(t.settings.general),
       children: [
         SettingsGroup(title: t.settings.languageAndRegion, children: [_languageSelector(context)]),
@@ -55,15 +55,6 @@ class GeneralSettingsScreen extends StatelessWidget {
           ],
         ),
 
-        SettingsGroup(
-          children: [
-            SettingNavigationTile(
-              icon: Symbols.notifications_rounded,
-              title: t.announcements.title,
-              destinationBuilder: (_) => const AnnouncementSettingsScreen(),
-            ),
-          ],
-        ),
         if (PlatformDetector.isDesktopOS())
           SettingsGroup(
             title: t.settings.window,

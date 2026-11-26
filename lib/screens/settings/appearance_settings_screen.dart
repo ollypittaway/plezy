@@ -37,6 +37,7 @@ class AppearanceSettingsScreen extends StatelessWidget {
     // never show the Explore toggle, mirroring the tab's own visibility.
     final hasExplore = context.watch<CatalogSourcesProvider?>()?.hasAnySource ?? false;
     return SettingsPage(
+      profileLayout: true,
       title: Text(t.settings.appearance),
       children: [
         SettingsGroup(

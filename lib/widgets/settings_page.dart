@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'focused_scroll_scaffold.dart';
+import 'profile_settings_layout.dart';
 
 /// Standard scaffold for settings pages made of ordinary list rows.
 class SettingsPage extends StatelessWidget {
@@ -10,6 +11,7 @@ class SettingsPage extends StatelessWidget {
   final List<Widget>? actions;
   final EdgeInsetsGeometry? padding;
   final bool pinned;
+  final bool profileLayout;
   final bool automaticallyImplyLeading;
   final VoidCallback? onBackPressed;
 
@@ -20,6 +22,7 @@ class SettingsPage extends StatelessWidget {
     this.actions,
     this.padding,
     this.pinned = true,
+    this.profileLayout = false,
     this.automaticallyImplyLeading = true,
     this.onBackPressed,
   }) : slivers = null;
@@ -30,6 +33,7 @@ class SettingsPage extends StatelessWidget {
     required List<Widget> this.slivers,
     this.actions,
     this.pinned = true,
+    this.profileLayout = false,
     this.automaticallyImplyLeading = true,
     this.onBackPressed,
   }) : children = null,
@@ -38,7 +42,7 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pageSlivers = slivers ?? [_buildListSliver()];
-    return FocusedScrollScaffold(
+    final page = FocusedScrollScaffold(
       title: title,
       actions: actions,
       pinned: pinned,
@@ -46,6 +50,7 @@ class SettingsPage extends StatelessWidget {
       onBackPressed: onBackPressed,
       slivers: pageSlivers,
     );
+    return profileLayout ? ProfileSettingsLayout(child: page) : page;
   }
 
   Widget _buildListSliver() {
