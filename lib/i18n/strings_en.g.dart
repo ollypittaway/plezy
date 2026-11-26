@@ -114,8 +114,8 @@ class Translations$announcements$en {
 	/// en: 'Automatic device pairing'
 	String get automaticPairing => 'Automatic device pairing';
 
-	/// en: 'Connect this device to panel.pittaway.dev for announcements and optional settings sync.'
-	String get automaticHint => 'Connect this device to panel.pittaway.dev for announcements and optional settings sync.';
+	/// en: 'Connect this device to panel.offstage.download for announcements and optional settings sync.'
+	String get automaticHint => 'Connect this device to panel.offstage.download for announcements and optional settings sync.';
 
 	/// en: 'Connecting to the Offstage panel…'
 	String get connecting => 'Connecting to the Offstage panel…';
@@ -8415,7 +8415,7 @@ extension on Translations {
 		return switch (path) {
 			'announcements.title' => 'Notifications',
 			'announcements.automaticPairing' => 'Automatic device pairing',
-			'announcements.automaticHint' => 'Connect this device to panel.pittaway.dev for announcements and optional settings sync.',
+			'announcements.automaticHint' => 'Connect this device to panel.offstage.download for announcements and optional settings sync.',
 			'announcements.connecting' => 'Connecting to the Offstage panel…',
 			'announcements.autoRetry' => 'Waiting for the Offstage panel. This device will retry automatically.',
 			'announcements.pairHint' => 'In your web panel, choose Pair a device and paste the link here.',

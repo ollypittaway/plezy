@@ -2,7 +2,7 @@
   "announcements": {
     "title": "Notifications",
     "automaticPairing": "Automatic device pairing",
-    "automaticHint": "Connect this device to panel.pittaway.dev for announcements and optional settings sync.",
+    "automaticHint": "Connect this device to panel.offstage.download for announcements and optional settings sync.",
     "connecting": "Connecting to the Offstage panel…",
     "autoRetry": "Waiting for the Offstage panel. This device will retry automatically.",
     "pairHint": "In your web panel, choose Pair a device and paste the link here.",

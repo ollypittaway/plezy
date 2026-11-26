@@ -42,6 +42,14 @@ void main() {
   test('pair links require HTTPS or loopback and carry their credential only in the fragment', () {
     expect(AnnouncementService.parsePairLink('https://panel.example/#$key').host, 'panel.example');
     expect(AnnouncementService.parsePairLink('http://127.0.0.1:8080/#$key').port, 8080);
+    expect(
+      AnnouncementService.parsePairLink('https://panel.pittaway.dev/#$key').origin,
+      'https://panel.offstage.download',
+    );
+    expect(
+      AnnouncementService.parsePairLink('https://panel.pittaway.dev:8443/#$key').origin,
+      'https://panel.pittaway.dev:8443',
+    );
     for (final link in [
       'http://panel.example/#$key',
       'https://a@panel.example/#$key',
@@ -105,7 +113,7 @@ void main() {
     var online = false, enrollments = 0, reads = 0;
     const installation = '0123456789abcdef0123456789abcdef';
     MockClient client() => MockClient((request) async {
-      expect(request.url.origin, 'https://panel.pittaway.dev');
+      expect(request.url.origin, 'https://panel.offstage.download');
       expect(request.headers['X-Plex-Token'], isNull);
       if (request.url.path == '/api/pair') {
         enrollments++;
@@ -181,22 +189,25 @@ void main() {
     expect(calls.single.toString(), 'https://custom.example/api/feed');
   });
 
-  test('shows the opt-out for older official panel pairings and reuses their credential', () async {
+  test('moves the former official pairing and its viewer preferences to the new host', () async {
     final prefs = await BaseSharedPreferencesService.sharedCache();
+    const former = 'https://panel.pittaway.dev';
+    final current = AnnouncementService.officialPanel.origin;
+    final oldScope = jsonEncode([former, 'viewer-a']);
+    final newScope = jsonEncode([current, 'viewer-a']);
+    await prefs.setString('user_a_sync_v1_enabled', oldScope);
+    await prefs.setString('user_a_sync_v1_base_$oldScope', '{"speed":1.5}');
+    await prefs.setStringList('user_a_dismissed_announcements_$former', ['1']);
+    await prefs.setStringList('user_a_dismissed_announcements_$current', ['2']);
     await prefs.setString(
       announcementPairPref,
-      jsonEncode({
-        'url': AnnouncementService.officialPanel.origin,
-        'key': key,
-        'installation': 'existing',
-        'seen': 0,
-        'push': false,
-      }),
+      jsonEncode({'url': former, 'key': key, 'installation': 'existing', 'seen': 2, 'push': false}),
     );
     final calls = <String>[];
     final service = AnnouncementService(
       client: MockClient((r) async {
         calls.add(r.url.path);
+        expect(r.url.origin, current);
         expect(r.headers['Authorization'], 'Bearer $key');
         return http.Response('{"messages":[],"push":false}', 200);
       }),
@@ -206,8 +217,42 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(service.automaticPairing, isTrue);
     expect(calls, ['/api/feed']);
+    final pair = jsonDecode(prefs.getString(announcementPairPref)!);
+    expect(pair['url'], current);
+    expect(pair['installation'], 'existing');
+    expect(pair['seen'], 2);
+    expect(prefs.getString('user_a_sync_v1_enabled'), newScope);
+    expect(prefs.getString('user_a_sync_v1_base_$newScope'), '{"speed":1.5}');
+    expect(prefs.getStringList('user_a_dismissed_announcements_$current'), unorderedEquals(['1', '2']));
+    expect(prefs.getString('user_a_sync_v1_base_$oldScope'), isNull);
+    expect(prefs.getStringList('user_a_dismissed_announcements_$former'), isNull);
     await service.setAutomaticPairing(false);
     expect(service.url, isNull);
+  });
+
+  test('an opted-out device retries its old push revocation only on the new panel', () async {
+    final prefs = await BaseSharedPreferencesService.sharedCache();
+    await prefs.setBool(AnnouncementService.automaticPairingPref, false);
+    await prefs.setString(
+      announcementPendingUnregisterPref,
+      jsonEncode({'url': 'https://panel.pittaway.dev', 'key': key, 'installation': 'existing'}),
+    );
+    final calls = <Uri>[];
+    final service = AnnouncementService(
+      client: MockClient((r) async {
+        calls.add(r.url);
+        expect(r.method, 'PUT');
+        expect(r.headers['Authorization'], 'Bearer $key');
+        expect(jsonDecode(r.body), {'installation': 'existing', 'fid': null});
+        return http.Response('', 204);
+      }),
+    );
+    addTearDown(service.dispose);
+    await service.start();
+    await service.refresh();
+    expect(calls.single.toString(), 'https://panel.offstage.download/api/device');
+    expect(prefs.containsKey(announcementPendingUnregisterPref), isFalse);
+    expect(service.automaticPairing, isFalse);
   });
 
   test('turning off while enrollment is in flight ignores its late reply', () async {
@@ -295,18 +340,18 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('panel.pittaway.dev'), findsOneWidget);
+    expect(find.text('panel.offstage.download'), findsOneWidget);
     final pairing = find.widgetWithText(SwitchListTile, t.announcements.automaticPairing);
     expect(tester.widget<SwitchListTile>(pairing).value, isTrue);
     await tester.tap(pairing);
     await tester.pumpAndSettle();
     expect(tester.widget<SwitchListTile>(pairing).value, isFalse);
-    expect(find.text('panel.pittaway.dev'), findsNothing);
+    expect(find.text('panel.offstage.download'), findsNothing);
     expect(find.text(t.announcements.link), findsOneWidget);
     await tester.tap(pairing);
     await tester.pumpAndSettle();
     expect(tester.widget<SwitchListTile>(pairing).value, isTrue);
-    expect(find.text('panel.pittaway.dev'), findsOneWidget);
+    expect(find.text('panel.offstage.download'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     service.dispose();
   });

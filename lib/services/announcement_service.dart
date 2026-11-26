@@ -63,7 +63,8 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
   AnnouncementService({http.Client? client, AnnouncementPush? push})
     : _client = client ?? http.Client(),
       _native = push ?? AnnouncementPush();
-  static final officialPanel = Uri.https('panel.pittaway.dev');
+  static final officialPanel = Uri.https('panel.offstage.download');
+  static const _previousPanelOrigin = 'https://panel.pittaway.dev';
   static const automaticPairingPref = 'gucciplexa_automatic_pairing';
   bool _automatic = true, _disconnectRequested = false;
   bool get automaticPairing => _automatic;
@@ -117,11 +118,37 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
     if (!_disposed) notifyListeners();
   }
 
+  // Update the local origin-scoped records before a viewer's sync session can start.
+  static Future<void> _migratePanelPreferences(SharedPreferencesWithCache prefs) async {
+    const oldScope = '["$_previousPanelOrigin",';
+    final newScope = '["${officialPanel.origin}",';
+    for (final key in prefs.keys) {
+      if (key.endsWith('dismissed_announcements_$_previousPanelOrigin')) {
+        final target = key.substring(0, key.length - _previousPanelOrigin.length) + officialPanel.origin;
+        final merged = {...?prefs.getStringList(target), ...?prefs.getStringList(key)};
+        await prefs.setStringList(target, merged.toList());
+        await prefs.remove(key);
+      } else if (key.contains('sync_v1_base_$oldScope')) {
+        final target = key.replaceFirst('sync_v1_base_$oldScope', 'sync_v1_base_$newScope');
+        final base = prefs.get(key);
+        if (base is! String) continue;
+        if (!prefs.containsKey(target)) await prefs.setString(target, base);
+        await prefs.remove(key);
+      } else if (key.endsWith('sync_v1_enabled')) {
+        final value = prefs.get(key);
+        if (value is String && value.startsWith(oldScope)) {
+          await prefs.setString(key, newScope + value.substring(oldScope.length));
+        }
+      }
+    }
+  }
+
   Future<void> start() async {
     WidgetsBinding.instance.addObserver(this);
     await _serial(() async {
       final prefs = _prefs = await BaseSharedPreferencesService.sharedCache();
       try {
+        await _migratePanelPreferences(prefs);
         final stored = prefs.getString(announcementPairPref);
         _automatic = prefs.getBool(automaticPairingPref) ?? stored == null;
         if (stored == null) return;
@@ -147,6 +174,7 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
           _installation = install;
           _seen = seen;
           _push = push;
+          if (Uri.parse(url).origin != pair.origin) await _save();
         } else {
           throw const FormatException();
         }
@@ -172,7 +200,8 @@ class AnnouncementService extends ChangeNotifier with WidgetsBindingObserver {
         !RegExp(r'^[A-Za-z0-9_-]{32,128}$').hasMatch(uri.fragment)) {
       throw FormatException(t.announcements.invalidLink);
     }
-    return uri;
+    // Only the exact former official HTTPS origin may carry its pairing to the new host.
+    return uri.origin == _previousPanelOrigin ? uri.replace(host: officialPanel.host) : uri;
   }
 
   Future<Map<String, dynamic>> _request(Uri origin, String key, String path, {Map<String, dynamic>? data}) async {

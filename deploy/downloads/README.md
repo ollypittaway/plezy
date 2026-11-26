@@ -6,11 +6,11 @@ Fire TV updater requests to `firestick.offstage.download/releases/latest` receiv
 
 | Download hostname | Release asset |
 | --- | --- |
-| `firestick.offstage.download` (also `firestick.pittaway.dev`) | `Offstage-Firestick.apk`, one package for 32-bit and 64-bit ARM Fire OS devices |
-| `android.offstage.download` (also `android.pittaway.dev`) | `Offstage-Android-arm64-v8a.apk`, for current ARM64 phones |
-| `ios.offstage.download` (also `ios.pittaway.dev`) | `Offstage-iOS-unsigned.ipa`, for importing into an iOS signing service |
-| `win.offstage.download` (also `windows.offstage.download` and `windows.pittaway.dev`) | `Offstage-Windows-Setup.exe`, one installer for x64 and ARM64 |
-| `mac.offstage.download` (also `mac.pittaway.dev`) | `Offstage-macOS.dmg`, containing Offstage and a shortcut to Applications |
+| `firestick.offstage.download` | `Offstage-Firestick.apk`, one package for 32-bit and 64-bit ARM Fire OS devices |
+| `android.offstage.download` | `Offstage-Android-arm64-v8a.apk`, for current ARM64 phones |
+| `ios.offstage.download` | `Offstage-iOS-unsigned.ipa`, for importing into an iOS signing service |
+| `win.offstage.download` (also `windows.offstage.download`) | `Offstage-Windows-Setup.exe`, one installer for x64 and ARM64 |
+| `mac.offstage.download` | `Offstage-macOS.dmg`, containing Offstage and a shortcut to Applications |
 
 Android also serves `/armeabi-v7a` and `/x86_64`. Every hostname serves `/SHA256SUMS.txt`. The Firestick build targets Fire OS, which installs APKs. Vega OS requires a separate port.
 
