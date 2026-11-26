@@ -98,10 +98,14 @@ void main() {
     final owner = Profile.local(id: 'owner', displayName: 'Owner', createdAt: DateTime(2026, 1, 1));
     final kids = Profile.local(id: 'kids', displayName: 'Kids', createdAt: DateTime(2026, 1, 2));
     await _pumpPicker(tester, profiles: [owner, kids], connections: const [], activeProfileId: kids.id);
+    final scaffold = tester.widget<Scaffold>(find.ancestor(of: find.text(t.profiles.whoIsWatching), matching: find.byType(Scaffold)).first);
+    expect(scaffold.backgroundColor, Colors.black);
 
     double diameter(String name) {
       final avatar = find.descendant(of: _tileFor(name), matching: find.byType(ProfileAvatar));
       final box = tester.renderObject<RenderBox>(avatar);
+      expect(box.size.width, box.size.height);
+      expect(find.descendant(of: avatar, matching: find.byType(ClipRRect)), findsOneWidget);
       return (box.localToGlobal(Offset(box.size.width, 0)) - box.localToGlobal(Offset.zero)).distance;
     }
 

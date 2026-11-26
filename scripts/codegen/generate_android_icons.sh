@@ -3,7 +3,7 @@
 set -eu
 
 res="android/app/src/main/res"
-mark="assets/gucciplexa-mark.png"
+mark="macos/plezy.icon/Assets/offstage.png"
 tile="assets/plezy.png"
 
 # At xxxhdpi, 432 px is the adaptive icon's 108 dp canvas. Android also

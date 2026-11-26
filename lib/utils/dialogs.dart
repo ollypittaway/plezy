@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../focus/focusable_text_field.dart';
 import '../focus/input_mode_tracker.dart';
 import '../i18n/strings.g.dart';
 import '../mixins/controller_disposer_mixin.dart';
+import '../theme/mono_tokens.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/dialog_action_button.dart';
 import '../widgets/focusable_list_tile.dart';
@@ -13,7 +15,9 @@ import '../widgets/scroll_ink_boundary.dart';
 import 'focus_utils.dart';
 
 const _buttonPadding = EdgeInsets.symmetric(horizontal: 18, vertical: 14);
-const _buttonShape = StadiumBorder();
+const _buttonShape = RoundedRectangleBorder(
+  borderRadius: BorderRadius.all(Radius.circular(MonoTokens.defaultRadiusMd)),
+);
 
 final _dialogOwners = <Route<dynamic>, Set<Route<dynamic>>>{};
 

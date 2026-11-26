@@ -164,8 +164,8 @@ flutter:
   assets:
     - assets/licenses/InterTight.txt
     - assets/licenses/SpatialAudioBridge.txt
-    - assets/harbor.jpg
     - assets/gucciplexa.webp
+    - assets/offstage/
     - assets/gucciplexa-mark.png
     - assets/plezy.png
     - assets/plex_chevron.svg

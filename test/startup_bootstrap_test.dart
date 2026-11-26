@@ -280,6 +280,61 @@ void main() {
     expect(find.byKey(startupBootstrapProgressKey), findsNothing);
   });
 
+  for (final artworkFirst in [true, false]) {
+    testWidgets('launch waits for the artwork and the app (artwork first: $artworkFirst)', (tester) async {
+      final completion = Completer<int>();
+      late VoidCallback finishArtwork;
+      final appKey = GlobalKey();
+      State? connectingApp;
+      await tester.pumpWidget(
+        StartupBootstrap<int>(
+          initialize: () => completion.future,
+          buildApp: (_, value) => MaterialApp(key: appKey, home: Text('ready $value')),
+          buildLaunchArtwork: (_, finish) {
+            finishArtwork = finish;
+            return const Text('launch artwork');
+          },
+        ),
+      );
+
+      if (artworkFirst) {
+        finishArtwork();
+      } else {
+        completion.complete(7);
+      }
+      await tester.pump();
+      expect(find.text('launch artwork'), findsOneWidget);
+      expect(find.text('ready 7'), findsNothing);
+      if (!artworkFirst) {
+        await tester.pump();
+        connectingApp = appKey.currentState;
+        expect(connectingApp, isNotNull);
+        expect(find.text('ready 7', skipOffstage: false), findsOneWidget);
+      }
+      if (artworkFirst) {
+        completion.complete(7);
+      } else {
+        finishArtwork();
+      }
+      await tester.pumpAndSettle();
+      expect(find.text('ready 7'), findsOneWidget);
+      if (!artworkFirst) expect(appKey.currentState, same(connectingApp));
+    });
+  }
+
+  testWidgets('a startup failure interrupts the launch artwork', (tester) async {
+    await tester.pumpWidget(
+      StartupBootstrap<int>(
+        initialize: () async => throw StateError('database unavailable'),
+        buildApp: (_, value) => Text('ready $value'),
+        buildLaunchArtwork: (_, finish) => const Text('launch artwork'),
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(startupBootstrapFailureKey), findsOneWidget);
+    expect(find.text('launch artwork'), findsNothing);
+  });
+
   testWidgets('names the failing phase instead of showing a bare error', (tester) async {
     await tester.pumpWidget(
       StartupBootstrap<int>(

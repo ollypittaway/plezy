@@ -33,7 +33,7 @@
     <uses-feature android:name="android.hardware.type.automotive" android:required="false" />
 
     <application
-        android:label="GucciPlexa"
+        android:label="Offstage"
         android:description="${gucciDescription}"
         android:name="${applicationName}"
         android:icon="${gucciAppIcon}"
@@ -87,7 +87,7 @@
         <activity-alias
             android:name="${applicationId}.MainActivity"
             android:exported="true"
-            android:label="GucciPlexa"
+            android:label="Offstage"
             android:icon="${gucciLauncherIcon}"
             android:banner="${gucciBanner}"
             android:targetActivity=".PlezyActivity">

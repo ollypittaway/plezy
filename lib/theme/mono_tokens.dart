@@ -27,6 +27,7 @@ class MonoTokens extends ThemeExtension<MonoTokens> {
   static const double radiusFull = 100;
 
   final double radiusSm;
+  static const double defaultRadiusMd = 12;
   final double radiusMd;
 
   /// Outer corners of M3E grouped-list cards and connected button groups.

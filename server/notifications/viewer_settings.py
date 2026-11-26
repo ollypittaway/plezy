@@ -20,7 +20,7 @@ COLORS = {'subtitle_text_color', 'subtitle_border_color', 'subtitle_background_c
 def verify_plex(token, client_id):
     conn = http.client.HTTPSConnection('plex.tv', timeout=6)
     try:
-        conn.request('GET', '/api/v2/user', headers={'Accept': 'application/json', 'X-Plex-Product': 'GucciPlexa',
+        conn.request('GET', '/api/v2/user', headers={'Accept': 'application/json', 'X-Plex-Product': 'Offstage',
                      'X-Plex-Client-Identifier': client_id, 'X-Plex-Token': token})
         reply = conn.getresponse()
         if reply.status in (401, 403):

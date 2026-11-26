@@ -104,7 +104,7 @@ class _Translations$app$pt_PT extends Translations$app$pt {
 	final TranslationsPtPt _root; // ignore: unused_field
 
 	// Translations
-	@override String get title => 'GucciPlexa';
+	@override String get title => 'Offstage';
 }
 
 // Path: appIcon
@@ -120,8 +120,8 @@ class _Translations$appIcon$pt_PT extends Translations$appIcon$pt {
 	@override String get locked => 'Incluído no Pacote de temas e ícones';
 	@override String get lockedHint => 'Os ícones alternativos estão incluídos no Pacote de temas e ícones.';
 	@override String get changeFailed => 'Não foi possível alterar o ícone da aplicação';
-	@override String get launcherHint => 'O novo ícone aparece no ecrã inicial assim que sair do GucciPlexa.';
-	@override String get tvLauncherHint => 'O novo banner aparece assim que sair do GucciPlexa. O Android TV pode continuar a mostrar o antigo até a TV ser reiniciada.';
+	@override String get launcherHint => 'O novo ícone aparece no ecrã inicial assim que sair do Offstage.';
+	@override String get tvLauncherHint => 'O novo banner aparece assim que sair do Offstage. O Android TV pode continuar a mostrar o antigo até a TV ser reiniciada.';
 	@override late final _Translations$appIcon$names$pt_PT names = _Translations$appIcon$names$pt_PT._(_root);
 }
 
@@ -147,7 +147,7 @@ class _Translations$auth$pt_PT extends Translations$auth$pt {
 	@override String get quickConnectWaiting => 'A aguardar aprovação…';
 	@override String get quickConnectCancel => 'Cancelar';
 	@override String get quickConnectExpired => 'O Quick Connect expirou. Tente novamente.';
-	@override String get localDataRecoveryRequired => 'O GucciPlexa não conseguiu recuperar com segurança os dados locais de acesso e de reproduções pendentes. Inicie sessão novamente.';
+	@override String get localDataRecoveryRequired => 'O Offstage não conseguiu recuperar com segurança os dados locais de acesso e de reproduções pendentes. Inicie sessão novamente.';
 	@override String get pinCheckRejected => 'A verificação do PIN do Plex foi rejeitada';
 }
 
@@ -255,7 +255,7 @@ class _Translations$supporter$pt_PT extends Translations$supporter$pt {
 	@override String get customTheme => 'Tema personalizado';
 	@override String get customThemeDescription => 'Escolha cada cor à sua maneira';
 	@override String get appIcons => 'Ícones da aplicação';
-	@override String get appIconsDescription => 'Escolha um ícone alternativo do GucciPlexa';
+	@override String get appIconsDescription => 'Escolha um ícone alternativo do Offstage';
 	@override String buy({required Object price}) => 'Comprar por ${price}';
 	@override String get loadingPrice => 'A carregar preço...';
 	@override String get restore => 'Restaurar compras';
@@ -423,7 +423,7 @@ class _Translations$settings$pt_PT extends Translations$settings$pt {
 	@override String get importSettingsDescription => 'Restaurar preferências a partir de um ficheiro';
 	@override String get importSettingsConfirm => 'Isto substituirá as suas definições atuais. Continuar?';
 	@override String get importSettingsSuccess => 'Definições importadas';
-	@override String get importSettingsInvalidFile => 'Este ficheiro não é uma exportação válida do GucciPlexa';
+	@override String get importSettingsInvalidFile => 'Este ficheiro não é uma exportação válida do Offstage';
 	@override String get importSettingsNoUser => 'Inicie sessão antes de importar as definições';
 	@override String get shortcutsReset => 'Atalhos repostos para os predefinidos';
 	@override String get resetShortcutsConfirm => 'Isto substituirá os seus atalhos personalizados pelos predefinidos. Continuar?';
@@ -560,7 +560,7 @@ class _Translations$settings$pt_PT extends Translations$settings$pt {
 	@override String get forceTvMode => 'Forçar modo TV';
 	@override String get forceTvModeDescription => 'Forçar o esquema de TV em dispositivos sem deteção automática. Requer reiniciar a aplicação.';
 	@override String get startInFullscreen => 'Iniciar em ecrã inteiro';
-	@override String get startInFullscreenDescription => 'Abrir o GucciPlexa em modo de ecrã inteiro ao iniciar';
+	@override String get startInFullscreenDescription => 'Abrir o Offstage em modo de ecrã inteiro ao iniciar';
 	@override String get exitFullscreenOnPlayerClose => 'Sair do ecrã inteiro ao fechar o reprodutor';
 	@override String get exitFullscreenOnPlayerCloseDescription => 'Sair automaticamente do ecrã inteiro ao fechar o reprodutor de vídeo';
 	@override String get autoHidePerformanceOverlay => 'Ocultar automaticamente o painel de desempenho';
@@ -610,7 +610,7 @@ class _Translations$settings$pt_PT extends Translations$settings$pt {
 	@override String get playerScopeGlobal => 'Em todo o lado';
 	@override String get playerScopeLibrary => 'Por biblioteca';
 	@override String get playerScopeTitle => 'Por série ou filme';
-	@override String get exportDialogTitle => 'Exportar definições do GucciPlexa';
+	@override String get exportDialogTitle => 'Exportar definições do Offstage';
 }
 
 // Path: themeEditor
@@ -845,8 +845,8 @@ class _Translations$mediaMenu$pt_PT extends Translations$mediaMenu$pt {
 		one: 'Mais ${n} episódio está armazenado no mesmo ficheiro e também será eliminado:',
 		other: 'Mais ${n} episódios estão armazenados no mesmo ficheiro e também serão eliminados:',
 	);
-	@override String get deleteScopeUnverifiedProbeFailed => 'O GucciPlexa não conseguiu verificar que ficheiros serão removidos, por isso pode eliminar mais do que o item acima. Cancele e tente novamente, ou elimine mesmo assim.';
-	@override String get deleteScopeUnverifiedNoFileInfo => 'O seu servidor não forneceu detalhes do ficheiro para este item, por isso o GucciPlexa não consegue verificar que ficheiros serão removidos. Pode eliminar mais do que o item acima.';
+	@override String get deleteScopeUnverifiedProbeFailed => 'O Offstage não conseguiu verificar que ficheiros serão removidos, por isso pode eliminar mais do que o item acima. Cancele e tente novamente, ou elimine mesmo assim.';
+	@override String get deleteScopeUnverifiedNoFileInfo => 'O seu servidor não forneceu detalhes do ficheiro para este item, por isso o Offstage não consegue verificar que ficheiros serão removidos. Pode eliminar mais do que o item acima.';
 	@override String get mediaDeletedSuccessfully => 'Item multimédia eliminado com sucesso';
 	@override String get mediaFailedToDelete => 'Falha ao eliminar o item multimédia';
 	@override String get rate => 'Avaliar';
@@ -1183,7 +1183,7 @@ class _Translations$profiles$pt_PT extends Translations$profiles$pt {
 	final TranslationsPtPt _root; // ignore: unused_field
 
 	// Translations
-	@override String get addPlezyProfile => 'Adicionar perfil GucciPlexa';
+	@override String get addPlezyProfile => 'Adicionar perfil Offstage';
 	@override String get switchingProfile => 'A mudar de perfil…';
 	@override String get deleteThisProfileTitle => 'Eliminar este perfil?';
 	@override String deleteThisProfileMessage({required Object displayName}) => 'Remover ${displayName}. As ligações não serão afetadas.';
@@ -1267,7 +1267,7 @@ class _Translations$connections$pt_PT extends Translations$connections$pt {
 	@override String accessDeniedMany({required Object count}) => '${count} servidores negaram o acesso a esta conta';
 	@override String get signInAgain => 'Iniciar sessão novamente';
 	@override String editMediaBrowserTitle({required Object product}) => 'Editar ligação do ${product}';
-	@override String editMediaBrowserIntro({required Object serverName}) => 'Adicione ou remova URLs para ${serverName}. O GucciPlexa usará o URL acessível com menor latência.';
+	@override String editMediaBrowserIntro({required Object serverName}) => 'Adicione ou remova URLs para ${serverName}. O Offstage usará o URL acessível com menor latência.';
 }
 
 // Path: accountPreferences
@@ -1281,7 +1281,7 @@ class _Translations$accountPreferences$pt_PT extends Translations$accountPrefere
 	@override String hubSubtitleSingle({required Object account}) => 'Opções de áudio, legendas e biblioteca guardadas em ${account}';
 	@override String hubSubtitleMultiple({required Object count}) => 'Opções de áudio, legendas e biblioteca guardadas em ${count} contas';
 	@override String get pickAccount => 'Cada conta guarda as suas próprias preferências. Escolha a que pretende editar.';
-	@override String get storedOnAccount => 'Estas opções são guardadas na própria conta, por isso todas as aplicações ligadas a ela as utilizam — incluindo o GucciPlexa nos seus outros dispositivos.';
+	@override String get storedOnAccount => 'Estas opções são guardadas na própria conta, por isso todas as aplicações ligadas a ela as utilizam — incluindo o Offstage nos seus outros dispositivos.';
 	@override String get noAccounts => 'Nenhuma conta para configurar';
 	@override String get noAccountsHint => 'Inicie sessão no Plex ou ligue um servidor Jellyfin ou Emby, e as preferências guardadas nessa conta aparecerão aqui.';
 	@override String get unavailable => 'Não foi possível aceder a esta conta';
@@ -1496,9 +1496,9 @@ class _Translations$startup$pt_PT extends Translations$startup$pt {
 	final TranslationsPtPt _root; // ignore: unused_field
 
 	// Translations
-	@override String get failedTitle => 'O GucciPlexa não conseguiu iniciar';
+	@override String get failedTitle => 'O Offstage não conseguiu iniciar';
 	@override String get failedBody => 'Algo correu mal durante o arranque. Os detalhes abaixo identificam o que falhou.';
-	@override String get failedBodyRepairable => 'O ficheiro de definições guardado do GucciPlexa está danificado e tem de ser reconstruído antes de o GucciPlexa poder iniciar. Tentar novamente não vai ajudar — escolha Reparar armazenamento.';
+	@override String get failedBodyRepairable => 'O ficheiro de definições guardado do Offstage está danificado e tem de ser reconstruído antes de o Offstage poder iniciar. Tentar novamente não vai ajudar — escolha Reparar armazenamento.';
 	@override String get phaseLabel => 'Fase';
 	@override String get showDetails => 'Mostrar detalhes';
 	@override String get hideDetails => 'Ocultar detalhes';
@@ -1507,16 +1507,16 @@ class _Translations$startup$pt_PT extends Translations$startup$pt {
 	@override String get uploadDetails => 'Enviar detalhes';
 	@override String get repairStorage => 'Reparar armazenamento';
 	@override String get repairTitle => 'Reparar dados armazenados?';
-	@override String get repairBodyCommon => 'O ficheiro de definições do GucciPlexa está danificado e não pode ser lido. Reparar repõe todas as definições predefinidas.';
+	@override String get repairBodyCommon => 'O ficheiro de definições do Offstage está danificado e não pode ser lido. Reparar repõe todas as definições predefinidas.';
 	@override String get repairBodyOneCredential => 'Um início de sessão guardado está danificado e não pode ser lido. Reparar remove apenas esse início de sessão; as suas outras definições permanecem intactas.';
 	@override String get repairBodySignInsKept => 'Os seus servidores e perfis devem permanecer ligados.';
 	@override String get repairBodySignInsLost => 'A chave que protege os seus inícios de sessão guardados não pode ser recuperada deste ficheiro, por isso terá de iniciar sessão novamente em todos os servidores e perfis. Nada no seu servidor multimédia é afetado.';
-	@override String get repairBodySessionsUncertain => 'Os rastreadores (MAL, AniList, Simkl, Trakt) e o Seerr são guardados separadamente e podem ou não ser preservados. O GucciPlexa indicará exatamente o que foi mantido.';
+	@override String get repairBodySessionsUncertain => 'Os rastreadores (MAL, AniList, Simkl, Trakt) e o Seerr são guardados separadamente e podem ou não ser preservados. O Offstage indicará exatamente o que foi mantido.';
 	@override String get repairConfirm => 'Reparar';
 	@override String get repairSucceeded => 'Armazenamento reparado';
 	@override String get repairNeedsRestart => 'Armazenamento reparado — reinício necessário';
-	@override String get restartRequiredBody => 'Os seus dados foram reparados, mas o GucciPlexa tem de iniciar do zero antes de os usar. Feche o GucciPlexa e abra-o novamente.';
-	@override String get quitPlezy => 'Sair do GucciPlexa';
+	@override String get restartRequiredBody => 'Os seus dados foram reparados, mas o Offstage tem de iniciar do zero antes de os usar. Feche o Offstage e abra-o novamente.';
+	@override String get quitPlezy => 'Sair do Offstage';
 	@override String get repairFailed => 'Falha na reparação';
 	@override String get repairKeptSignIns => 'Os seus servidores e perfis ainda estão ligados.';
 	@override String get repairLostSignIns => 'A chave que protege os seus inícios de sessão guardados não pôde ser recuperada. Terá de iniciar sessão novamente em todos os servidores e perfis.';
@@ -1525,7 +1525,7 @@ class _Translations$startup$pt_PT extends Translations$startup$pt {
 	@override String get backupWarning => 'Contém as suas credenciais de início de sessão. Não a envie nem partilhe.';
 	@override String get deleteBackup => 'Eliminar cópia';
 	@override String get backupDeleted => 'Cópia eliminada.';
-	@override String get previousFailureTitle => 'O GucciPlexa não conseguiu iniciar da última vez';
+	@override String get previousFailureTitle => 'O Offstage não conseguiu iniciar da última vez';
 }
 
 // Path: licenses
@@ -1832,7 +1832,7 @@ class _Translations$watchTogether$pt_PT extends Translations$watchTogether$pt {
 	@override String get codeCopied => 'Código da sala copiado';
 	@override String get shareInvite => 'Partilhar convite';
 	@override String get inviteCopied => 'Convite copiado. Cole-o numa mensagem.';
-	@override String inviteMessage({required Object code}) => 'Entra na minha sala do Ver juntos no GucciPlexa: abre "Ver juntos", escolhe "Entrar na sala" e introduz ${code}.';
+	@override String inviteMessage({required Object code}) => 'Entra na minha sala do Ver juntos no Offstage: abre "Ver juntos", escolhe "Entrar na sala" e introduz ${code}.';
 	@override String get openSessionControls => 'Abrir os controlos da sessão Ver juntos';
 	@override String get reconnecting => 'A voltar a ligar...';
 	@override String get reconnectingDescription => 'A ligação caiu. Vai voltar à sala automaticamente.';
@@ -1858,7 +1858,7 @@ class _Translations$watchTogether$pt_PT extends Translations$watchTogether$pt {
 	@override String get chooseAnotherCopy => 'Escolher outra cópia';
 	@override String get dontPlay => 'Não reproduzir';
 	@override String get unavailableTitle => 'Não tem este vídeo';
-	@override String get unavailableDescription => 'O GucciPlexa não o encontrou nas suas bibliotecas. Escolha uma cópia manualmente ou pesquise novamente.';
+	@override String get unavailableDescription => 'O Offstage não o encontrou nas suas bibliotecas. Escolha uma cópia manualmente ou pesquise novamente.';
 	@override String get chooseCopy => 'Escolher uma cópia';
 	@override String get searchAgain => 'Pesquisar novamente';
 	@override String get noCandidates => 'Nenhuma cópia encontrada nas suas bibliotecas.';
@@ -2322,11 +2322,11 @@ class _Translations$trakt$pt_PT extends Translations$trakt$pt {
 	@override String get connected => 'Ligado';
 	@override String connectedAs({required Object username}) => 'Ligado como @${username}';
 	@override String get disconnectConfirm => 'Desligar a conta do Trakt?';
-	@override String get disconnectConfirmBody => 'O GucciPlexa deixará de enviar eventos para o Trakt. Pode voltar a ligar quando quiser.';
+	@override String get disconnectConfirmBody => 'O Offstage deixará de enviar eventos para o Trakt. Pode voltar a ligar quando quiser.';
 	@override String get scrobble => 'Scrobbling em tempo real';
 	@override String get scrobbleDescription => 'Envia eventos de reprodução, pausa e paragem para o Trakt durante a visualização.';
 	@override String get watchedSync => 'Sincronizar estado de visto';
-	@override String get watchedSyncDescription => 'Ao marcar itens como vistos no GucciPlexa, também serão marcados no Trakt.';
+	@override String get watchedSyncDescription => 'Ao marcar itens como vistos no Offstage, também serão marcados no Trakt.';
 }
 
 // Path: seerr
@@ -2345,10 +2345,10 @@ class _Translations$seerr$pt_PT extends Translations$seerr$pt {
 	@override String get signInWithEmby => 'Iniciar sessão com o Emby';
 	@override String get signInWithLocal => 'Usar uma conta local';
 	@override String get email => 'E-mail';
-	@override String get noSignInMethods => 'Esta instância do Seerr não oferece nenhum método de acesso compatível com o GucciPlexa.';
+	@override String get noSignInMethods => 'Esta instância do Seerr não oferece nenhum método de acesso compatível com o Offstage.';
 	@override String get instance => 'Instância';
 	@override String get disconnectConfirm => 'Desligar o Seerr?';
-	@override String get disconnectConfirmBody => 'O GucciPlexa esquecerá esta instância do Seerr. Volte a ligar quando quiser.';
+	@override String get disconnectConfirmBody => 'O Offstage esquecerá esta instância do Seerr. Volte a ligar quando quiser.';
 	@override String get request => 'Pedir';
 	@override String get request4k => 'Pedir em 4K';
 	@override String get seasons => 'Temporadas';
@@ -2373,7 +2373,7 @@ class _Translations$seerr$pt_PT extends Translations$seerr$pt {
 	@override String get statusBlocklisted => 'Na lista de bloqueio';
 	@override String couldNotReach({required Object url, required Object error}) => 'Não foi possível contactar ${url}: ${error}';
 	@override String noInstanceAtUrl({required Object url, required Object status}) => 'Nenhuma instância do Seerr em ${url} (HTTP ${status})';
-	@override String get behindAuthProxy => 'Um proxy inverso com autenticação (SSO ou autenticação HTTP) respondeu em vez do Seerr. O GucciPlexa não consegue iniciar sessão através dele: permita que o caminho /api/v1 do Seerr ignore o proxy para esta aplicação, ou use um endereço que chegue diretamente ao Seerr.';
+	@override String get behindAuthProxy => 'Um proxy inverso com autenticação (SSO ou autenticação HTTP) respondeu em vez do Seerr. O Offstage não consegue iniciar sessão através dele: permita que o caminho /api/v1 do Seerr ignore o proxy para esta aplicação, ou use um endereço que chegue diretamente ao Seerr.';
 	@override String get invalidUrl => 'Introduza um endereço de servidor como https://seerr.example.com';
 	@override String get quickConnectUnsupported => 'Esta instância do Seerr não suporta o Quick Connect. É necessário o Seerr 3.4 ou mais recente.';
 	@override String get notInitialized => 'Esta instância do Seerr não concluiu a configuração inicial';
@@ -2403,7 +2403,7 @@ class _Translations$services$pt_PT extends Translations$services$pt {
 	@override String get scrobble => 'Registar progresso automaticamente';
 	@override String get scrobbleDescription => 'Atualiza a sua lista quando termina um episódio ou filme.';
 	@override String disconnectConfirm({required Object service}) => 'Desligar ${service}?';
-	@override String disconnectConfirmBody({required Object service}) => 'O GucciPlexa deixará de atualizar ${service}. Volte a ligar quando quiser.';
+	@override String disconnectConfirmBody({required Object service}) => 'O Offstage deixará de atualizar ${service}. Volte a ligar quando quiser.';
 	@override String connectFailed({required Object service}) => 'Não foi possível ligar ao ${service}. Tente novamente.';
 	@override late final _Translations$services$names$pt_PT names = _Translations$services$names$pt_PT._(_root);
 	@override late final _Translations$services$simklReconnect$pt_PT simklReconnect = _Translations$services$simklReconnect$pt_PT._(_root);
@@ -2476,7 +2476,7 @@ class _Translations$deepLinks$pt_PT extends Translations$deepLinks$en {
 	final TranslationsPtPt _root; // ignore: unused_field
 
 	// Translations
-	@override String get invalid => 'Este link do GucciPlexa não é válido.';
+	@override String get invalid => 'Este link do Offstage não é válido.';
 	@override String profileNotFound({required Object profile}) => 'Nenhum perfil corresponde a "${profile}".';
 	@override String get serverUnavailable => 'Não foi possível contactar o servidor deste link.';
 	@override String get notFound => 'Não foi possível encontrar este título nas suas bibliotecas.';
@@ -3190,7 +3190,7 @@ class _Translations$watchTogether$errors$pt_PT extends Translations$watchTogethe
 	@override String get relayFull => 'O Ver juntos está sobrecarregado de momento. Tente novamente mais tarde.';
 	@override String get unreachable => 'Não foi possível contactar o servidor de retransmissão do Ver juntos. Verifique a sua ligação.';
 	@override String get rateLimited => 'Demasiadas tentativas. Aguarde um momento e tente novamente.';
-	@override String get clientBlocked => 'Esta versão do GucciPlexa não pode usar o servidor de retransmissão. Atualize a aplicação.';
+	@override String get clientBlocked => 'Esta versão do Offstage não pode usar o servidor de retransmissão. Atualize a aplicação.';
 	@override String get forbidden => 'Apenas o anfitrião pode fazer isto.';
 	@override String get notInRoom => 'Não está numa sala.';
 	@override String get alreadyInRoom => 'Já está numa sala.';
@@ -3211,14 +3211,14 @@ class _Translations$downloads$backgroundWarning$pt_PT extends Translations$downl
 	@override String get bannerAction => 'Detalhes';
 	@override String get sheetTitle => 'As transferências em segundo plano estão bloqueadas';
 	@override String get sheetTitleDegraded => 'As transferências em segundo plano podem estar limitadas';
-	@override String get sheetIntro => 'O Android está a impedir que o GucciPlexa faça transferências de forma fiável em segundo plano.';
-	@override String get sheetIntroDegraded => 'O seu dispositivo está a limitar quando o GucciPlexa pode fazer transferências em segundo plano.';
-	@override String get reasonBackgroundRestricted => 'A utilização em segundo plano do GucciPlexa está restrita. Defina a utilização da bateria ou a utilização em segundo plano como "Sem restrições".';
-	@override String get reasonStandbyRestricted => 'O Android colocou o GucciPlexa num modo de espera restrito. Defina a utilização da bateria como "Sem restrições".';
+	@override String get sheetIntro => 'O Android está a impedir que o Offstage faça transferências de forma fiável em segundo plano.';
+	@override String get sheetIntroDegraded => 'O seu dispositivo está a limitar quando o Offstage pode fazer transferências em segundo plano.';
+	@override String get reasonBackgroundRestricted => 'A utilização em segundo plano do Offstage está restrita. Defina a utilização da bateria ou a utilização em segundo plano como "Sem restrições".';
+	@override String get reasonStandbyRestricted => 'O Android colocou o Offstage num modo de espera restrito. Defina a utilização da bateria como "Sem restrições".';
 	@override String get reasonDownloadChannelBlocked => 'As notificações de transferência estão desativadas; por isso, o progresso e os controlos podem ficar indisponíveis.';
 	@override String get reasonNotificationsDisabled => 'As notificações estão desativadas. No Android 13 ou mais recente, são necessárias para transferências longas em segundo plano.';
 	@override String get reasonDataSaver => 'A Poupança de dados está ativada e bloqueia as transferências em segundo plano com dados móveis. As transferências devem continuar a funcionar por Wi-Fi.';
-	@override String get reasonOemUnknown => 'As transferências foram interrompidas várias vezes enquanto o GucciPlexa estava em segundo plano. Verifique as definições de bateria ou de utilização em segundo plano do GucciPlexa.';
+	@override String get reasonOemUnknown => 'As transferências foram interrompidas várias vezes enquanto o Offstage estava em segundo plano. Verifique as definições de bateria ou de utilização em segundo plano do Offstage.';
 	@override String get openSettings => 'Abrir definições';
 	@override String get stillNotWorking => 'Ajuda específica para o dispositivo';
 	@override String get stillNotWorkingDescription => 'Veja as instruções para o seu dispositivo ou, se o problema persistir, envie um registo em Definições › Ver registos.';
@@ -3273,19 +3273,19 @@ class _Translations$companionRemote$pairing$pt_PT extends Translations$companion
 	final TranslationsPtPt _root; // ignore: unused_field
 
 	// Translations
-	@override String get discoveryDescription => 'Dispositivos GucciPlexa com a mesma conta Plex aparecem aqui';
+	@override String get discoveryDescription => 'Dispositivos Offstage com a mesma conta Plex aparecem aqui';
 	@override String get hostAddressHint => '192.168.1.100:48632';
 	@override String get connecting => 'A ligar...';
 	@override String get searchingForDevices => 'A procurar dispositivos...';
 	@override String get noDevicesFound => 'Nenhum dispositivo encontrado na sua rede';
-	@override String get noDevicesHint => 'Abra o GucciPlexa no computador e use a mesma rede Wi-Fi';
+	@override String get noDevicesHint => 'Abra o Offstage no computador e use a mesma rede Wi-Fi';
 	@override String get availableDevices => 'Dispositivos disponíveis';
 	@override String get manualConnection => 'Ligação manual';
 	@override String get cryptoInitFailed => 'Não foi possível iniciar a ligação segura. Inicie sessão no Plex primeiro.';
 	@override String get validationHostRequired => 'Introduza o endereço do anfitrião';
 	@override String get validationHostFormat => 'O formato deve ser IP:porta (ex.: 192.168.1.100:48632)';
 	@override String get connectionTimedOut => 'A ligação atingiu o tempo limite. Use a mesma rede nos dois dispositivos.';
-	@override String get sessionNotFound => 'Dispositivo não encontrado. Verifique se o GucciPlexa está em execução no anfitrião.';
+	@override String get sessionNotFound => 'Dispositivo não encontrado. Verifique se o Offstage está em execução no anfitrião.';
 	@override String get authFailed => 'Falha na autenticação. Ambos os dispositivos têm de usar a mesma conta Plex.';
 	@override String failedToConnect({required Object error}) => 'Falha ao ligar: ${error}';
 }
@@ -3375,7 +3375,7 @@ class _Translations$services$deviceCode$pt_PT extends Translations$services$devi
 	final TranslationsPtPt _root; // ignore: unused_field
 
 	// Translations
-	@override String title({required Object service}) => 'Ativar o GucciPlexa no ${service}';
+	@override String title({required Object service}) => 'Ativar o Offstage no ${service}';
 	@override String get instructions => 'Digitalize o código QR ou aceda ao endereço abaixo e introduza este código:';
 	@override String openToActivate({required Object service}) => 'Abrir ${service} para ativar';
 	@override String get copyCode => 'Copiar código de ativação';
@@ -3435,15 +3435,15 @@ class _Translations$services$libraryFilter$pt_PT extends Translations$services$l
 extension on TranslationsPtPt {
 	dynamic _flatMapFunction(String path) {
 		return switch (path) {
-			'app.title' => 'GucciPlexa',
+			'app.title' => 'Offstage',
 			'appIcon.title' => 'Ícone da aplicação',
 			'appIcon.defaultIcon' => 'Predefinido',
 			'appIcon.current' => 'Ícone atual',
 			'appIcon.locked' => 'Incluído no Pacote de temas e ícones',
 			'appIcon.lockedHint' => 'Os ícones alternativos estão incluídos no Pacote de temas e ícones.',
 			'appIcon.changeFailed' => 'Não foi possível alterar o ícone da aplicação',
-			'appIcon.launcherHint' => 'O novo ícone aparece no ecrã inicial assim que sair do GucciPlexa.',
-			'appIcon.tvLauncherHint' => 'O novo banner aparece assim que sair do GucciPlexa. O Android TV pode continuar a mostrar o antigo até a TV ser reiniciada.',
+			'appIcon.launcherHint' => 'O novo ícone aparece no ecrã inicial assim que sair do Offstage.',
+			'appIcon.tvLauncherHint' => 'O novo banner aparece assim que sair do Offstage. O Android TV pode continuar a mostrar o antigo até a TV ser reiniciada.',
 			'appIcon.names.midnight' => 'Meia-noite',
 			'appIcon.names.ember' => 'Brasa',
 			'appIcon.names.paper' => 'Papel',
@@ -3482,7 +3482,7 @@ extension on TranslationsPtPt {
 			'auth.quickConnectWaiting' => 'A aguardar aprovação…',
 			'auth.quickConnectCancel' => 'Cancelar',
 			'auth.quickConnectExpired' => 'O Quick Connect expirou. Tente novamente.',
-			'auth.localDataRecoveryRequired' => 'O GucciPlexa não conseguiu recuperar com segurança os dados locais de acesso e de reproduções pendentes. Inicie sessão novamente.',
+			'auth.localDataRecoveryRequired' => 'O Offstage não conseguiu recuperar com segurança os dados locais de acesso e de reproduções pendentes. Inicie sessão novamente.',
 			'auth.pinCheckRejected' => 'A verificação do PIN do Plex foi rejeitada',
 			'common.cancel' => 'Cancelar',
 			'common.save' => 'Guardar',
@@ -3577,7 +3577,7 @@ extension on TranslationsPtPt {
 			'supporter.customTheme' => 'Tema personalizado',
 			'supporter.customThemeDescription' => 'Escolha cada cor à sua maneira',
 			'supporter.appIcons' => 'Ícones da aplicação',
-			'supporter.appIconsDescription' => 'Escolha um ícone alternativo do GucciPlexa',
+			'supporter.appIconsDescription' => 'Escolha um ícone alternativo do Offstage',
 			'supporter.buy' => ({required Object price}) => 'Comprar por ${price}',
 			'supporter.loadingPrice' => 'A carregar preço...',
 			'supporter.restore' => 'Restaurar compras',
@@ -3741,7 +3741,7 @@ extension on TranslationsPtPt {
 			'settings.importSettingsDescription' => 'Restaurar preferências a partir de um ficheiro',
 			'settings.importSettingsConfirm' => 'Isto substituirá as suas definições atuais. Continuar?',
 			'settings.importSettingsSuccess' => 'Definições importadas',
-			'settings.importSettingsInvalidFile' => 'Este ficheiro não é uma exportação válida do GucciPlexa',
+			'settings.importSettingsInvalidFile' => 'Este ficheiro não é uma exportação válida do Offstage',
 			'settings.importSettingsNoUser' => 'Inicie sessão antes de importar as definições',
 			'settings.shortcutsReset' => 'Atalhos repostos para os predefinidos',
 			'settings.resetShortcutsConfirm' => 'Isto substituirá os seus atalhos personalizados pelos predefinidos. Continuar?',
@@ -3878,7 +3878,7 @@ extension on TranslationsPtPt {
 			'settings.forceTvMode' => 'Forçar modo TV',
 			'settings.forceTvModeDescription' => 'Forçar o esquema de TV em dispositivos sem deteção automática. Requer reiniciar a aplicação.',
 			'settings.startInFullscreen' => 'Iniciar em ecrã inteiro',
-			'settings.startInFullscreenDescription' => 'Abrir o GucciPlexa em modo de ecrã inteiro ao iniciar',
+			'settings.startInFullscreenDescription' => 'Abrir o Offstage em modo de ecrã inteiro ao iniciar',
 			'settings.exitFullscreenOnPlayerClose' => 'Sair do ecrã inteiro ao fechar o reprodutor',
 			'settings.exitFullscreenOnPlayerCloseDescription' => 'Sair automaticamente do ecrã inteiro ao fechar o reprodutor de vídeo',
 			'settings.autoHidePerformanceOverlay' => 'Ocultar automaticamente o painel de desempenho',
@@ -3928,7 +3928,7 @@ extension on TranslationsPtPt {
 			'settings.playerScopeGlobal' => 'Em todo o lado',
 			'settings.playerScopeLibrary' => 'Por biblioteca',
 			'settings.playerScopeTitle' => 'Por série ou filme',
-			'settings.exportDialogTitle' => 'Exportar definições do GucciPlexa',
+			'settings.exportDialogTitle' => 'Exportar definições do Offstage',
 			'themeEditor.builtIn' => 'Integrados',
 			'themeEditor.presets' => 'Predefinidos',
 			'themeEditor.custom' => 'Personalizado',
@@ -4146,8 +4146,8 @@ extension on TranslationsPtPt {
 			'mediaMenu.deleteEpisodeCountWarning' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('pt'))(n, one: 'Isto elimina ${n} episódio e o respetivo ficheiro.', other: 'Isto elimina todos os ${n} episódios e os respetivos ficheiros.', ), 
 			'mediaMenu.deleteMultiPartWarning' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('pt'))(n, one: 'Este item está armazenado como ${n} ficheiro, que será eliminado.', other: 'Este item está armazenado em ${n} ficheiros, e todos eles serão eliminados.', ), 
 			'mediaMenu.deleteSharedFileHeading' => ({required num n}) => (_root.$meta.cardinalResolver ?? PluralResolvers.cardinal('pt'))(n, one: 'Mais ${n} episódio está armazenado no mesmo ficheiro e também será eliminado:', other: 'Mais ${n} episódios estão armazenados no mesmo ficheiro e também serão eliminados:', ), 
-			'mediaMenu.deleteScopeUnverifiedProbeFailed' => 'O GucciPlexa não conseguiu verificar que ficheiros serão removidos, por isso pode eliminar mais do que o item acima. Cancele e tente novamente, ou elimine mesmo assim.',
-			'mediaMenu.deleteScopeUnverifiedNoFileInfo' => 'O seu servidor não forneceu detalhes do ficheiro para este item, por isso o GucciPlexa não consegue verificar que ficheiros serão removidos. Pode eliminar mais do que o item acima.',
+			'mediaMenu.deleteScopeUnverifiedProbeFailed' => 'O Offstage não conseguiu verificar que ficheiros serão removidos, por isso pode eliminar mais do que o item acima. Cancele e tente novamente, ou elimine mesmo assim.',
+			'mediaMenu.deleteScopeUnverifiedNoFileInfo' => 'O seu servidor não forneceu detalhes do ficheiro para este item, por isso o Offstage não consegue verificar que ficheiros serão removidos. Pode eliminar mais do que o item acima.',
 			'mediaMenu.mediaDeletedSuccessfully' => 'Item multimédia eliminado com sucesso',
 			'mediaMenu.mediaFailedToDelete' => 'Falha ao eliminar o item multimédia',
 			'mediaMenu.rate' => 'Avaliar',
@@ -4398,7 +4398,7 @@ extension on TranslationsPtPt {
 			'mpvConfig.removeLine' => 'Remover linha',
 			'mpvConfig.embeddedVoHint' => 'vo, gpu-context e gpu-api são ignorados no Linux: o vídeo incorporado é sempre renderizado via vo=libmpv no plano de vídeo, e gpu-next (necessário para shaders de computação como ArtCNN) não pode ser executado incorporado.',
 			'dialog.confirmAction' => 'Confirmar ação',
-			'profiles.addPlezyProfile' => 'Adicionar perfil GucciPlexa',
+			'profiles.addPlezyProfile' => 'Adicionar perfil Offstage',
 			'profiles.switchingProfile' => 'A mudar de perfil…',
 			'profiles.deleteThisProfileTitle' => 'Eliminar este perfil?',
 			'profiles.deleteThisProfileMessage' => ({required Object displayName}) => 'Remover ${displayName}. As ligações não serão afetadas.',
@@ -4475,12 +4475,12 @@ extension on TranslationsPtPt {
 			'connections.accessDeniedMany' => ({required Object count}) => '${count} servidores negaram o acesso a esta conta',
 			'connections.signInAgain' => 'Iniciar sessão novamente',
 			'connections.editMediaBrowserTitle' => ({required Object product}) => 'Editar ligação do ${product}',
-			'connections.editMediaBrowserIntro' => ({required Object serverName}) => 'Adicione ou remova URLs para ${serverName}. O GucciPlexa usará o URL acessível com menor latência.',
+			'connections.editMediaBrowserIntro' => ({required Object serverName}) => 'Adicione ou remova URLs para ${serverName}. O Offstage usará o URL acessível com menor latência.',
 			'accountPreferences.sectionTitle' => 'Preferências da conta',
 			'accountPreferences.hubSubtitleSingle' => ({required Object account}) => 'Opções de áudio, legendas e biblioteca guardadas em ${account}',
 			'accountPreferences.hubSubtitleMultiple' => ({required Object count}) => 'Opções de áudio, legendas e biblioteca guardadas em ${count} contas',
 			'accountPreferences.pickAccount' => 'Cada conta guarda as suas próprias preferências. Escolha a que pretende editar.',
-			'accountPreferences.storedOnAccount' => 'Estas opções são guardadas na própria conta, por isso todas as aplicações ligadas a ela as utilizam — incluindo o GucciPlexa nos seus outros dispositivos.',
+			'accountPreferences.storedOnAccount' => 'Estas opções são guardadas na própria conta, por isso todas as aplicações ligadas a ela as utilizam — incluindo o Offstage nos seus outros dispositivos.',
 			'accountPreferences.noAccounts' => 'Nenhuma conta para configurar',
 			'accountPreferences.noAccountsHint' => 'Inicie sessão no Plex ou ligue um servidor Jellyfin ou Emby, e as preferências guardadas nessa conta aparecerão aqui.',
 			'accountPreferences.unavailable' => 'Não foi possível aceder a esta conta',
@@ -4714,9 +4714,9 @@ extension on TranslationsPtPt {
 			'logs.clearLogs' => 'Limpar registos',
 			'logs.copyLogs' => 'Copiar registos',
 			'logs.uploadLogs' => 'Enviar registos',
-			'startup.failedTitle' => 'O GucciPlexa não conseguiu iniciar',
+			'startup.failedTitle' => 'O Offstage não conseguiu iniciar',
 			'startup.failedBody' => 'Algo correu mal durante o arranque. Os detalhes abaixo identificam o que falhou.',
-			'startup.failedBodyRepairable' => 'O ficheiro de definições guardado do GucciPlexa está danificado e tem de ser reconstruído antes de o GucciPlexa poder iniciar. Tentar novamente não vai ajudar — escolha Reparar armazenamento.',
+			'startup.failedBodyRepairable' => 'O ficheiro de definições guardado do Offstage está danificado e tem de ser reconstruído antes de o Offstage poder iniciar. Tentar novamente não vai ajudar — escolha Reparar armazenamento.',
 			'startup.phaseLabel' => 'Fase',
 			'startup.showDetails' => 'Mostrar detalhes',
 			'startup.hideDetails' => 'Ocultar detalhes',
@@ -4725,16 +4725,16 @@ extension on TranslationsPtPt {
 			'startup.uploadDetails' => 'Enviar detalhes',
 			'startup.repairStorage' => 'Reparar armazenamento',
 			'startup.repairTitle' => 'Reparar dados armazenados?',
-			'startup.repairBodyCommon' => 'O ficheiro de definições do GucciPlexa está danificado e não pode ser lido. Reparar repõe todas as definições predefinidas.',
+			'startup.repairBodyCommon' => 'O ficheiro de definições do Offstage está danificado e não pode ser lido. Reparar repõe todas as definições predefinidas.',
 			'startup.repairBodyOneCredential' => 'Um início de sessão guardado está danificado e não pode ser lido. Reparar remove apenas esse início de sessão; as suas outras definições permanecem intactas.',
 			'startup.repairBodySignInsKept' => 'Os seus servidores e perfis devem permanecer ligados.',
 			'startup.repairBodySignInsLost' => 'A chave que protege os seus inícios de sessão guardados não pode ser recuperada deste ficheiro, por isso terá de iniciar sessão novamente em todos os servidores e perfis. Nada no seu servidor multimédia é afetado.',
-			'startup.repairBodySessionsUncertain' => 'Os rastreadores (MAL, AniList, Simkl, Trakt) e o Seerr são guardados separadamente e podem ou não ser preservados. O GucciPlexa indicará exatamente o que foi mantido.',
+			'startup.repairBodySessionsUncertain' => 'Os rastreadores (MAL, AniList, Simkl, Trakt) e o Seerr são guardados separadamente e podem ou não ser preservados. O Offstage indicará exatamente o que foi mantido.',
 			'startup.repairConfirm' => 'Reparar',
 			'startup.repairSucceeded' => 'Armazenamento reparado',
 			'startup.repairNeedsRestart' => 'Armazenamento reparado — reinício necessário',
-			'startup.restartRequiredBody' => 'Os seus dados foram reparados, mas o GucciPlexa tem de iniciar do zero antes de os usar. Feche o GucciPlexa e abra-o novamente.',
-			'startup.quitPlezy' => 'Sair do GucciPlexa',
+			'startup.restartRequiredBody' => 'Os seus dados foram reparados, mas o Offstage tem de iniciar do zero antes de os usar. Feche o Offstage e abra-o novamente.',
+			'startup.quitPlezy' => 'Sair do Offstage',
 			'startup.repairFailed' => 'Falha na reparação',
 			'startup.repairKeptSignIns' => 'Os seus servidores e perfis ainda estão ligados.',
 			'startup.repairLostSignIns' => 'A chave que protege os seus inícios de sessão guardados não pôde ser recuperada. Terá de iniciar sessão novamente em todos os servidores e perfis.',
@@ -4743,7 +4743,7 @@ extension on TranslationsPtPt {
 			'startup.backupWarning' => 'Contém as suas credenciais de início de sessão. Não a envie nem partilhe.',
 			'startup.deleteBackup' => 'Eliminar cópia',
 			'startup.backupDeleted' => 'Cópia eliminada.',
-			'startup.previousFailureTitle' => 'O GucciPlexa não conseguiu iniciar da última vez',
+			'startup.previousFailureTitle' => 'O Offstage não conseguiu iniciar da última vez',
 			'licenses.relatedPackages' => 'Pacotes relacionados',
 			'licenses.license' => 'Licença',
 			'licenses.licenseNumber' => ({required Object number}) => 'Licença ${number}',
@@ -5089,7 +5089,7 @@ extension on TranslationsPtPt {
 			'watchTogether.codeCopied' => 'Código da sala copiado',
 			'watchTogether.shareInvite' => 'Partilhar convite',
 			'watchTogether.inviteCopied' => 'Convite copiado. Cole-o numa mensagem.',
-			'watchTogether.inviteMessage' => ({required Object code}) => 'Entra na minha sala do Ver juntos no GucciPlexa: abre "Ver juntos", escolhe "Entrar na sala" e introduz ${code}.',
+			'watchTogether.inviteMessage' => ({required Object code}) => 'Entra na minha sala do Ver juntos no Offstage: abre "Ver juntos", escolhe "Entrar na sala" e introduz ${code}.',
 			'watchTogether.openSessionControls' => 'Abrir os controlos da sessão Ver juntos',
 			'watchTogether.reconnecting' => 'A voltar a ligar...',
 			'watchTogether.reconnectingDescription' => 'A ligação caiu. Vai voltar à sala automaticamente.',
@@ -5115,7 +5115,7 @@ extension on TranslationsPtPt {
 			'watchTogether.chooseAnotherCopy' => 'Escolher outra cópia',
 			'watchTogether.dontPlay' => 'Não reproduzir',
 			'watchTogether.unavailableTitle' => 'Não tem este vídeo',
-			'watchTogether.unavailableDescription' => 'O GucciPlexa não o encontrou nas suas bibliotecas. Escolha uma cópia manualmente ou pesquise novamente.',
+			'watchTogether.unavailableDescription' => 'O Offstage não o encontrou nas suas bibliotecas. Escolha uma cópia manualmente ou pesquise novamente.',
 			'watchTogether.chooseCopy' => 'Escolher uma cópia',
 			'watchTogether.searchAgain' => 'Pesquisar novamente',
 			'watchTogether.noCandidates' => 'Nenhuma cópia encontrada nas suas bibliotecas.',
@@ -5207,7 +5207,7 @@ extension on TranslationsPtPt {
 			'watchTogether.errors.relayFull' => 'O Ver juntos está sobrecarregado de momento. Tente novamente mais tarde.',
 			'watchTogether.errors.unreachable' => 'Não foi possível contactar o servidor de retransmissão do Ver juntos. Verifique a sua ligação.',
 			'watchTogether.errors.rateLimited' => 'Demasiadas tentativas. Aguarde um momento e tente novamente.',
-			'watchTogether.errors.clientBlocked' => 'Esta versão do GucciPlexa não pode usar o servidor de retransmissão. Atualize a aplicação.',
+			'watchTogether.errors.clientBlocked' => 'Esta versão do Offstage não pode usar o servidor de retransmissão. Atualize a aplicação.',
 			'watchTogether.errors.forbidden' => 'Apenas o anfitrião pode fazer isto.',
 			'watchTogether.errors.notInRoom' => 'Não está numa sala.',
 			'watchTogether.errors.alreadyInRoom' => 'Já está numa sala.',
@@ -5301,14 +5301,14 @@ extension on TranslationsPtPt {
 			'downloads.backgroundWarning.bannerAction' => 'Detalhes',
 			'downloads.backgroundWarning.sheetTitle' => 'As transferências em segundo plano estão bloqueadas',
 			'downloads.backgroundWarning.sheetTitleDegraded' => 'As transferências em segundo plano podem estar limitadas',
-			'downloads.backgroundWarning.sheetIntro' => 'O Android está a impedir que o GucciPlexa faça transferências de forma fiável em segundo plano.',
-			'downloads.backgroundWarning.sheetIntroDegraded' => 'O seu dispositivo está a limitar quando o GucciPlexa pode fazer transferências em segundo plano.',
-			'downloads.backgroundWarning.reasonBackgroundRestricted' => 'A utilização em segundo plano do GucciPlexa está restrita. Defina a utilização da bateria ou a utilização em segundo plano como "Sem restrições".',
-			'downloads.backgroundWarning.reasonStandbyRestricted' => 'O Android colocou o GucciPlexa num modo de espera restrito. Defina a utilização da bateria como "Sem restrições".',
+			'downloads.backgroundWarning.sheetIntro' => 'O Android está a impedir que o Offstage faça transferências de forma fiável em segundo plano.',
+			'downloads.backgroundWarning.sheetIntroDegraded' => 'O seu dispositivo está a limitar quando o Offstage pode fazer transferências em segundo plano.',
+			'downloads.backgroundWarning.reasonBackgroundRestricted' => 'A utilização em segundo plano do Offstage está restrita. Defina a utilização da bateria ou a utilização em segundo plano como "Sem restrições".',
+			'downloads.backgroundWarning.reasonStandbyRestricted' => 'O Android colocou o Offstage num modo de espera restrito. Defina a utilização da bateria como "Sem restrições".',
 			'downloads.backgroundWarning.reasonDownloadChannelBlocked' => 'As notificações de transferência estão desativadas; por isso, o progresso e os controlos podem ficar indisponíveis.',
 			'downloads.backgroundWarning.reasonNotificationsDisabled' => 'As notificações estão desativadas. No Android 13 ou mais recente, são necessárias para transferências longas em segundo plano.',
 			'downloads.backgroundWarning.reasonDataSaver' => 'A Poupança de dados está ativada e bloqueia as transferências em segundo plano com dados móveis. As transferências devem continuar a funcionar por Wi-Fi.',
-			'downloads.backgroundWarning.reasonOemUnknown' => 'As transferências foram interrompidas várias vezes enquanto o GucciPlexa estava em segundo plano. Verifique as definições de bateria ou de utilização em segundo plano do GucciPlexa.',
+			'downloads.backgroundWarning.reasonOemUnknown' => 'As transferências foram interrompidas várias vezes enquanto o Offstage estava em segundo plano. Verifique as definições de bateria ou de utilização em segundo plano do Offstage.',
 			'downloads.backgroundWarning.openSettings' => 'Abrir definições',
 			'downloads.backgroundWarning.stillNotWorking' => 'Ajuda específica para o dispositivo',
 			'downloads.backgroundWarning.stillNotWorkingDescription' => 'Veja as instruções para o seu dispositivo ou, se o problema persistir, envie um registo em Definições › Ver registos.',
@@ -5372,19 +5372,19 @@ extension on TranslationsPtPt {
 			'companionRemote.session.stopServer' => 'Parar servidor',
 			'companionRemote.session.minimize' => 'Minimizar',
 			'companionRemote.session.manualAddressHint' => 'Endereço de ligação manual:',
-			'companionRemote.pairing.discoveryDescription' => 'Dispositivos GucciPlexa com a mesma conta Plex aparecem aqui',
+			'companionRemote.pairing.discoveryDescription' => 'Dispositivos Offstage com a mesma conta Plex aparecem aqui',
 			'companionRemote.pairing.hostAddressHint' => '192.168.1.100:48632',
 			'companionRemote.pairing.connecting' => 'A ligar...',
 			'companionRemote.pairing.searchingForDevices' => 'A procurar dispositivos...',
 			'companionRemote.pairing.noDevicesFound' => 'Nenhum dispositivo encontrado na sua rede',
-			'companionRemote.pairing.noDevicesHint' => 'Abra o GucciPlexa no computador e use a mesma rede Wi-Fi',
+			'companionRemote.pairing.noDevicesHint' => 'Abra o Offstage no computador e use a mesma rede Wi-Fi',
 			'companionRemote.pairing.availableDevices' => 'Dispositivos disponíveis',
 			'companionRemote.pairing.manualConnection' => 'Ligação manual',
 			'companionRemote.pairing.cryptoInitFailed' => 'Não foi possível iniciar a ligação segura. Inicie sessão no Plex primeiro.',
 			'companionRemote.pairing.validationHostRequired' => 'Introduza o endereço do anfitrião',
 			'companionRemote.pairing.validationHostFormat' => 'O formato deve ser IP:porta (ex.: 192.168.1.100:48632)',
 			'companionRemote.pairing.connectionTimedOut' => 'A ligação atingiu o tempo limite. Use a mesma rede nos dois dispositivos.',
-			'companionRemote.pairing.sessionNotFound' => 'Dispositivo não encontrado. Verifique se o GucciPlexa está em execução no anfitrião.',
+			'companionRemote.pairing.sessionNotFound' => 'Dispositivo não encontrado. Verifique se o Offstage está em execução no anfitrião.',
 			'companionRemote.pairing.authFailed' => 'Falha na autenticação. Ambos os dispositivos têm de usar a mesma conta Plex.',
 			'companionRemote.pairing.failedToConnect' => ({required Object error}) => 'Falha ao ligar: ${error}',
 			'companionRemote.remote.disconnectConfirm' => 'Pretende desligar-se da sessão remota?',
@@ -5613,11 +5613,11 @@ extension on TranslationsPtPt {
 			'trakt.connected' => 'Ligado',
 			'trakt.connectedAs' => ({required Object username}) => 'Ligado como @${username}',
 			'trakt.disconnectConfirm' => 'Desligar a conta do Trakt?',
-			'trakt.disconnectConfirmBody' => 'O GucciPlexa deixará de enviar eventos para o Trakt. Pode voltar a ligar quando quiser.',
+			'trakt.disconnectConfirmBody' => 'O Offstage deixará de enviar eventos para o Trakt. Pode voltar a ligar quando quiser.',
 			'trakt.scrobble' => 'Scrobbling em tempo real',
 			'trakt.scrobbleDescription' => 'Envia eventos de reprodução, pausa e paragem para o Trakt durante a visualização.',
 			'trakt.watchedSync' => 'Sincronizar estado de visto',
-			'trakt.watchedSyncDescription' => 'Ao marcar itens como vistos no GucciPlexa, também serão marcados no Trakt.',
+			'trakt.watchedSyncDescription' => 'Ao marcar itens como vistos no Offstage, também serão marcados no Trakt.',
 			'seerr.title' => 'Seerr',
 			'seerr.connectTitle' => 'Ligar ao Seerr',
 			'seerr.serverUrl' => 'URL do servidor',
@@ -5627,10 +5627,10 @@ extension on TranslationsPtPt {
 			'seerr.signInWithEmby' => 'Iniciar sessão com o Emby',
 			'seerr.signInWithLocal' => 'Usar uma conta local',
 			'seerr.email' => 'E-mail',
-			'seerr.noSignInMethods' => 'Esta instância do Seerr não oferece nenhum método de acesso compatível com o GucciPlexa.',
+			'seerr.noSignInMethods' => 'Esta instância do Seerr não oferece nenhum método de acesso compatível com o Offstage.',
 			'seerr.instance' => 'Instância',
 			'seerr.disconnectConfirm' => 'Desligar o Seerr?',
-			'seerr.disconnectConfirmBody' => 'O GucciPlexa esquecerá esta instância do Seerr. Volte a ligar quando quiser.',
+			'seerr.disconnectConfirmBody' => 'O Offstage esquecerá esta instância do Seerr. Volte a ligar quando quiser.',
 			'seerr.request' => 'Pedir',
 			'seerr.request4k' => 'Pedir em 4K',
 			'seerr.seasons' => 'Temporadas',
@@ -5655,7 +5655,7 @@ extension on TranslationsPtPt {
 			'seerr.statusBlocklisted' => 'Na lista de bloqueio',
 			'seerr.couldNotReach' => ({required Object url, required Object error}) => 'Não foi possível contactar ${url}: ${error}',
 			'seerr.noInstanceAtUrl' => ({required Object url, required Object status}) => 'Nenhuma instância do Seerr em ${url} (HTTP ${status})',
-			'seerr.behindAuthProxy' => 'Um proxy inverso com autenticação (SSO ou autenticação HTTP) respondeu em vez do Seerr. O GucciPlexa não consegue iniciar sessão através dele: permita que o caminho /api/v1 do Seerr ignore o proxy para esta aplicação, ou use um endereço que chegue diretamente ao Seerr.',
+			'seerr.behindAuthProxy' => 'Um proxy inverso com autenticação (SSO ou autenticação HTTP) respondeu em vez do Seerr. O Offstage não consegue iniciar sessão através dele: permita que o caminho /api/v1 do Seerr ignore o proxy para esta aplicação, ou use um endereço que chegue diretamente ao Seerr.',
 			'seerr.invalidUrl' => 'Introduza um endereço de servidor como https://seerr.example.com',
 			'seerr.quickConnectUnsupported' => 'Esta instância do Seerr não suporta o Quick Connect. É necessário o Seerr 3.4 ou mais recente.',
 			'seerr.notInitialized' => 'Esta instância do Seerr não concluiu a configuração inicial',
@@ -5676,7 +5676,7 @@ extension on TranslationsPtPt {
 			'services.scrobble' => 'Registar progresso automaticamente',
 			'services.scrobbleDescription' => 'Atualiza a sua lista quando termina um episódio ou filme.',
 			'services.disconnectConfirm' => ({required Object service}) => 'Desligar ${service}?',
-			'services.disconnectConfirmBody' => ({required Object service}) => 'O GucciPlexa deixará de atualizar ${service}. Volte a ligar quando quiser.',
+			'services.disconnectConfirmBody' => ({required Object service}) => 'O Offstage deixará de atualizar ${service}. Volte a ligar quando quiser.',
 			'services.connectFailed' => ({required Object service}) => 'Não foi possível ligar ao ${service}. Tente novamente.',
 			'services.names.mal' => 'MyAnimeList',
 			'services.names.anilist' => 'AniList',
@@ -5685,7 +5685,7 @@ extension on TranslationsPtPt {
 			'services.names.mdblist' => 'MDBList',
 			'services.simklReconnect.title' => 'Voltar a ligar o Simkl',
 			'services.simklReconnect.subtitle' => 'O Simkl está a desativar o método de acesso usado por esta ligação. Ao voltar a ligar, o simkl.com será aberto para aprovar o Plezy — o Plezy nunca vê a sua palavra-passe. O seu histórico de visualização continua no Simkl.',
-			'services.deviceCode.title' => ({required Object service}) => 'Ativar o GucciPlexa no ${service}',
+			'services.deviceCode.title' => ({required Object service}) => 'Ativar o Offstage no ${service}',
 			'services.deviceCode.instructions' => 'Digitalize o código QR ou aceda ao endereço abaixo e introduza este código:',
 			'services.deviceCode.openToActivate' => ({required Object service}) => 'Abrir ${service} para ativar',
 			'services.deviceCode.copyCode' => 'Copiar código de ativação',
@@ -5755,7 +5755,7 @@ extension on TranslationsPtPt {
 			'addServer.redirectDifferentHost' => ({required Object product}) => 'O servidor redirecionou para outro anfitrião. Introduza diretamente o URL final do ${product}.',
 			'addServer.redirectInsecure' => 'O servidor redirecionou de HTTPS para um URL inseguro',
 			'addServer.redirectUnsupportedEnterFinal' => ({required Object product}) => 'O servidor redirecionou para um URL não suportado. Introduza diretamente o URL final do ${product}.',
-			'deepLinks.invalid' => 'Este link do GucciPlexa não é válido.',
+			'deepLinks.invalid' => 'Este link do Offstage não é válido.',
 			'deepLinks.profileNotFound' => ({required Object profile}) => 'Nenhum perfil corresponde a "${profile}".',
 			'deepLinks.serverUnavailable' => 'Não foi possível contactar o servidor deste link.',
 			'deepLinks.notFound' => 'Não foi possível encontrar este título nas suas bibliotecas.',

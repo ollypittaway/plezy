@@ -90,7 +90,7 @@ class _ApkUpdateDialogState extends State<_ApkUpdateDialog> {
         Navigator.pop(context);
       } else {
         setState(() {
-          _message = 'Allow GucciPlexa to install unknown apps in Settings, then select Update now again.';
+          _message = 'Allow ${t.app.title} to install unknown apps in Settings, then select Update now again.';
         });
       }
     } catch (_) {

@@ -53,7 +53,12 @@ class DialogActionButton extends StatelessWidget {
       (false, null) => TextButton(onPressed: onPressed, style: style, child: Text(label)),
     };
 
+    final themedStyle = isPrimary ? FilledButtonTheme.of(context).style : TextButtonTheme.of(context).style;
+    final shape = (style?.shape ?? themedStyle?.shape)?.resolve({WidgetState.focused});
     return FocusableButton(
+      borderRadius: shape is RoundedRectangleBorder
+          ? shape.borderRadius.resolve(Directionality.of(context)).topLeft.x
+          : 100,
       focusNode: focusNode,
       autofocus: autofocus,
       onPressed: onPressed,

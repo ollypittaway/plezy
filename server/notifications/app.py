@@ -1,6 +1,7 @@
-"""GucciPlexa's private broadcast panel and device feed."""
+"""Offstage's private broadcast panel and device feed."""
 import hashlib
 import hmac
+import mimetypes
 import os
 import re
 import secrets
@@ -43,7 +44,8 @@ def create_app(directory, admin_key, *, sender=None, verifier=verify_plex, autom
         conn.execute("INSERT OR IGNORE INTO config VALUES ('pair', ?)", (secrets.token_urlsafe(32),))
         pair_key = conn.execute("SELECT value FROM config WHERE key='pair'").fetchone()[0]
 
-    app = Flask(__name__, static_folder=None)
+    mimetypes.add_type('font/woff2', '.woff2')
+    app = Flask(__name__, static_folder='brand', static_url_path='/brand')
     app.config['MAX_CONTENT_LENGTH'] = 256 * 1024
     app.config['SYNC_SIGNING_KEY'] = admin_key
 
@@ -75,7 +77,8 @@ def create_app(directory, admin_key, *, sender=None, verifier=verify_plex, autom
     @app.after_request
     def headers(response):
         response.headers.update({
-            'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
+            'Cache-Control': 'no-cache' if request.endpoint == 'static' else 'no-store',
+            'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
             'Content-Security-Policy': "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
         })
         return response

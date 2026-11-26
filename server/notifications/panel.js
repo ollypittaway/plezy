@@ -93,12 +93,13 @@ async function refresh() {
 }
 el('signin').onsubmit = async (event) => {
   event.preventDefault();
+  el('login-status').textContent = '';
   key = el('admin').value;
   try {
     await refresh();
     el('admin').value = '';
     el('login').hidden = true;
-    el('workspace').hidden = el('signout').hidden = false;
+    el('workspace').hidden = false;
     el('status').textContent = '';
     clearInterval(refreshTimer);
     refreshTimer = setInterval(
@@ -107,7 +108,7 @@ el('signin').onsubmit = async (event) => {
     );
   } catch (e) {
     key = '';
-    el('status').textContent = e.message;
+    el('login-status').textContent = e.message;
   }
 };
 el('signout').onclick = () => location.reload();

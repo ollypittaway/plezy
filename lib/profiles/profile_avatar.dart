@@ -31,7 +31,8 @@ class ProfileAvatar extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          ClipOval(
+          ClipRRect(
+            borderRadius: BorderRadius.circular(size * 0.2),
             child: SizedBox(width: size, height: size, child: _buildContent(theme, p, memCacheSize)),
           ),
           if (showLockBadge && p != null && p.isPinProtected)

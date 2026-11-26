@@ -18,6 +18,8 @@ import '../services/settings_service.dart';
 import '../services/storage_service.dart';
 import '../providers/account_preferences_controller.dart';
 import '../i18n/strings.g.dart';
+import '../widgets/splash_logo.dart';
+import '../theme/mono_tokens.dart';
 import '../utils/app_logger.dart';
 import '../utils/dialogs.dart';
 import '../utils/platform_detector.dart';
@@ -263,81 +265,63 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    final wide = MediaQuery.sizeOf(context).width >= 760;
-    final brand = Text(
-      t.app.title,
-      style: theme.textTheme.displayLarge?.copyWith(
-        fontSize: wide ? 80 : 56,
-        height: 1,
-        letterSpacing: -3,
-        fontWeight: FontWeight.w800,
-        color: Colors.white,
-        shadows: const [Shadow(color: Colors.black54, blurRadius: 20)],
-      ),
-    );
-    final form = Container(
-      padding: EdgeInsets.all(wide ? 32 : 24),
-      decoration: BoxDecoration(
-        color: colors.surface.withValues(alpha: 0.96),
-        border: Border.all(color: colors.outline),
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(t.common.connect, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 20),
-          _buildAuthBody(),
-        ],
-      ),
-    );
+    final compactHeight = MediaQuery.sizeOf(context).height < 560;
     return Focus(
       canRequestFocus: false,
       onKeyEvent: (_, event) => handleBackKeyNavigation(context, event),
       child: Scaffold(
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              'assets/harbor.jpg',
-              fit: BoxFit.cover,
-              alignment: const Alignment(-0.4, 0),
-              excludeFromSemantics: true,
+        body: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: const Alignment(0, -0.55),
+              radius: 1.25,
+              colors: [colors.surface, theme.scaffoldBackgroundColor],
             ),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0x08030B10), Color(0xC8030B10)],
-                ),
-              ),
-            ),
-            SafeArea(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.all(wide ? 40 : 20),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: wide ? 1040 : 420),
-                    child: wide
-                        ? Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Expanded(child: brand),
-                              const SizedBox(width: 24),
-                              SizedBox(width: 368, child: form),
-                            ],
-                          )
-                        : Column(
+          ),
+          child: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: compactHeight ? 16 : 32),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(child: SplashLogo(size: compactHeight ? 120 : 176)),
+                      SizedBox(height: compactHeight ? 8 : 16),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: colors.surface,
+                          border: Border.all(color: colors.outlineVariant),
+                          borderRadius: BorderRadius.circular(MonoTokens.defaultRadiusMd),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [brand, const SizedBox(height: 24), form],
+                            children: [
+                              Semantics(
+                                header: true,
+                                child: Text(
+                                  t.common.connect,
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              _buildAuthBody(),
+                            ],
                           ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

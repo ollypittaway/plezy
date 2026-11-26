@@ -198,6 +198,8 @@ void _bootstrapApp() {
       darkTheme: monoTheme(MonoPalette.dark),
       themeMode: material.ThemeMode.dark,
       resolveTheme: _resolveStartupTheme,
+      buildLaunchArtwork: (context, finish) =>
+          SplashLogo(size: MediaQuery.sizeOf(context).height < 700 ? 160 : 288, onLaunchFinished: finish),
       // Android runs the Flutter surface in transparent mode over a window
       // whose background PlezyActivity already restored, so the loading frame
       // can leave the launch screen on display. Every other platform composites
@@ -658,6 +660,7 @@ class StartupBootstrap<T> extends StatefulWidget {
     this.themeMode = material.ThemeMode.system,
     this.resolveTheme,
     this.transparentWhileLoading = false,
+    this.buildLaunchArtwork,
   });
 
   final Future<T> Function() initialize;
@@ -698,6 +701,10 @@ class StartupBootstrap<T> extends StatefulWidget {
   /// persisted launch colour.
   final bool transparentWhileLoading;
 
+  /// Called inside the startup theme. The artwork signals when its opening
+  /// sequence finishes and can hold its resting pose during a slower launch.
+  final Widget Function(BuildContext context, VoidCallback onFinished)? buildLaunchArtwork;
+
   @override
   State<StartupBootstrap<T>> createState() => _StartupBootstrapState<T>();
 }
@@ -710,6 +717,7 @@ class _StartupBootstrapState<T> extends State<StartupBootstrap<T>> {
   /// cause; the record is a redacted allowlist and deliberately cannot.
   Object? _failureError;
   bool _completed = false;
+  bool _artworkFinished = false;
   bool _initializing = false;
   bool _repairing = false;
 
@@ -795,6 +803,7 @@ class _StartupBootstrapState<T> extends State<StartupBootstrap<T>> {
       setState(() {
         _failure = failure;
         _failureError = error;
+        _artworkFinished = true;
         _initializing = false;
       });
     }
@@ -841,6 +850,26 @@ class _StartupBootstrapState<T> extends State<StartupBootstrap<T>> {
 
   @override
   Widget build(BuildContext context) {
+    final artwork = widget.buildLaunchArtwork;
+    if (artwork != null && _failure == null) {
+      final covered = !_completed || !_artworkFinished;
+      return Stack(
+        fit: StackFit.expand,
+        alignment: Alignment.center,
+        children: [
+          // Mount SetupScreen as soon as its dependencies exist so its normal
+          // profile-aware server binding can run during the curtain opening.
+          Offstage(
+            offstage: covered,
+            child: ExcludeFocus(
+              excluding: covered,
+              child: _completed ? widget.buildApp(context, _value as T) : const SizedBox.shrink(),
+            ),
+          ),
+          if (covered) _buildLaunchLayer(context, artwork),
+        ],
+      );
+    }
     if (_completed) return widget.buildApp(context, _value as T);
 
     final resolved = _resolvedTheme;
@@ -855,8 +884,37 @@ class _StartupBootstrapState<T> extends State<StartupBootstrap<T>> {
             theme: resolved?.lightTheme ?? widget.lightTheme,
             darkTheme: resolved?.darkTheme ?? widget.darkTheme,
             themeMode: resolved?.themeMode ?? widget.themeMode,
+            themeAnimationDuration: Duration.zero,
             builder: (context, child) => AppSystemUiStyle(child: child!),
             home: Builder(builder: _buildBootstrapHome),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLaunchLayer(BuildContext context, Widget Function(BuildContext, VoidCallback) artwork) {
+    final resolved = _resolvedTheme;
+    final useDark = switch (resolved?.themeMode ?? widget.themeMode) {
+      material.ThemeMode.dark => true,
+      material.ThemeMode.light => false,
+      material.ThemeMode.system => MediaQuery.platformBrightnessOf(context) == Brightness.dark,
+    };
+    final light = resolved?.lightTheme ?? widget.lightTheme;
+    final theme = useDark ? (resolved?.darkTheme ?? widget.darkTheme ?? light ?? ThemeData.dark()) : (light ?? ThemeData.light());
+    final waitingForPalette = widget.resolveTheme != null && resolved == null && !_completed;
+    // Artwork needs only a theme. The live app owns the navigator, keyboard
+    // handler and keyed translation provider throughout the connection pass.
+    return Theme(
+      data: theme,
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: AppSystemUiStyle(
+          child: ColoredBox(
+            color: widget.transparentWhileLoading ? Colors.transparent : theme.scaffoldBackgroundColor,
+            child: Center(
+              child: waitingForPalette ? const SizedBox.shrink() : Builder(builder: (context) => artwork(context, _finishArtwork)),
+            ),
           ),
         ),
       ),
@@ -877,14 +935,15 @@ class _StartupBootstrapState<T> extends State<StartupBootstrap<T>> {
       );
     }
 
-    // Nothing here is worth covering the launch screen for. The platform
-    // window already holds the user's launch colour, and this frame outlives
-    // the whole gate, so painting a theme guessed from platform brightness is
-    // what turned a black Android TV splash into a flashbang (#1833).
+    // Let the native window supply the background on Android TV (#1833).
     return Scaffold(
       backgroundColor: widget.transparentWhileLoading ? Colors.transparent : null,
       body: const Center(child: CircularProgressIndicator(key: startupBootstrapProgressKey)),
     );
+  }
+
+  void _finishArtwork() {
+    if (mounted && !_artworkFinished) setState(() => _artworkFinished = true);
   }
 }
 
@@ -1091,7 +1150,7 @@ Future<void> _logEnvironmentDiagnostics() async {
     await Future.sync(() => Sentry.configureScope((scope) => scope.setTag('renderer', rendererName ?? 'unknown')));
   }
   appLogger.i(
-    'GucciPlexa v${appVersion.label}$commitSuffix$renderer'
+    '${t.app.title} v${appVersion.label}$commitSuffix$renderer'
     ' [effects: ${DevicePerformance.describeSync()}]',
   );
   appLogger.i('Display: ${DevicePerformance.describeDisplay()}');
@@ -2556,7 +2615,7 @@ class _SetupScreenState extends State<SetupScreen> with MountedSetStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    const coralColor = Color(0xFFE5A00D);
+    final accent = Theme.of(context).colorScheme.primary;
     final height = MediaQuery.sizeOf(context).height;
     // The stacked layout below hangs its two rows off fixed ±170/180 offsets from the middle, which
     // needs roughly 700 logical pixels of height. A car at a large interface scale — and a phone in
@@ -2576,10 +2635,10 @@ class _SetupScreenState extends State<SetupScreen> with MountedSetStateMixin {
                   const SizedBox(height: 16),
                   Center(
                     child: _serverStatus.isEmpty
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: coralColor),
+                            child: CircularProgressIndicator(strokeWidth: 2, color: accent),
                           )
                         : _buildServerStatusList(context),
                   ),
@@ -2602,10 +2661,10 @@ class _SetupScreenState extends State<SetupScreen> with MountedSetStateMixin {
             top: height * 0.5 + 180,
             child: Center(
               child: _serverStatus.isEmpty
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: coralColor),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: accent),
                     )
                   : _buildServerStatusList(context),
             ),

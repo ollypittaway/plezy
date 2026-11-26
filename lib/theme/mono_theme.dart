@@ -84,19 +84,19 @@ class MonoPalette {
     accent: Color(0xFF006C62),
   );
   static const dark = MonoPalette(
-    bg: Color(0xFF030B10),
-    surface: Color(0xFF071A26),
-    outline: Color(0x29D6ECE8),
-    text: Color(0xFFF0FDFA),
-    textMuted: Color(0xFFA1B6B9),
+    bg: Color(0xFF0D0D0D),
+    surface: Color(0xFF191919),
+    outline: Color(0x29FFFFFF),
+    text: Color(0xFFF5F5F5),
+    textMuted: Color(0xFFAAAAAA),
     accent: Color(0xFF2DD4BF),
   );
   static const oled = MonoPalette(
     bg: Color(0xFF000000), // Pure black for OLED
-    surface: Color(0xFF091316),
-    outline: Color(0x29D6ECE8),
-    text: Color(0xFFF0FDFA),
-    textMuted: Color(0xFFA1B6B9),
+    surface: Color(0xFF121212),
+    outline: Color(0x29FFFFFF),
+    text: Color(0xFFF5F5F5),
+    textMuted: Color(0xFFAAAAAA),
     accent: Color(0xFF2DD4BF),
   );
 
@@ -342,6 +342,14 @@ ThemeData _buildMonoTheme(MonoPalette c, {required TargetPlatform platform}) {
           bodyMedium: TextStyle(color: c.text),
           bodySmall: TextStyle(color: c.textMuted),
         ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: c.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(MonoTokens.defaultRadiusMd),
+        side: BorderSide(color: c.outline),
+      ),
+    ),
     cardTheme: CardThemeData(
       color: c.surface,
       elevation: 0,
@@ -405,7 +413,7 @@ ThemeData _buildMonoTheme(MonoPalette c, {required TargetPlatform platform}) {
     extensions: [
       MonoTokens(
         radiusSm: 8,
-        radiusMd: 12,
+        radiusMd: MonoTokens.defaultRadiusMd,
         radiusLg: 20,
         radiusXs: 5,
         groupGap: 2,

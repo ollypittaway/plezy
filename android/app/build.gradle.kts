@@ -314,7 +314,7 @@ android {
     val fireTv = System.getenv("AMAZON") != null
     manifestPlaceholders["gucciAppIcon"] = if (fireTv) "@drawable/gucci_fire_icon" else "@mipmap/ic_launcher"
     manifestPlaceholders["gucciLauncherIcon"] = if (fireTv) "@drawable/gucci_fire_icon" else "@drawable/gucciplexa_foreground"
-    manifestPlaceholders["gucciBanner"] = if (fireTv) "@drawable/gucci_fire_banner" else "@drawable/gucciplexa_tv_banner"
+    manifestPlaceholders["gucciBanner"] = if (fireTv) "@drawable/gucci_fire_banner" else "@drawable/tv_banner"
     manifestPlaceholders["gucciDescription"] = if (fireTv) "@string/gucci_fire_description" else "@string/gucciplexa_description"
     applicationId = "com.gucciplexa.app"
     minSdk = 25 // Fire OS 6.x (API 25); the mpv-android AAR shares the same floor

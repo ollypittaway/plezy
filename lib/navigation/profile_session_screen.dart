@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../connection/connection_registry.dart';
 import '../focus/covered_route_focus_boundary.dart';
 import '../focus/key_event_utils.dart';
+import '../i18n/strings.g.dart';
 import '../media/ids.dart';
 import '../media/media_server_client.dart';
 import '../profiles/active_profile_provider.dart';
@@ -330,7 +331,7 @@ class _ProfileSessionScreenState extends State<ProfileSessionScreen> {
                   return WatchTogetherProvider(
                     clientFor: (serverId) => multiServer.getClientForServer(ServerId(serverId)),
                     findCopies: multiServer.aggregationService.findTitleCopiesAcrossServers,
-                    displayName: () => activeProfile.active?.displayName ?? 'GucciPlexa',
+                    displayName: () => activeProfile.active?.displayName ?? t.app.title,
                     profileId: () => activeProfile.activeId,
                   );
                 },

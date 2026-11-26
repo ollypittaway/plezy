@@ -6,6 +6,18 @@ from app import ExpiredToken, create_app, firebase_sender
 
 
 class PanelTests(unittest.TestCase):
+    def test_public_signin_loads_the_packaged_brand(self):
+        with self.client.get('/') as page:
+            self.assertIn(b'<title>Offstage Admin</title>', page.data)
+        for filename, media_type in [
+            ('curtain.webp', 'image/webp'), ('wordmark.svg', 'image/svg+xml'),
+            ('favicon.png', 'image/png'), ('inter-tight.woff2', 'font/woff2'),
+        ]:
+            with self.subTest(filename=filename), self.client.get('/brand/' + filename) as asset:
+                self.assertEqual(asset.status_code, 200)
+                self.assertEqual(asset.mimetype, media_type)
+                self.assertTrue(asset.data)
+
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)

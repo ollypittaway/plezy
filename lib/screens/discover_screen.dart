@@ -790,13 +790,14 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     final profiles = activeProvider.profiles;
 
     return FocusableAction(
+      debugLabel: 'home_profiles',
       onPressed: _switchingProfile ? null : () => _userMenuKey.currentState?.showButtonMenu(focusFirstItem: true),
       child: AppMenuButton<String>(
         key: _userMenuKey,
         enabled: !_switchingProfile,
         icon: active != null
             ? ProfileAvatar(profile: active, size: 32, avatarUrl: activeProvider.avatarUrlFor(active.id))
-            : const AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Colors.white),
+            : AppIcon(Symbols.account_circle_rounded, fill: 1, size: 32, color: Theme.of(context).colorScheme.onSurface),
         tooltip: t.profiles.sectionTitle,
         adaptiveSheet: !PlatformDetector.usesDesktopPresentation(),
         anchorAlignment: AppMenuAnchorAlignment.end,
@@ -814,13 +815,15 @@ class _DiscoverScreenState extends State<DiscoverScreen>
     required ActiveProfileProvider activeProvider,
   }) {
     final theme = Theme.of(context);
+    final avatarSize = PlatformDetector.usesDesktopPresentation() ? 32.0 : 24.0;
     final switchable = profiles.where((p) => p.id != activeProfile?.id).toList();
 
     return [
       if (activeProfile != null && PlatformDetector.usesDesktopPresentation()) ...[
         AppMenuItem<String>(
           value: 'manage_profiles',
-          leading: ProfileAvatar(profile: activeProfile, size: 34, avatarUrl: activeProvider.avatarUrlFor(activeProfile.id)),
+          leadingWidth: avatarSize,
+          leading: ProfileAvatar(profile: activeProfile, size: avatarSize, showLockBadge: false, avatarUrl: activeProvider.avatarUrlFor(activeProfile.id)),
           label: activeProfile.displayName,
           selected: true,
           trailing: AppIcon(Symbols.check_circle_rounded, size: 18, color: theme.colorScheme.primary),
@@ -830,7 +833,8 @@ class _DiscoverScreenState extends State<DiscoverScreen>
       for (final p in switchable)
         AppMenuItem<String>(
           value: 'profile:${p.id}',
-          leading: ProfileAvatar(profile: p, size: PlatformDetector.usesDesktopPresentation() ? 32 : 24, avatarUrl: activeProvider.avatarUrlFor(p.id)),
+          leadingWidth: avatarSize,
+          leading: ProfileAvatar(profile: p, size: avatarSize, showLockBadge: false, avatarUrl: activeProvider.avatarUrlFor(p.id)),
           label: p.displayName,
           trailing: p.isPinProtected
               ? AppIcon(Symbols.lock_rounded, fill: 1, size: 14, color: theme.colorScheme.onSurfaceVariant)

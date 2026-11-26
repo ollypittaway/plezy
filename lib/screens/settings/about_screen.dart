@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:plezy/widgets/app_icon.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../widgets/focused_scroll_scaffold.dart';
+import '../../widgets/splash_logo.dart';
 import '../../widgets/focusable_list_tile.dart';
 import '../../widgets/settings_section.dart';
 import '../../i18n/strings.g.dart';
@@ -16,7 +17,6 @@ class AboutScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appName = t.app.title;
 
     return FutureBuilder<AppVersion>(
       future: _appVersionFuture,
@@ -33,7 +33,7 @@ class AboutScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         const SizedBox(height: 24),
-                        Image.asset('assets/gucciplexa.webp', width: 176, height: 176, semanticLabel: appName),
+                        const SplashLogo(size: 176),
                         const SizedBox(height: 8),
                         Text(
                           // Blank while loading or when the platform can't report it; the line keeps its height.

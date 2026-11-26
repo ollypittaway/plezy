@@ -1,15 +1,15 @@
-# GucciPlexa settings and notifications panel
+# Offstage settings and notifications panel
 
-One announcement goes to the recent list on every paired GucciPlexa installation. An open app checks for announcements every 20 seconds and displays the newest one. The panel keeps the last 50 available in the app. Phones with push enabled also receive an operating-system alert while GucciPlexa is in the background.
+One announcement goes to the recent list on every paired Offstage installation. An open app checks for announcements every 20 seconds and displays the newest one. The panel keeps the last 50 available in the app. Phones with push enabled also receive an operating-system alert while Offstage is in the background.
 
 ## Run on Coolify
 
 1. Create an application from your copy of the repository. Choose the Dockerfile build pack, set the base directory to `/server/notifications`, the Dockerfile location to `/Dockerfile`, and the container port to `8080`. The same directory works as a standalone Docker build context.
 2. Assign an HTTPS domain and a persistent volume at `/data`. Run a single replica. The SQLite database contains viewer preferences, announcements, device registrations, and the pending push queue. A volume created by Docker inherits the image directory’s ownership. For a bind mount, make the directory writable by UID 10001.
 3. Generate an admin key with `openssl rand -hex 32` and put it in the runtime secret `ADMIN_KEY`. Deploy and sign into the panel with that key. The health check path is `/health`.
-4. In the panel choose **Pair a device**. Paste its private link into **GucciPlexa → Settings → Notifications** on each device. The pairing link allows reading announcements and registering for push. Keep the admin key with the sender.
+4. In the panel choose **Pair a device**. Paste its private link into **Offstage → Settings → Notifications** on each device. The pairing link allows reading announcements and registering for push. Keep the admin key with the sender.
 
-The GucciPlexa app attempts automatic device pairing with `https://panel.pittaway.dev` on first launch. On the official deployment, set the runtime variable `GUCCIPLEXA_AUTO_PAIR=true` to enable this. Any installation can then read app-wide announcements. Each installation receives an individual credential, and Plex identity verification is still required to sync settings. The setting **Settings → Notifications → Automatic device pairing** can be turned off. Other deployments use private pairing links unless they explicitly enable automatic enrollment.
+The Offstage app attempts automatic device pairing with `https://panel.pittaway.dev` on first launch. On the official deployment, set the runtime variable `GUCCIPLEXA_AUTO_PAIR=true` to enable this. Any installation can then read app-wide announcements. Each installation receives an individual credential, and Plex identity verification is still required to sync settings. The setting **Settings → Notifications → Automatic device pairing** can be turned off. Other deployments use private pairing links unless they explicitly enable automatic enrollment.
 
 In-app announcements work with just these settings. **Send notification** publishes immediately. The history shows whether Firebase accepted each push, whether it is queued for retry, or whether it failed. Firebase acceptance does not confirm that a person saw an alert.
 

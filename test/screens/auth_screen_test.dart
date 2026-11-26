@@ -1,19 +1,57 @@
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/connection/connection.dart';
 import 'package:plezy/connection/connection_registry.dart';
 import 'package:plezy/database/app_database.dart';
+import 'package:plezy/i18n/strings.g.dart';
 import 'package:plezy/models/plex/plex_home_user.dart';
 import 'package:plezy/profiles/plex_home_service.dart';
 import 'package:plezy/profiles/profile.dart';
 import 'package:plezy/profiles/profile_connection_registry.dart';
 import 'package:plezy/screens/auth_screen.dart';
 import 'package:plezy/services/storage_service.dart';
+import 'package:plezy/theme/mono_theme.dart';
+import 'package:plezy/widgets/splash_logo.dart';
 
 import '../test_helpers/prefs.dart';
 
 void main() {
   setUp(resetSharedPreferencesForTest);
+
+  for (final (size, palette) in [
+    (const Size(1280, 720), MonoPalette.dark),
+    (const Size(360, 720), MonoPalette.light),
+    (const Size(740, 360), MonoPalette.oled),
+  ]) {
+    testWidgets('the full logo is centered above the sign-in options at ${size.width}×${size.height}', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = size;
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+      await tester.pumpWidget(
+        TranslationProvider(
+          child: MaterialApp(theme: monoTheme(palette), home: const AuthScreen(initializeServices: false)),
+        ),
+      );
+      await tester.pump();
+
+      final curtain = tester.getRect(find.byType(OffstageMark));
+      final wordmark = tester.getRect(find.byType(OffstageWordmark));
+      final signIn = tester.getRect(find.text(t.auth.signInWithPlex));
+      expect(curtain.center.dx, closeTo(size.width / 2, 1));
+      expect(wordmark.center.dx, closeTo(curtain.center.dx, 1));
+      expect(curtain.bottom, lessThan(wordmark.top));
+      expect(wordmark.bottom, lessThan(signIn.top));
+      expect(tester.widget<OffstageMark>(find.byType(OffstageMark)).onLaunchFinished, isNull);
+
+      final lastOption = find.text(t.auth.connectToMediaBrowser(product: 'Emby'));
+      await tester.ensureVisible(lastOption);
+      await tester.pumpAndSettle();
+      expect(lastOption.hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   test('initial profile is built from the refreshed Plex Home cache', () async {
     final db = AppDatabase.forTesting(NativeDatabase.memory());

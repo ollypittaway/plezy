@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:plezy/profiles/profile.dart';
 import 'package:plezy/profiles/profile_avatar.dart';
+import 'package:plezy/theme/mono_theme.dart';
 import 'package:plezy/utils/initials_palette.dart';
+import 'package:plezy/widgets/app_menu.dart';
 
 void main() {
   Future<void> pumpAvatar(
@@ -51,6 +53,28 @@ void main() {
     final inner = avatarResizeImage(tester).imageProvider;
     return (inner as CachedNetworkImageProvider).url;
   }
+
+  testWidgets('the profile dropdown reserves a square thumbnail and crops the source photo', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: monoTheme(MonoPalette.dark),
+        home: Scaffold(
+          body: AppMenuItemTile<String>(
+            item: AppMenuItem(
+              value: 'owner',
+              label: 'Owner',
+              leadingWidth: 32,
+              leading: ProfileAvatar(profile: localProfile(), avatarUrl: 'https://plex.example/avatar', size: 32),
+            ),
+            onPressed: () {},
+          ),
+        ),
+      ),
+    );
+    final photo = find.byType(Image);
+    expect(tester.getSize(photo), const Size.square(32));
+    expect(tester.widget<Image>(photo).fit, BoxFit.cover);
+  });
 
   testWidgets('avatarUrl renders the derived network image', (tester) async {
     const avatarUrl = 'https://jellyfin.example/Users/user-1/Images/Primary?tag=derived';

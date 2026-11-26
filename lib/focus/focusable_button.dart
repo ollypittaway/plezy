@@ -22,6 +22,7 @@ class FocusableButton extends StatefulWidget {
 
   /// Whether to use background color instead of border for focus indicator.
   final bool useBackgroundFocus;
+  final double borderRadius;
 
   const FocusableButton({
     super.key,
@@ -36,6 +37,7 @@ class FocusableButton extends StatefulWidget {
     this.onBack,
     this.autoScroll = true,
     this.useBackgroundFocus = false,
+    this.borderRadius = 100,
   });
 
   @override
@@ -58,7 +60,7 @@ class _FocusableButtonState extends State<FocusableButton> {
       focusNode: widget.focusNode,
       canRequestFocus: enabled,
       disableScale: true,
-      borderRadius: 100,
+      borderRadius: widget.borderRadius,
       useBackgroundFocus: widget.useBackgroundFocus,
       descendantsAreFocusable: false,
       onFocusChange: (f) => setState(() => _isFocused = f),

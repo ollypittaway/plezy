@@ -11,6 +11,7 @@ import '../navigation/navigation_tabs.dart';
 import '../theme/mono_tokens.dart';
 import '../utils/desktop_window_padding.dart';
 import 'app_icon.dart';
+import 'splash_logo.dart';
 import '../screens/settings/announcement_settings_screen.dart';
 import 'app_menu.dart';
 
@@ -287,21 +288,9 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                         child: Row(
                           children: [
-                            Image.asset(
-                              'assets/gucciplexa-mark.png',
-                              width: 26,
-                              height: 26,
-                              excludeFromSemantics: true,
-                            ),
+                            const OffstageMark(size: 26),
                             const SizedBox(width: 7),
-                            Text(
-                              t.app.title,
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                fontWeight: .w500,
-                                fontSize: 20,
-                                letterSpacing: -0.6,
-                              ),
-                            ),
+                            OffstageWordmark(width: 77, color: theme.colorScheme.onSurface),
                           ],
                         ),
                       ),
@@ -329,7 +318,7 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
                             builder: (context, state) => Container(
                               width: 44, height: 44,
                               alignment: Alignment.center,
-                              decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: state.showFocus ? colors.primary : Colors.transparent, width: 2)),
+                              decoration: BoxDecoration(borderRadius: BorderRadius.circular(tokens(context).radiusMd), border: Border.all(color: state.showFocus ? colors.primary : Colors.transparent, width: 2)),
                               child: profile == null
                                   ? const AppIcon(Symbols.account_circle_rounded, size: 30)
                                   : ProfileAvatar(profile: profile, size: 32, avatarUrl: activeProvider?.avatarUrlFor(profile.id), showLockBadge: false),

@@ -239,7 +239,7 @@ void main() {
 
     tester.state<FocusableActionBarState>(find.byType(FocusableActionBar)).requestFocusOnFirst();
     await tester.pump();
-    expect(FocusManager.instance.primaryFocus?.debugLabel, 'ActionBar[0]');
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_notifications');
 
     await tester.sendKeyDownEvent(LogicalKeyboardKey.arrowDown);
     expect(FocusManager.instance.primaryFocus?.debugLabel, 'tv_browse_rail');
@@ -248,14 +248,14 @@ void main() {
 
     tester.state<FocusableActionBarState>(find.byType(FocusableActionBar)).requestFocusOnFirst();
     await tester.pump();
-    expect(FocusManager.instance.primaryFocus?.debugLabel, 'ActionBar[0]');
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_notifications');
 
     (discoverKey.currentState! as FocusableTab).focusActiveTabIfReady();
     (discoverKey.currentState! as TabVisibilityAware).onTabHidden();
     await tester.pump();
     await tester.pump();
 
-    expect(FocusManager.instance.primaryFocus?.debugLabel, 'ActionBar[0]');
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_notifications');
 
     (discoverKey.currentState! as TabVisibilityAware).onTabShown();
     (discoverKey.currentState! as FocusableTab).focusActiveTabIfReady();
@@ -917,7 +917,7 @@ void main() {
     // toolbar — the only control, and home of the profile menu (#3117) — and
     // the rail keeps its initial-focus claim for when hubs arrive.
     final gated = await _pumpGatedDiscover(tester);
-    expect(FocusManager.instance.primaryFocus?.debugLabel, 'ActionBar[0]');
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_notifications');
 
     await gated.landItems(tester);
 
@@ -951,7 +951,7 @@ void main() {
     (tester.state(find.byType(DiscoverScreen)) as FocusableTab).focusActiveTabIfReady();
     await tester.pump();
     await tester.pump();
-    expect(FocusManager.instance.primaryFocus?.debugLabel, 'ActionBar[0]');
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_notifications');
 
     await gated.landItems(tester);
 
@@ -998,19 +998,19 @@ void main() {
   testWidgets('the profile menu is reachable with the D-pad from an empty TV Home (#3117)', (tester) async {
     await _pumpGatedDiscover(tester);
     final lastAction = tester.widget<FocusableActionBar>(find.byType(FocusableActionBar)).actions.length - 1;
-    expect(FocusManager.instance.primaryFocus?.debugLabel, 'ActionBar[0]');
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_notifications');
 
     for (var i = 0; i < lastAction; i++) {
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
       await tester.pump();
     }
-    expect(FocusManager.instance.primaryFocus?.debugLabel, 'ActionBar[$lastAction]');
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_profiles');
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pump();
     expect(
       FocusManager.instance.primaryFocus?.debugLabel,
-      'ActionBar[$lastAction]',
+      'home_profiles',
       reason: 'with no rail below, Down must not drop focus',
     );
 
@@ -1024,14 +1024,14 @@ void main() {
     final gated = await _pumpGatedDiscover(tester);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
     await tester.pump();
-    expect(FocusManager.instance.primaryFocus?.debugLabel, 'ActionBar[1]');
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'desktop_header_refresh');
 
     await gated.landItems(tester);
 
     expect(find.byType(TvBrowseRail), findsOneWidget);
     expect(
       FocusManager.instance.primaryFocus?.debugLabel,
-      'ActionBar[1]',
+      'desktop_header_refresh',
       reason: 'the user navigated on; do not yank focus',
     );
 
@@ -1049,7 +1049,7 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     await tester.pump();
 
-    expect(FocusManager.instance.primaryFocus?.debugLabel, 'ActionBar[0]');
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_notifications');
   });
 
   testWidgets('a TV Home with no servers parks on Retry, which reaches the toolbar and the sidebar', (tester) async {
@@ -1058,7 +1058,7 @@ void main() {
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
     await tester.pump();
-    expect(FocusManager.instance.primaryFocus?.debugLabel, 'ActionBar[0]');
+    expect(FocusManager.instance.primaryFocus?.debugLabel, 'home_notifications');
 
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pump();

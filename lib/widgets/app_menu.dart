@@ -31,6 +31,7 @@ class AppMenuItem<T> extends AppMenuEntry<T> {
   final Widget? subtitleWidget;
   final IconData? icon;
   final Widget? leading;
+  final double leadingWidth;
   final Widget? trailing;
   final bool enabled;
   final bool selected;
@@ -47,6 +48,7 @@ class AppMenuItem<T> extends AppMenuEntry<T> {
     this.subtitleWidget,
     this.icon,
     this.leading,
+    this.leadingWidth = 24,
     this.trailing,
     this.enabled = true,
     this.selected = false,
@@ -206,8 +208,12 @@ class _AnchoredPanel extends StatelessWidget {
     final panel = Material(
       elevation: 3,
       shadowColor: colorScheme.shadow,
-      color: Color.alphaBlend(colorScheme.onSurface.withValues(alpha: 0.08), colorScheme.surface),
-      borderRadius: BorderRadius.circular(tokens(context).radiusMd),
+      color: colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(tokens(context).radiusMd),
+      ),
       clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
         constraints: BoxConstraints(minWidth: panelWidth, maxWidth: panelWidth, maxHeight: effectiveMaxHeight),
@@ -591,7 +597,7 @@ class _AppMenuItemTileState<T> extends State<AppMenuItemTile<T>> with FocusableT
                     children: [
                       if (leading != null) ...[
                         SizedBox(
-                          width: 24,
+                          width: item.leadingWidth,
                           child: IconTheme.merge(
                             data: IconThemeData(color: foreground),
                             child: leading,
@@ -823,12 +829,15 @@ class _AppMenuSurface<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final surface = Color.alphaBlend(colorScheme.onSurface.withValues(alpha: 0.08), colorScheme.surface);
     return Material(
       elevation: 3,
       shadowColor: colorScheme.shadow,
-      color: surface,
-      borderRadius: BorderRadius.circular(tokens(context).radiusMd),
+      color: colorScheme.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(tokens(context).radiusMd),
+      ),
       clipBehavior: Clip.antiAlias,
       child: ConstrainedBox(
         constraints: BoxConstraints(minWidth: width, maxWidth: width, maxHeight: maxHeight),

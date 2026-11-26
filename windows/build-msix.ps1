@@ -74,7 +74,7 @@ function New-AppxManifest {
             ProcessorArchitecture="$Architecture" />
 
   <Properties>
-    <DisplayName>GucciPlexa</DisplayName>
+    <DisplayName>Offstage</DisplayName>
     <PublisherDisplayName>$PublisherDisplayName</PublisherDisplayName>
     <Logo>assets\StoreLogo.png</Logo>
   </Properties>
@@ -97,7 +97,7 @@ function New-AppxManifest {
 
   <Applications>
     <Application Id="Plezy" Executable="plezy.exe" EntryPoint="Windows.FullTrustApplication">
-      <uap:VisualElements DisplayName="GucciPlexa"
+      <uap:VisualElements DisplayName="Offstage"
                           Description="A modern client for Plex and Jellyfin"
                           BackgroundColor="transparent"
                           Square150x150Logo="assets\Square150x150Logo.png"

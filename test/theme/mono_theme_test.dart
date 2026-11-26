@@ -27,6 +27,16 @@ const _builtIns = {'light': MonoPalette.light, 'dark': MonoPalette.dark, 'oled':
 /// two properties that make that safe: stable identity per palette, and a cache
 /// key that includes every input the builder actually reads.
 void main() {
+  test('confirmation dialogs use the selected surface and the menu corner radius', () {
+    for (final palette in _palettes.values) {
+      final theme = monoTheme(palette);
+      final shape = theme.dialogTheme.shape! as RoundedRectangleBorder;
+      expect(theme.dialogTheme.backgroundColor, palette.surface);
+      expect(shape.borderRadius, BorderRadius.circular(theme.extension<MonoTokens>()!.radiusMd));
+      expect(shape.side.color, palette.outline);
+    }
+  });
+
   test('repeated calls return the identical instance per palette', () {
     for (final palette in _palettes.values) {
       expect(identical(monoTheme(palette), monoTheme(palette)), isTrue);
