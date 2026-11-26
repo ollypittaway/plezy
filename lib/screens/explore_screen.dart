@@ -183,25 +183,26 @@ class ExploreScreenState extends State<ExploreScreen>
     if (_requestedSpotlightKey == item.globalKey) return;
     _requestedSpotlightKey = item.globalKey;
     final request = ++_spotlightRequest;
-    _spotlight.select(item);
-    unawaited(_loadSpotlightDescription(item, request));
+    _spotlight.select(item, prepare: () => _loadSpotlightDescription(item, request));
   }
 
-  Future<void> _loadSpotlightDescription(MediaItem item, int request) async {
-    if (item.summary?.trim().isNotEmpty == true || _spotlightDetails.containsKey(item.globalKey)) return;
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    if (!mounted || request != _spotlightRequest) return;
+  Future<MediaItem> _loadSpotlightDescription(MediaItem item, int request) async {
+    final cached = _spotlightDetails[item.globalKey];
+    if (cached != null) return cached;
+    if (item.summary?.trim().isNotEmpty == true || !mounted || request != _spotlightRequest) return item;
     final source = _explore.activeSource;
     final catalog = item.catalogItem;
-    if (source == null || catalog == null) return;
+    if (source == null || catalog == null) return item;
     try {
-      final detail = await source.fetchDetail(catalog, castLimit: 0, relatedLimit: 0);
-      if (!mounted || request != _spotlightRequest || source != _explore.activeSource) return;
+      final detail = await source.fetchDetail(catalog, castLimit: 0, relatedLimit: 0).timeout(const Duration(seconds: 8));
+      if (!mounted || request != _spotlightRequest || source != _explore.activeSource) return item;
       final enriched = detail.item.toMediaItem();
       if (_spotlightDetails.length >= 80) _spotlightDetails.remove(_spotlightDetails.keys.first);
-      setState(() => _spotlightDetails[item.globalKey] = enriched);
+      _spotlightDetails[item.globalKey] = enriched;
+      return enriched;
     } catch (_) {
       // A catalog detail failure must never interrupt browsing.
+      return item;
     }
   }
 

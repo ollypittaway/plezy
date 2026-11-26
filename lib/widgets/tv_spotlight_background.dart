@@ -35,6 +35,8 @@ class TvSpotlightBackground extends StatelessWidget {
   final bool allowNetwork;
   final bool lightweightTransitions;
   final bool exploreLayout;
+  final VoidCallback? onArtworkReady;
+  final VoidCallback? onLogoReady;
 
   /// Optional caller-owned fact appended to the existing metadata line.
   final Widget? metadataTrailing;
@@ -53,6 +55,8 @@ class TvSpotlightBackground extends StatelessWidget {
     this.allowNetwork = true,
     this.lightweightTransitions = false,
     this.exploreLayout = false,
+    this.onArtworkReady,
+    this.onLogoReady,
     this.metadataTrailing,
   });
 
@@ -61,6 +65,9 @@ class TvSpotlightBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final media = item;
+    if (exploreLayout && (media == null || !showInfo)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => onLogoReady?.call());
+    }
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
 
     // The gradients never differ between spotlight items, so only the artwork
@@ -85,7 +92,8 @@ class TvSpotlightBackground extends StatelessWidget {
           active: !lightweightTransitions,
           alignment: exploreLayout ? Alignment.topCenter : Alignment.center,
           lightweightFade: lightweightTransitions,
-          fadeDuration: const Duration(milliseconds: 220),
+          fadeDuration: exploreLayout ? Duration.zero : const Duration(milliseconds: 220),
+          onArtworkReady: onArtworkReady,
           // Always request at full-screen size: the corner box only crops the
           // layout. A mode-dependent size would change the transcode URL and
           // cold-start every cached backdrop when the setting is toggled.
@@ -126,7 +134,7 @@ class TvSpotlightBackground extends StatelessWidget {
                 // The info block still cross-fades via AnimatedSwitcher, but its
                 // saveLayers are bounded to the text region, not the screen.
                 child: AnimatedSwitcher(
-                  duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : lightweightTransitions
+                  duration: exploreLayout || MediaQuery.disableAnimationsOf(context) ? Duration.zero : lightweightTransitions
                       ? const Duration(milliseconds: 180)
                       : DevicePerformance.reducedDuration(const Duration(milliseconds: 280)),
                   transitionBuilder: (child, animation) => FadeTransition(
@@ -272,6 +280,7 @@ class TvSpotlightBackground extends StatelessWidget {
     final logoHeight = _logoHeight(scale);
     final width = ClearLogoImage.fallbackWidthFor(logoWidth: logoWidth, available: availableWidth);
     if (logoPath == null || logoPath.isEmpty) {
+      if (exploreLayout) WidgetsBinding.instance.addPostFrameCallback((_) => onLogoReady?.call());
       return SizedBox(width: width, height: logoHeight, child: _buildTitle(context, title));
     }
     final pixelRatio = MediaImageHelper.artworkPixelRatio(context, imageType: ImageType.heroLogo);
@@ -281,6 +290,26 @@ class TvSpotlightBackground extends StatelessWidget {
       imageType: ImageType.heroLogo,
     );
 
+    if (exploreLayout) {
+      final url = MediaImageHelper.getOptimizedImageUrl(client: client, thumbPath: logoPath, maxWidth: logoWidth, maxHeight: logoHeight, pixelRatio: pixelRatio, imageType: ImageType.heroLogo);
+      if (url.isEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => onLogoReady?.call());
+        return SizedBox(width: width, height: logoHeight, child: _buildTitle(context, title));
+      }
+      final provider = MediaImageHelper.serverArtworkProvider(imageUrl: url, memWidth: logoMemWidth, memHeight: logoMemHeight);
+      return SizedBox(width: width, height: logoHeight, child: Align(alignment: Alignment.centerLeft, child: Image(
+        image: logoToneTarget == null ? provider : ToneMappedLogoImage(provider, target: logoToneTarget, remapMixed: false),
+        width: logoWidth, height: logoHeight, fit: BoxFit.contain, alignment: Alignment.centerLeft,
+        frameBuilder: (context, child, frame, synchronous) {
+          if (frame != null || synchronous) WidgetsBinding.instance.addPostFrameCallback((_) => onLogoReady?.call());
+          return child;
+        },
+        errorBuilder: (context, error, stack) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => onLogoReady?.call());
+          return _buildTitle(context, title);
+        },
+      )));
+    }
     final localLogoPath = localArtworkPathResolver?.call(logoPath);
     if (localLogoPath != null && File(localLogoPath).existsSync()) {
       final bounded = MediaImageHelper.boundedDecode(

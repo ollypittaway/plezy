@@ -27,22 +27,27 @@ class TvSpotlightController extends ValueNotifier<MediaItem?> {
   bool _moving = false;
   bool get isMoving => _moving;
   String? _pendingKey;
+  int _selectionGeneration = 0;
+  bool _disposed = false;
 
-  void select(MediaItem item) {
+  void select(MediaItem item, {Future<MediaItem> Function()? prepare}) {
     if (blankWhileMoving && _pendingKey == item.globalKey) return;
     _pendingKey = item.globalKey;
+    final generation = ++_selectionGeneration;
     if (blankWhileMoving && !_moving && value?.globalKey != item.globalKey) {
       _moving = true;
       notifyListeners();
     }
-    void apply() {
+    Future<void> apply() async {
+      final prepared = prepare == null ? item : await prepare();
+      if (_disposed || generation != _selectionGeneration) return;
       final wasMoving = _moving;
       _moving = false;
       if (value?.globalKey == item.globalKey) {
         if (wasMoving) notifyListeners();
         return;
       }
-      value = item;
+      value = prepared;
     }
 
     if (_settleDelay == Duration.zero) {
@@ -60,7 +65,7 @@ class TvSpotlightController extends ValueNotifier<MediaItem?> {
       fallback ??= hub.items.first;
       if (current == null) continue;
       for (final item in hub.items) {
-        if (item.globalKey == current.globalKey) return item;
+        if (item.globalKey == current.globalKey) return blankWhileMoving ? current : item;
       }
     }
     return fallback;
@@ -68,6 +73,7 @@ class TvSpotlightController extends ValueNotifier<MediaItem?> {
 
   @override
   void dispose() {
+    _disposed = true;
     _debouncer.dispose();
     super.dispose();
   }
@@ -144,8 +150,7 @@ class TvSpotlightScaffold extends StatelessWidget {
                     builder: (context, _, _) {
                       final spotlight = resolveSpotlight();
                       final moving = spotlightListenable is TvSpotlightController && (spotlightListenable as TvSpotlightController).isMoving;
-                      return Stack(fit: StackFit.expand, children: [
-                        _CatalogSpotlightBackground(
+                      final background = _CatalogSpotlightBackground(
                         item: spotlight,
                         client: resolveClient(spotlight),
                         hideSpoilers: hideSpoilers ?? settings.read(SettingsService.hideSpoilers),
@@ -157,13 +162,8 @@ class TvSpotlightScaffold extends StatelessWidget {
                             : (size.width * MediaQuery.devicePixelRatioOf(context)).ceil(),
                         lightweightTransitions: lightweightTransitions,
                         exploreLayout: exploreLayout,
-                      ),
-                        if (exploreLayout) IgnorePointer(child: AnimatedOpacity(
-                          opacity: moving ? 1 : 0,
-                          duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 150),
-                          child: const ColoredBox(color: Colors.black),
-                        )),
-                      ]);
+                      );
+                      return exploreLayout ? _ExploreHeroGate(moving: moving, hero: background) : background;
                     },
                   ),
                   builder: (context, animatedBleed, child) =>
@@ -190,6 +190,9 @@ class _CatalogSpotlightBackground extends StatefulWidget {
     required this.targetWidthPx,
     required this.lightweightTransitions,
     required this.exploreLayout,
+    this.onArtworkReady,
+    this.onLogoReady,
+    super.key,
   });
 
   final MediaItem? item;
@@ -201,6 +204,8 @@ class _CatalogSpotlightBackground extends StatefulWidget {
   final int targetWidthPx;
   final bool lightweightTransitions;
   final bool exploreLayout;
+  final VoidCallback? onArtworkReady;
+  final VoidCallback? onLogoReady;
 
   @override
   State<_CatalogSpotlightBackground> createState() => _CatalogSpotlightBackgroundState();
@@ -295,6 +300,8 @@ class _CatalogSpotlightBackgroundState extends State<_CatalogSpotlightBackground
       compact: true,
       lightweightTransitions: widget.lightweightTransitions,
       exploreLayout: widget.exploreLayout,
+      onArtworkReady: widget.onArtworkReady,
+      onLogoReady: widget.onLogoReady,
       metadataTrailing: _buildNextEpisodeMetadata(context),
     );
     if (accentColor == null) return background;
@@ -304,6 +311,65 @@ class _CatalogSpotlightBackgroundState extends State<_CatalogSpotlightBackground
       ),
       child: background,
     );
+  }
+}
+
+/// Keeps the black scrim opaque until both images in the replacement hero
+/// have actually painted a decoded frame (or their terminal fallback).
+class _ExploreHeroGate extends StatefulWidget {
+  const _ExploreHeroGate({required this.moving, required this.hero});
+  final bool moving;
+  final _CatalogSpotlightBackground hero;
+
+  @override
+  State<_ExploreHeroGate> createState() => _ExploreHeroGateState();
+}
+
+class _ExploreHeroGateState extends State<_ExploreHeroGate> {
+  bool _artworkReady = false;
+  bool _logoReady = false;
+  int _generation = 0;
+
+  @override
+  void didUpdateWidget(covariant _ExploreHeroGate oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.hero.item, widget.hero.item)) {
+      _generation++;
+      _artworkReady = false;
+      _logoReady = false;
+    }
+  }
+
+  void _ready(int generation, {required bool artwork}) {
+    if (!mounted || generation != _generation) return;
+    if (artwork ? _artworkReady : _logoReady) return;
+    setState(() {
+      if (artwork) { _artworkReady = true; } else { _logoReady = true; }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hero = widget.hero;
+    final generation = _generation;
+    final ready = !widget.moving && _artworkReady && _logoReady;
+    return Stack(fit: StackFit.expand, children: [
+      _CatalogSpotlightBackground(
+        key: ValueKey(generation),
+        item: hero.item, client: hero.client, hideSpoilers: hero.hideSpoilers,
+        contentTop: hero.contentTop, contentBottom: hero.contentBottom,
+        contentLeft: hero.contentLeft, targetWidthPx: hero.targetWidthPx,
+        lightweightTransitions: hero.lightweightTransitions, exploreLayout: true,
+        onArtworkReady: () => _ready(generation, artwork: true),
+        onLogoReady: () => _ready(generation, artwork: false),
+      ),
+      IgnorePointer(child: AnimatedOpacity(
+        opacity: ready ? 0 : 1,
+        duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero
+            : Duration(milliseconds: ready ? 250 : 150),
+        child: const ColoredBox(color: Colors.black),
+      )),
+    ]);
   }
 }
 

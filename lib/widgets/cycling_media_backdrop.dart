@@ -35,6 +35,7 @@ class CyclingMediaBackdrop extends StatefulWidget {
     this.rotationInterval = const Duration(seconds: 10),
     this.fadeDuration = const Duration(milliseconds: 280),
     this.lightweightFade = false,
+    this.onArtworkReady,
   });
 
   final Object? mediaKey;
@@ -60,6 +61,7 @@ class CyclingMediaBackdrop extends StatefulWidget {
   final Duration rotationInterval;
   final Duration fadeDuration;
   final bool lightweightFade;
+  final VoidCallback? onArtworkReady;
 
   @override
   State<CyclingMediaBackdrop> createState() => _CyclingMediaBackdropState();
@@ -266,6 +268,7 @@ class _CyclingMediaBackdropState extends State<CyclingMediaBackdrop> with Widget
     final pending = localResolution == LocalFileResolution.pending;
     final provider = path == null || pending ? null : _providerFor(context, path, localFile);
     if (path != null && provider == null && !pending) _reportMissingProvider(path);
+    if (path == null && !pending) WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) widget.onArtworkReady?.call(); });
     final fadeDuration = _disableAnimations ? Duration.zero : widget.lightweightFade
         ? widget.fadeDuration : DevicePerformance.reducedDuration(widget.fadeDuration);
 
@@ -279,6 +282,7 @@ class _CyclingMediaBackdropState extends State<CyclingMediaBackdrop> with Widget
       alignment: widget.alignment,
       fallbackColor: widget.fallbackColor,
       onImageError: _handleImageError,
+      onArtworkReady: widget.onArtworkReady,
     );
   }
 
@@ -315,6 +319,7 @@ class _BackdropArtworkCrossfade extends StatefulWidget {
     required this.alignment,
     required this.fallbackColor,
     required this.onImageError,
+    this.onArtworkReady,
   });
 
   final Object? artworkKey;
@@ -326,6 +331,7 @@ class _BackdropArtworkCrossfade extends StatefulWidget {
   final Alignment alignment;
   final Color fallbackColor;
   final ValueChanged<Object?> onImageError;
+  final VoidCallback? onArtworkReady;
 
   @override
   State<_BackdropArtworkCrossfade> createState() => _BackdropArtworkCrossfadeState();
@@ -449,14 +455,15 @@ class _BackdropArtworkCrossfadeState extends State<_BackdropArtworkCrossfade> wi
       excludeFromSemantics: true,
       gaplessPlayback: true,
       opacity: opacity,
-      frameBuilder: !incoming
-          ? null
-          : (context, child, frame, wasSynchronouslyLoaded) {
-              if (frame != null || wasSynchronouslyLoaded) {
-                _startFade();
-              }
-              return child;
-            },
+      frameBuilder: !incoming && widget.onArtworkReady == null ? null : (context, child, frame, wasSynchronouslyLoaded) {
+        if (frame != null || wasSynchronouslyLoaded) {
+          if (incoming) _startFade();
+          if (widget.onArtworkReady != null) WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && (incoming || provider == _base)) widget.onArtworkReady?.call();
+          });
+        }
+        return child;
+      },
       errorBuilder: (context, error, stackTrace) {
         _reportError(imageErrorKey);
         return incoming ? const SizedBox.shrink() : ColoredBox(color: widget.fallbackColor);
