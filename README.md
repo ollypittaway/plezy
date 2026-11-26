@@ -250,7 +250,7 @@ scripts/codegen.sh
 flutter run
 ```
 
-For GucciPlexa’s five-platform GitHub release and Coolify downloads, see the [release setup](deploy/downloads/README.md).
+For Offstage’s five-platform GitHub release and Coolify downloads, see the [release setup](deploy/downloads/README.md).
 
 ### Building smaller Android APKs
 

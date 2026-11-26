@@ -1,10 +1,10 @@
-appId: com.gucciplexa.app
+appId: com.offstage.app
 ---
 - retry:
     maxRetries: 1
     commands:
       - launchApp:
-          appId: com.gucciplexa.app
+          appId: com.offstage.app
           clearState: true
           permissions:
             all: allow

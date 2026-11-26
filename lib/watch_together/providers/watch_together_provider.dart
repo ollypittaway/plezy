@@ -76,7 +76,7 @@ class WatchTogetherProvider extends ChangeNotifier {
        _resolver = LibraryResolver(clientFor: clientFor ?? _noClient, findCopies: findCopies ?? _noCopies);
 
   static MediaServerClient? _noClient(String serverId) => null;
-  static String _defaultName() => 'GucciPlexa';
+  static String _defaultName() => 'Offstage';
   static String? _noProfile() => null;
   static String? _relaySetting() => SettingsService.instanceOrNull?.read(SettingsService.watchPartyRelayUrl);
   static Future<LibraryLookupResult> _noCopies(TitleQuery query, {AbortController? abort}) async => (
@@ -132,7 +132,7 @@ class WatchTogetherProvider extends ChangeNotifier {
   /// Opens the room's file when no player is open; set by the main screen.
   ChoiceOpener? navigatorOpener;
 
-  static Future<String> _defaultClientName() async => 'GucciPlexa/${(await AppVersion.current()).versionOrUnknown}';
+  static Future<String> _defaultClientName() async => 'Offstage/${(await AppVersion.current()).versionOrUnknown}';
 
   static owp.WatchParty<WatchCopy> _defaultParty({
     required owp.Relays relays,
@@ -820,12 +820,12 @@ class WatchTogetherProvider extends ChangeNotifier {
 }
 
 /// [name] as an Open Watch Party display name: 1 to 32 code points of
-/// protocol text; "GucciPlexa" when nothing is left.
+/// protocol text; "Offstage" when nothing is left.
 String _sanitizedName(String name) {
   final text = descriptorText(name);
-  if (text == null) return 'GucciPlexa';
+  if (text == null) return 'Offstage';
   final kept = String.fromCharCodes(text.runes.take(32)).trim();
-  return kept.isEmpty ? 'GucciPlexa' : kept;
+  return kept.isEmpty ? 'Offstage' : kept;
 }
 
 enum _Away { background, vehicle, profileSelection }

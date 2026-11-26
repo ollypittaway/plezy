@@ -18,11 +18,11 @@ case "${1:-}" in
     openssl rand -hex 32 > "$dir/password"
     "$keytool_bin" -genkeypair -storetype PKCS12 -keystore "$dir/release.p12" \
       -storepass:file "$dir/password" -keypass:file "$dir/password" -alias gucciplexa \
-      -keyalg RSA -keysize 3072 -validity 10950 -dname "CN=GucciPlexa Android Release"
+      -keyalg RSA -keysize 3072 -validity 10950 -dname "CN=Offstage Android Release"
     echo "Created $dir. Back up both files privately."
     ;;
   upload)
-    repository=${2:?Provide the owner/repository that will build GucciPlexa}
+    repository=${2:?Provide the owner/repository that will build Offstage}
     [[ -s "$dir/password" && -s "$dir/release.p12" ]]
     if ! command -v gh >/dev/null; then echo "Install GitHub CLI and sign in to upload the secrets." >&2; exit 1; fi
     # Resume a partial upload without changing a signing identity already configured in GitHub.

@@ -10,12 +10,13 @@ dst=build/distribution
 mkdir -p "$dst"
 version=$(python3 scripts/pubspec_version.py --version-name pubspec.yaml)
 sign_apk() {
-  local input=$1 output=$2 abis=$3 actual bytes
+  local input=$1 output=$2 abis=$3 package_id=${4:-com.offstage.app} label=${5:-Offstage} actual bytes
   "$tools/apksigner" sign --ks "$GUCCIPLEXA_KEYSTORE" --ks-key-alias gucciplexa \
-    --ks-pass env:GUCCIPLEXA_KEY_PASSWORD --out "$dst/$output" "$src/$input"
+    --ks-pass env:GUCCIPLEXA_KEY_PASSWORD --out "$dst/$output" "$input"
   "$tools/apksigner" verify --verbose "$dst/$output"
   actual=$("$tools/aapt" dump badging "$dst/$output")
-  grep -F "package: name='com.gucciplexa.app'" <<< "$actual" >/dev/null
+  grep -F "package: name='$package_id'" <<< "$actual" >/dev/null
+  grep -Fx "application-label:'$label'" <<< "$actual" >/dev/null
   grep -F "versionName='$version'" <<< "$actual" >/dev/null
   grep -Fx "native-code: $abis" <<< "$actual" >/dev/null
   bytes=$(wc -c < "$dst/$output")
@@ -25,9 +26,11 @@ sign_apk() {
 case "$variant" in
   android)
     for abi in arm64-v8a armeabi-v7a x86_64; do
-      sign_apk "app-$abi-release.apk" "GucciPlexa-Android-$abi.apk" "'$abi'"
+      sign_apk "$src/app-$abi-release.apk" "Offstage-Android-$abi.apk" "'$abi'"
     done ;;
   firestick)
-    sign_apk app-release.apk GucciPlexa-Firestick.apk "'arm64-v8a' 'armeabi-v7a'" ;;
-  *) echo "Expected android or firestick" >&2; exit 2 ;;
+    sign_apk "$src/app-release.apk" Offstage-Firestick.apk "'arm64-v8a' 'armeabi-v7a'" ;;
+  migration)
+    sign_apk "${2:?Specify the migration APK path}" Offstage-Firestick-Migration.apk "'arm64-v8a' 'armeabi-v7a'" com.gucciplexa.app "Offstage (previous install)" ;;
+  *) echo "Expected android, firestick or migration" >&2; exit 2 ;;
 esac

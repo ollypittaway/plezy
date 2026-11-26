@@ -1,4 +1,4 @@
-appId: com.gucciplexa.app
+appId: com.offstage.app
 ---
 # Reach phone Settings from signed-in Home. The profile menu is an overlay
 # sheet; retry while the previous route settles.

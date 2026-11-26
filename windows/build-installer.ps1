@@ -41,7 +41,7 @@ Source: "staging\arm64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
     return @"
 #define Name "Offstage"
 #define Version "$Version"
-#define Publisher "GucciPlexa"
+#define Publisher "Offstage"
 #define ExeName "plezy.exe"
 
 [Setup]
@@ -49,7 +49,7 @@ AppId={{$AppGuid}
 AppName={#Name}
 AppVersion={#Version}
 AppPublisher={#Publisher}
-DefaultDirName={autopf}\GucciPlexa
+DefaultDirName={autopf}\Offstage
 DefaultGroupName={#Name}
 AllowNoIcons=yes
 OutputDir=.
@@ -68,7 +68,7 @@ ArchitecturesInstallIn64BitMode=$ArchAllowed
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [CustomMessages]
-ElevationRequired=Offstage is installed in %1, which requires administrator privileges to update.%n%nRe-run this installer using "Run as administrator", or download the latest installer from https://windows.pittaway.dev
+ElevationRequired=Offstage is installed in %1, which requires administrator privileges to update.%n%nRe-run this installer using "Run as administrator", or download the latest installer from https://win.offstage.download
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked

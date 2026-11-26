@@ -1,5 +1,5 @@
-name: GucciPlexa packages
-run-name: GucciPlexa packages · ${{ github.ref_name }}
+name: Offstage packages
+run-name: Offstage packages · ${{ github.ref_name }}
 
 on:
   push:
@@ -158,7 +158,7 @@ jobs:
           HAS_KEY: ${{ secrets.GUCCIPLEXA_ANDROID_KEYSTORE != '' && secrets.GUCCIPLEXA_ANDROID_PASSWORD != '' }}
         run: |
           if [[ "$HAS_KEY" != true ]]; then
-            echo "::error::Set both GucciPlexa Android release secrets. See deploy/downloads/README.md."
+            echo "::error::Set both Offstage Android release secrets. See deploy/downloads/README.md."
             exit 1
           fi
       - name: Reserve space for both NDKs and Gradle on the hosted runner
@@ -177,7 +177,7 @@ jobs:
         run: flutter build apk --release --split-per-abi --no-pub
       - name: Build dual-architecture Fire OS APK
         if: matrix.variant == 'firestick'
-        run: AMAZON=1 flutter build apk --release --target-platform android-arm,android-arm64 --no-pub --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=GUCCIPLEXA_FIRESTICK=true
+        run: AMAZON=1 flutter build apk --release --target-platform android-arm,android-arm64 --no-pub --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=OFFSTAGE_FIRESTICK=true
       - name: Sign and verify packages
         env:
           VARIANT: ${{ matrix.variant }}
@@ -224,7 +224,7 @@ jobs:
           HAS_KEY: ${{ secrets.GUCCIPLEXA_ANDROID_KEYSTORE != '' && secrets.GUCCIPLEXA_ANDROID_PASSWORD != '' }}
         run: |
           if [[ "$HAS_KEY" != true ]]; then
-            echo "::error::Set both GucciPlexa Android release secrets. See deploy/downloads/README.md."
+            echo "::error::Set both Offstage Android release secrets. See deploy/downloads/README.md."
             exit 1
           fi
       - name: Reserve space for both NDKs and Gradle on the hosted runner
@@ -238,12 +238,15 @@ jobs:
         run: >-
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-36' 'build-tools;36.1.0' 'cmake;4.1.2' 'cmake;3.22.1' 'ndk;29.0.14206865' 'ndk;28.2.13676358'
       - run: flutter pub get --enforce-lockfile --no-example
-      - name: Build phone APKs
-        if: matrix.variant == 'android'
-        run: flutter build apk --release --split-per-abi --no-pub
-      - name: Build dual-architecture Fire OS APK
-        if: matrix.variant == 'firestick'
-        run: AMAZON=1 flutter build apk --release --target-platform android-arm,android-arm64 --no-pub --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=GUCCIPLEXA_FIRESTICK=true
+      - name: Build Fire OS packages for new and existing installations
+        env:
+          AMAZON: '1'
+        run: |
+          set -euo pipefail
+          args=(apk --release --target-platform 'android-arm,android-arm64' --no-pub --dart-define=ENABLE_UPDATE_CHECK=true --dart-define=OFFSTAGE_FIRESTICK=true)
+          OFFSTAGE_FIRESTICK_MIGRATION=1 flutter build "${args[@]}"
+          cp build/app/outputs/flutter-apk/app-release.apk "$RUNNER_TEMP/offstage-migration.apk"
+          flutter build "${args[@]}"
       - name: Sign and verify packages
         env:
           VARIANT: ${{ matrix.variant }}
@@ -255,6 +258,7 @@ jobs:
           trap 'rm -f "$GUCCIPLEXA_KEYSTORE"' EXIT
           printf '%s' "$STORE_BASE64" | base64 --decode > "$GUCCIPLEXA_KEYSTORE"
           bash scripts/release/package-android.sh "$VARIANT"
+          bash scripts/release/package-android.sh migration "$RUNNER_TEMP/offstage-migration.apk"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: release-${{ matrix.variant }}
@@ -390,11 +394,11 @@ jobs:
           RELEASE_VERSION: ${{ needs.version.outputs.number }}
         run: |
           .\windows\build-installer.ps1 -X64BuildDir bundles/windows-bundle-x64 -Arm64BuildDir bundles/windows-bundle-arm64 -Version $env:RELEASE_VERSION
-          Move-Item plezy-windows-installer.exe GucciPlexa-Windows-Setup.exe
+          Move-Item plezy-windows-installer.exe Offstage-Windows-Setup.exe
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: release-windows
-          path: GucciPlexa-Windows-Setup.exe
+          path: Offstage-Windows-Setup.exe
           if-no-files-found: error
           compression-level: 0
 
@@ -413,7 +417,7 @@ jobs:
           set -euo pipefail
           tag="v$RELEASE_VERSION"
           if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "GucciPlexa $RELEASE_VERSION" --notes 'Packages are published as each platform finishes. Android and Fire OS APKs are signed. The iPhone IPA requires external signing. The Mac disk image is ad hoc signed and the Windows installer is unsigned.'
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "Offstage $RELEASE_VERSION" --notes 'Packages are published as each platform finishes. Android and Fire OS APKs are signed. For a new Fire TV installation, download Offstage-Firestick.apk. Fire TV v0.0.23 can migrate using its in-app updater. On earlier releases, open firestick.offstage.download in Downloader to install Offstage directly. The iPhone IPA requires external signing. The Mac disk image is ad hoc signed and the Windows installer is unsigned.'
           fi
 
   publish_android:
@@ -438,7 +442,7 @@ jobs:
           set -euo pipefail
           tag="v$RELEASE_VERSION"
           repo="$GITHUB_REPOSITORY"
-          assets=(GucciPlexa-Android-arm64-v8a.apk GucciPlexa-Android-armeabi-v7a.apk GucciPlexa-Android-x86_64.apk)
+          assets=(Offstage-Android-arm64-v8a.apk Offstage-Android-armeabi-v7a.apk Offstage-Android-x86_64.apk)
           for asset in "${assets[@]}"; do
             test -s "$asset"
           done
@@ -486,7 +490,7 @@ jobs:
           set -euo pipefail
           tag="v$RELEASE_VERSION"
           repo="$GITHUB_REPOSITORY"
-          assets=(GucciPlexa-Firestick.apk)
+          assets=(Offstage-Firestick.apk Offstage-Firestick-Migration.apk)
           for asset in "${assets[@]}"; do
             test -s "$asset"
           done
@@ -534,7 +538,7 @@ jobs:
           set -euo pipefail
           tag="v$RELEASE_VERSION"
           repo="$GITHUB_REPOSITORY"
-          assets=(GucciPlexa-iOS-unsigned.ipa)
+          assets=(Offstage-iOS-unsigned.ipa)
           for asset in "${assets[@]}"; do
             test -s "$asset"
           done
@@ -582,7 +586,7 @@ jobs:
           set -euo pipefail
           tag="v$RELEASE_VERSION"
           repo="$GITHUB_REPOSITORY"
-          assets=(GucciPlexa-macOS.dmg)
+          assets=(Offstage-macOS.dmg)
           for asset in "${assets[@]}"; do
             test -s "$asset"
           done
@@ -630,7 +634,7 @@ jobs:
           set -euo pipefail
           tag="v$RELEASE_VERSION"
           repo="$GITHUB_REPOSITORY"
-          assets=(GucciPlexa-Windows-Setup.exe)
+          assets=(Offstage-Windows-Setup.exe)
           for asset in "${assets[@]}"; do
             test -s "$asset"
           done

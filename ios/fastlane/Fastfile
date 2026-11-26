@@ -15,10 +15,10 @@ platform :ios do
 
     sh("cd #{PROJECT_ROOT_ARG} && flutter build ipa --dart-define=ENABLE_SENTRY=true --dart-define=GIT_COMMIT=#{git_commit} --dart-define=SENTRY_ENVIRONMENT=app-store --dart-define=SENTRY_DIST=app-store --dart-define=SUPPORTER_MODE=iap --split-debug-info=debug-info/ios")
 
-    sh("cd #{PROJECT_ROOT_ARG} && SENTRY_DIST=app-store BUGS_APPLE_ARCHIVE=build/ios/archive/GucciPlexa.xcarchive ./scripts/upload-symbols.sh ios")
+    sh("cd #{PROJECT_ROOT_ARG} && SENTRY_DIST=app-store BUGS_APPLE_ARCHIVE=build/ios/archive/Offstage.xcarchive ./scripts/upload-symbols.sh ios")
 
     upload_to_app_store(
-      ipa: "../build/ios/ipa/GucciPlexa.ipa",
+      ipa: "../build/ios/ipa/Offstage.ipa",
       force: true,
       submit_for_review: false,
       skip_screenshots: true, # https://github.com/fastlane/fastlane/issues/29735

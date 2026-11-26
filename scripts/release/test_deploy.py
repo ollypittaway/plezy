@@ -115,8 +115,8 @@ class AppleUploadTest(unittest.TestCase):
         client = deploy.AscClient({})
         with mock.patch.object(client, "request") as request:
             for platform, bundle_id in [
-                ("IOS", "com.gucciplexa.app"),
-                ("TV_OS", "com.edde746.plezy"),
+                ("IOS", "com.offstage.app"),
+                ("TV_OS", "com.offstage.app"),
             ]:
                 with self.subTest(platform=platform):
                     request.return_value.json.return_value = {"data": [{"id": platform}]}

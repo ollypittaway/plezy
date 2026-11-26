@@ -45,7 +45,7 @@ class PlexConfig {
       baseUrl: baseUrl,
       token: token,
       clientIdentifier: clientIdentifier,
-      product: product ?? 'GucciPlexa',
+      product: product ?? 'Offstage',
       version: appVersion.versionOrUnknown,
       platform: platform ?? identity.platform,
       device: device ?? sanitizeHeaderValue(identity.deviceModel),

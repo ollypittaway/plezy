@@ -511,9 +511,9 @@ Future<SymbolPlan> createSymbolPlan(
         : explicitArchive != null && explicitArchive.isNotEmpty
         ? path.join(
             path.isAbsolute(explicitArchive) ? explicitArchive : path.join(sourceRoot, explicitArchive),
-            platform == 'tvos' ? 'Products/Applications/Plezy.app' : 'Products/Applications/GucciPlexa.app',
+            platform == 'tvos' ? 'Products/Applications/Plezy.app' : 'Products/Applications/Offstage.app',
           )
-        : path.join(build, 'ios/iphoneos/GucciPlexa.app');
+        : path.join(build, 'ios/iphoneos/Offstage.app');
     if (!Directory(product).existsSync()) throw SymbolFailure('Missing selected release product: $product');
     for (final file in _files(product).where(isDebugObject)) {
       final artifact = await _inspect(file, command, 10);

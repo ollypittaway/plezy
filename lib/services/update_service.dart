@@ -21,8 +21,10 @@ import 'base_shared_preferences_service.dart';
 class UpdateService {
   static const String _releaseHost = 'https://firestick.offstage.download';
   static const String _githubRepo = 'ollypittaway/plezy';
-  static const bool _firestickBuild = bool.fromEnvironment('GUCCIPLEXA_FIRESTICK');
-  static const String _firestickAsset = 'GucciPlexa-Firestick.apk';
+  static const bool _firestickBuild = bool.fromEnvironment('OFFSTAGE_FIRESTICK');
+  static const String _firestickAsset = 'Offstage-Firestick.apk';
+  // Archived APKs through this release have the old Android application ID.
+  static const String _lastFirestickReleaseWithPreviousId = '0.0.23';
   static bool get supportsApkUpdates => Platform.isAndroid && _firestickBuild;
 
   static const String _keySkippedVersion = 'update_skipped_version';
@@ -48,7 +50,7 @@ class UpdateService {
   /// Whether the native auto_updater (Sparkle/WinSparkle) should be used.
   /// True on macOS (non-Homebrew) and installed Windows (has uninstaller).
   static bool get useNativeUpdater {
-    // GucciPlexa does not publish a Sparkle/WinSparkle appcast. Never use
+    // Offstage does not publish a Sparkle/WinSparkle appcast. Never use
     // upstream Plezy's native update feed.
     return false;
   }
@@ -120,6 +122,7 @@ class UpdateService {
     MediaServerHttpClient? client,
     bool forceEnabled = false,
     bool throwOnFailure = false,
+    String? firestickInstallMode,
   }) async {
     if (!forceEnabled && !isUpdateCheckAvailable) {
       return null;
@@ -153,20 +156,25 @@ class UpdateService {
       // Remove 'v' prefix if present
       final cleanVersion = latestVersion.startsWith('v') ? latestVersion.substring(1) : latestVersion;
 
-      final hasUpdate = _isNewerVersion(cleanVersion, currentVersion);
+      final mode = firestickInstallMode ??
+          (supportsApkUpdates ? await deviceChannel.invokeMethod<String>('getOffstageInstallMode') : null);
+      if (mode == 'migrated' || (supportsApkUpdates && mode != 'update' && mode != 'migration')) return null;
+      final migrating = mode == 'migration';
+      final hasUpdate = migrating || _isNewerVersion(cleanVersion, currentVersion);
 
       if (hasUpdate) {
-        final apk = supportsApkUpdates ? firestickAssetForRelease(data, cleanVersion) : null;
+        final apk = mode != null ? firestickAssetForRelease(data, cleanVersion) : null;
         // A release may be public before the Fire Stick package has arrived.
-        if (supportsApkUpdates && apk == null) return null;
+        if (mode != null && apk == null) return null;
         // Check if this version was skipped
         final skippedVersion = await getSkippedVersion();
-        if (skippedVersion == cleanVersion) {
+        if (!migrating && skippedVersion == cleanVersion) {
           return null;
         }
 
         return {
           'hasUpdate': true,
+          if (migrating) 'migration': true,
           if (apk != null) 'apkUrl': apk['url'],
           if (apk != null) 'apkSha256': apk['sha256'],
           'currentVersion': currentVersion,
@@ -189,6 +197,7 @@ class UpdateService {
   @visibleForTesting
   static Map<String, String>? firestickAssetForRelease(dynamic data, String version) {
     if (!RegExp(r'^\d+\.\d+\.\d+$').hasMatch(version) || data is! Map) return null;
+    if (!_isNewerVersion(version, _lastFirestickReleaseWithPreviousId)) return null;
     final assets = data['assets'];
     if (assets is! List) return null;
     final expected = 'https://github.com/$_githubRepo/releases/download/v$version/$_firestickAsset';
@@ -219,13 +228,13 @@ class UpdateService {
     final client = http.Client();
     File? file;
     try {
-      final allowed = await deviceChannel.invokeMethod<bool>('canInstallGucciPlexaUpdate') ?? false;
+      final allowed = await deviceChannel.invokeMethod<bool>('canInstallOffstageUpdate') ?? false;
       if (!allowed) {
-        await deviceChannel.invokeMethod<void>('openGucciPlexaInstallSettings');
+        await deviceChannel.invokeMethod<void>('openOffstageInstallSettings');
         return false;
       }
       final cache = await getTemporaryDirectory();
-      final directory = await Directory('${cache.path}/gucciplexa-update').create(recursive: true);
+      final directory = await Directory('${cache.path}/offstage-update').create(recursive: true);
       final target = File('${directory.path}/update.apk');
       file = target;
       final response = await client.send(http.Request('GET', Uri.parse(info['apkUrl'] as String)))
@@ -249,7 +258,7 @@ class UpdateService {
       }
       final actual = await sha256.bind(target.openRead()).first;
       if (actual.toString() != digest) throw StateError('Update checksum mismatch');
-      await deviceChannel.invokeMethod<void>('installGucciPlexaUpdate', {'path': target.path});
+      await deviceChannel.invokeMethod<void>('installOffstageUpdate', {'path': target.path});
       return true;
     } catch (_) {
       if (file != null && await file.exists()) await file.delete();
@@ -265,11 +274,13 @@ class UpdateService {
     required bool respectCooldown,
     required MediaServerHttpClient client,
     bool throwOnFailure = false,
+    String? firestickInstallMode,
   }) {
     return _performUpdateCheck(
       respectCooldown: respectCooldown,
       client: client,
       forceEnabled: true,
+      firestickInstallMode: firestickInstallMode,
       throwOnFailure: throwOnFailure,
     );
   }

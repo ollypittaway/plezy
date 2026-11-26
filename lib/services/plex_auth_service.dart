@@ -51,7 +51,7 @@ String _redactHost(String host) {
 }
 
 class PlexAuthService {
-  static const String _appName = 'GucciPlexa';
+  static const String _appName = 'Offstage';
   static const String _plexApiBase = 'https://plex.tv/api/v2';
   static const String _clientsApi = 'https://clients.plex.tv/api/v2';
 

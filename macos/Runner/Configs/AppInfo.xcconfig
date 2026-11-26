@@ -1,6 +1,6 @@
 
-PRODUCT_NAME = GucciPlexa
+PRODUCT_NAME = Offstage
 
-PRODUCT_BUNDLE_IDENTIFIER = com.gucciplexa.app
+PRODUCT_BUNDLE_IDENTIFIER = com.offstage.app
 
 PRODUCT_COPYRIGHT = Copyright © 2025 edde746

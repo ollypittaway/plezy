@@ -80,6 +80,8 @@ class _ApkUpdateDialog extends StatefulWidget {
 class _ApkUpdateDialogState extends State<_ApkUpdateDialog> {
   bool _busy = false;
   String? _message;
+  bool get _migrating => widget.info['migration'] == true;
+  String get _installLabel => _migrating ? 'Install Offstage' : 'Update now';
 
   Future<void> _install() async {
     setState(() { _busy = true; _message = null; });
@@ -90,7 +92,8 @@ class _ApkUpdateDialogState extends State<_ApkUpdateDialog> {
         Navigator.pop(context);
       } else {
         setState(() {
-          _message = 'Allow ${t.app.title} to install unknown apps in Settings, then select Update now again.';
+          final source = _migrating ? 'Offstage (previous install)' : t.app.title;
+          _message = 'Allow $source to install unknown apps in Settings, then select $_installLabel again.';
         });
       }
     } catch (_) {
@@ -102,14 +105,18 @@ class _ApkUpdateDialogState extends State<_ApkUpdateDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: Text(widget.title),
+    title: Text(_migrating ? 'Move to Offstage' : widget.title),
     content: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(t.update.versionAvailable(version: widget.info['latestVersion'] as String)),
-        const SizedBox(height: 8),
-        Text(t.update.currentVersion(version: widget.info['currentVersion'] as String)),
+        if (_migrating)
+          const Text('Install Offstage alongside this app and sign in again. You can still watch your offline downloads in this copy.')
+        else ...[
+          Text(t.update.versionAvailable(version: widget.info['latestVersion'] as String)),
+          const SizedBox(height: 8),
+          Text(t.update.currentVersion(version: widget.info['currentVersion'] as String)),
+        ],
         if (_busy) ...[
           const SizedBox(height: 16),
           const LinearProgressIndicator(),
@@ -121,7 +128,7 @@ class _ApkUpdateDialogState extends State<_ApkUpdateDialog> {
     ),
     actions: [
       if (!_busy) DialogActionButton(onPressed: () => Navigator.pop(context), label: widget.dismissLabel),
-      if (!_busy) DialogActionButton(onPressed: _install, label: 'Update now', isPrimary: true),
+      if (!_busy) DialogActionButton(onPressed: _install, label: _installLabel, isPrimary: true),
     ],
   );
 }

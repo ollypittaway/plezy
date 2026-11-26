@@ -316,7 +316,10 @@ android {
     manifestPlaceholders["gucciLauncherIcon"] = if (fireTv) "@drawable/gucci_fire_icon" else "@drawable/gucciplexa_foreground"
     manifestPlaceholders["gucciBanner"] = if (fireTv) "@drawable/gucci_fire_banner" else "@drawable/tv_banner"
     manifestPlaceholders["gucciDescription"] = if (fireTv) "@string/gucci_fire_description" else "@string/gucciplexa_description"
-    applicationId = "com.gucciplexa.app"
+    val migration = System.getenv("OFFSTAGE_FIRESTICK_MIGRATION") == "1"
+    require(!migration || fireTv) { "The migration APK is only built for Fire OS" }
+    manifestPlaceholders["offstageAppLabel"] = if (migration) "Offstage (previous install)" else "Offstage"
+    applicationId = if (migration) "com.gucciplexa.app" else "com.offstage.app"
     minSdk = 25 // Fire OS 6.x (API 25); the mpv-android AAR shares the same floor
     targetSdk = flutter.targetSdkVersion
     versionCode = flutter.versionCode

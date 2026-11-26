@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>com.edde746.plezy</id>
+  <id>com.offstage.app</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-only</project_license>
   <name>Offstage</name>
@@ -14,7 +14,7 @@
     <p>Playback uses MPV with support for subtitles, multiple audio tracks,
     playback speed controls, and hardware video decoding on supported systems.</p>
   </description>
-  <launchable type="desktop-id">com.edde746.plezy.desktop</launchable>
+  <launchable type="desktop-id">com.offstage.app.desktop</launchable>
   <url type="homepage">https://plezy.app</url>
   <url type="bugtracker">https://github.com/edde746/plezy/issues</url>
   <url type="vcs-browser">https://github.com/edde746/plezy</url>

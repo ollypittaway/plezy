@@ -133,8 +133,8 @@ CHANNEL_SPECS = {
 AMAZON_API_BASE = "https://developer.amazon.com/api/appstore/v1/applications"
 AMAZON_AUTH_URL = "https://api.amazon.com/auth/o2/token"
 ASC_API_BASE = "https://api.appstoreconnect.apple.com/v1"
-ANDROID_APPLICATION_ID = "com.gucciplexa.app"
-APPLE_BUNDLE_IDS = {"IOS": "com.gucciplexa.app", "TV_OS": "com.edde746.plezy"}
+ANDROID_APPLICATION_ID = "com.offstage.app"
+APPLE_BUNDLE_IDS = {"IOS": "com.offstage.app", "TV_OS": "com.offstage.app"}
 MSSTORE_API_BASE = "https://manage.devcenter.microsoft.com/v1.0/my/applications"
 
 RELEASE_ASSET_NAMES = frozenset(
@@ -143,7 +143,7 @@ RELEASE_ASSET_NAMES = frozenset(
         "plezy-android-arm64-v8a.tar.gz",
         "plezy-android-armeabi-v7a.tar.gz",
         "plezy-android-x86_64.tar.gz",
-        "GucciPlexa-ios.ipa",
+        "Offstage-ios.ipa",
         "plezy-linux-arm64.AppImage",
         "plezy-linux-arm64.AppImage.zsync",
         "plezy-linux-arm64.deb",
@@ -1250,9 +1250,9 @@ def phase_ios(ctx: Context) -> None:
     ])
     run(
         [str(SCRIPTS_DIR / "upload-symbols.sh"), "ios"],
-        env={"SENTRY_DIST": "app-store", "BUGS_APPLE_ARCHIVE": "build/ios/archive/GucciPlexa.xcarchive"},
+        env={"SENTRY_DIST": "app-store", "BUGS_APPLE_ARCHIVE": "build/ios/archive/Offstage.xcarchive"},
     )
-    _upload_ipa(ctx, ROOT / "build/ios/ipa/GucciPlexa.ipa", "ios")
+    _upload_ipa(ctx, ROOT / "build/ios/ipa/Offstage.ipa", "ios")
 
 
 def phase_tvos(ctx: Context) -> None:

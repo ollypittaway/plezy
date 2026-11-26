@@ -94,7 +94,7 @@ ln -s plezy.sh "$APPDIR/AppRun"
 
 # appimagetool reads the one .desktop file at the AppDir root and expects the
 # icon its Icon= names beside it; .DirIcon is what file managers show.
-cp "$SCRIPT_DIR/com.edde746.plezy.desktop" "$APPDIR/"
+cp "$SCRIPT_DIR/com.offstage.app.desktop" "$APPDIR/"
 ICON_DIR="$APPDIR/usr/share/icons/hicolor/256x256/apps"
 mkdir -p "$ICON_DIR"
 "$IMAGEMAGICK" "$PROJECT_ROOT/assets/plezy.png" -resize 256x256 "$ICON_DIR/plezy.png"

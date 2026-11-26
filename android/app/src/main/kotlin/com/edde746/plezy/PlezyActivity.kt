@@ -6,7 +6,9 @@ import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.content.pm.Signature
 import android.content.res.Configuration
 import android.media.AudioManager
 import android.os.Build
@@ -872,6 +874,11 @@ class PlezyActivity : FlutterActivity() {
     textureView.resume()
   }
 
+  @Suppress("DEPRECATION")
+  private fun apkSigners(info: PackageInfo): Set<Signature> =
+    (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) info.signingInfo?.apkContentsSigners else info.signatures)
+      ?.toSet().orEmpty()
+
   override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
     super.configureFlutterEngine(flutterEngine)
     flutterEngine.plugins.add(MpvPlayerPlugin())
@@ -880,10 +887,23 @@ class PlezyActivity : FlutterActivity() {
 
     MethodChannel(flutterEngine.dartExecutor.binaryMessenger, DEVICE_CHANNEL).setMethodCallHandler { call, result ->
       when (call.method) {
-        "canInstallGucciPlexaUpdate" -> result.success(
+        "getOffstageInstallMode" -> {
+          val mode = when {
+            packageName == "com.offstage.app" -> "update"
+            packageName != "com.gucciplexa.app" -> "unsupported"
+            else -> try {
+              packageManager.getPackageInfo("com.offstage.app", 0)
+              "migrated"
+            } catch (_: PackageManager.NameNotFoundException) {
+              "migration"
+            }
+          }
+          result.success(mode)
+        }
+        "canInstallOffstageUpdate" -> result.success(
           Build.VERSION.SDK_INT < Build.VERSION_CODES.O || packageManager.canRequestPackageInstalls()
         )
-        "openGucciPlexaInstallSettings" -> {
+        "openOffstageInstallSettings" -> {
           try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
               startActivity(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
@@ -894,21 +914,33 @@ class PlezyActivity : FlutterActivity() {
             result.error("INSTALL_SETTINGS", e.message, null)
           }
         }
-        "installGucciPlexaUpdate" -> {
+        "installOffstageUpdate" -> {
           try {
             val requested = call.argument<String>("path") ?: error("Missing APK path")
             val apk = java.io.File(requested).canonicalFile
-            val expected = java.io.File(cacheDir, "gucciplexa-update/update.apk").canonicalFile
+            val expected = java.io.File(cacheDir, "offstage-update/update.apk").canonicalFile
             require(apk == expected && apk.isFile) { "Invalid update file" }
-            val candidate = packageManager.getPackageArchiveInfo(apk.path, 0)
-              ?: error("Invalid APK")
-            require(candidate.packageName == packageName) { "Unexpected package identity" }
-            val installed = packageManager.getPackageInfo(packageName, 0)
             @Suppress("DEPRECATION")
-            val newer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-              candidate.longVersionCode > installed.longVersionCode
-            else candidate.versionCode > installed.versionCode
-            require(newer) { "Update is not newer than installed build" }
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+              PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES
+            val candidate = packageManager.getPackageArchiveInfo(apk.path, flags)
+              ?: error("Invalid APK")
+            require(packageName == "com.offstage.app" || packageName == "com.gucciplexa.app") { "Unexpected source package" }
+            require(candidate.packageName == "com.offstage.app") { "Unexpected destination package" }
+            val installed = packageManager.getPackageInfo(packageName, flags)
+            val signers = apkSigners(installed)
+            require(signers.isNotEmpty() && signers == apkSigners(candidate)) { "Unexpected APK signer" }
+            val target = if (candidate.packageName == packageName) installed else try {
+              packageManager.getPackageInfo(candidate.packageName, 0)
+            } catch (_: PackageManager.NameNotFoundException) {
+              null
+            }
+            if (target != null) {
+              @Suppress("DEPRECATION")
+              val newer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                candidate.longVersionCode > target.longVersionCode else candidate.versionCode > target.versionCode
+              require(newer) { "Update is not newer than installed build" }
+            }
             val uri = androidx.core.content.FileProvider.getUriForFile(this, "$packageName.fileprovider", apk)
             startActivity(Intent(Intent.ACTION_VIEW).apply {
               setDataAndType(uri, "application/vnd.android.package-archive")

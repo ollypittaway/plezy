@@ -19,7 +19,7 @@ import urllib.request
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-APP_ID = "com.gucciplexa.app"
+APP_ID = "com.offstage.app"
 FAULTS = ("music-failure", "offline", "recovery")
 ANIMATION_SCALES = (
     "window_animation_scale",

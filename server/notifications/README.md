@@ -15,7 +15,7 @@ In-app announcements work with just these settings. **Send notification** publis
 
 ## Enable iPhone and Android push
 
-Use one Firebase project for the service and the mobile builds. The Android application ID and iOS bundle ID are both `com.gucciplexa.app`.
+Use one Firebase project for the service and the mobile builds. The Android application ID and iOS bundle ID are both `com.offstage.app`. Register this identifier in Firebase and use matching client configuration files when enabling push for the new app.
 
 - Enable the Firebase Cloud Messaging API. Give the service account permission to send FCM messages (Firebase Cloud Messaging API Admin). Mount its JSON credential as a read-only Coolify secret file, readable by UID 10001, and set `GOOGLE_APPLICATION_CREDENTIALS` to the container path. Restart the panel. That credential belongs on the server.
 - **Android** — Register your app’s Android application ID in Firebase. Place the downloaded `google-services.json` at `android/app/google-services.json` before building. If you change the application ID, keep the Kotlin namespace intact. Test on a device with Google Play services.

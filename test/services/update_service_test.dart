@@ -13,21 +13,55 @@ import '../test_helpers/prefs.dart';
 
 void main() {
   test('Fire Stick updates require the exact repository asset and SHA-256 digest', () {
-    const version = '0.0.2';
+    const version = '0.0.24';
     final digest = List.filled(64, 'a').join();
     final asset = {
-      'name': 'GucciPlexa-Firestick.apk',
-      'browser_download_url': 'https://github.com/ollypittaway/plezy/releases/download/v0.0.2/GucciPlexa-Firestick.apk',
+      'name': 'Offstage-Firestick.apk',
+      'browser_download_url': 'https://github.com/ollypittaway/plezy/releases/download/v$version/Offstage-Firestick.apk',
       'digest': 'sha256:$digest',
     };
     expect(UpdateService.firestickAssetForRelease({'assets': [asset]}, version), {
-      'url': 'https://firestick.offstage.download/releases/download/v0.0.2/GucciPlexa-Firestick.apk',
+      'url': 'https://firestick.offstage.download/releases/download/v$version/Offstage-Firestick.apk',
       'sha256': digest,
     });
+    final archive = {
+      ...asset,
+      'browser_download_url': 'https://github.com/ollypittaway/plezy/releases/download/v0.0.23/Offstage-Firestick.apk',
+    };
+    expect(UpdateService.firestickAssetForRelease({'assets': [archive]}, '0.0.23'), isNull);
+    expect(UpdateService.firestickAssetForRelease({'assets': [{...asset, 'name': 'Other.apk'}]}, version), isNull);
     expect(UpdateService.firestickAssetForRelease({'assets': []}, version), isNull);
     expect(UpdateService.firestickAssetForRelease({'assets': [{...asset, 'digest': null}]}, version), isNull);
     expect(UpdateService.firestickAssetForRelease({'assets': [{...asset, 'browser_download_url': 'https://example.com/update.apk'}]}, version), isNull);
   });
+  test('the migration build can install the same version once, alongside the previous package', () async {
+    const asset = 'Offstage-Firestick.apk';
+    final response = {
+      'tag_name': 'v1.0.0',
+      'html_url': 'https://github.com/ollypittaway/plezy/releases/tag/v1.0.0',
+      'published_at': '2026-11-26T10:00:00Z',
+      'assets': [
+        {
+          'name': asset,
+          'browser_download_url': 'https://github.com/ollypittaway/plezy/releases/download/v1.0.0/$asset',
+          'digest': 'sha256:${'a' * 64}',
+        }
+      ],
+    };
+    final client = MediaServerHttpClient(client: MockClient((_) async =>
+        http.Response(jsonEncode(response), 200, headers: {'content-type': 'application/json'})));
+    addTearDown(client.close);
+    Future<Map<String, dynamic>?> check(String mode) => UpdateService.debugPerformUpdateCheck(
+      respectCooldown: false, client: client, firestickInstallMode: mode, throwOnFailure: true,
+    );
+    await UpdateService.skipVersion('1.0.0');
+    expect((await check('migration'))?['migration'], true);
+    expect(await check('migrated'), isNull);
+    expect(await check('update'), isNull);
+    response['assets'] = [];
+    expect(await check('migration'), isNull);
+  });
+
   const lastCheckKey = 'update_last_check_time';
 
   setUp(resetSharedPreferencesForTest);

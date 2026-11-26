@@ -164,9 +164,7 @@ flutter:
   assets:
     - assets/licenses/InterTight.txt
     - assets/licenses/SpatialAudioBridge.txt
-    - assets/gucciplexa.webp
     - assets/offstage/
-    - assets/gucciplexa-mark.png
     - assets/plezy.png
     - assets/plex_chevron.svg
     - assets/jellyfin_icon.svg

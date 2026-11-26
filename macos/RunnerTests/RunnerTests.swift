@@ -2,7 +2,7 @@ import Libmpv
 import FlutterMacOS
 import XCTest
 
-@testable import GucciPlexa
+@testable import Offstage
 
 final class ControllablePropertyCore: MpvPlayerCoreBase {
   var nextResult: Result<Void, Error>?
