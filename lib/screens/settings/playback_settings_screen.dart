@@ -18,12 +18,13 @@ import '../../widgets/setting_tile.dart';
 import '../../widgets/settings_builder.dart';
 import '../../widgets/settings_page.dart';
 import '../../widgets/settings_section.dart';
+import 'account_preferences_screen.dart';
 import 'external_player_screen.dart';
 import 'mpv_config_screen.dart';
 import 'settings_utils.dart';
 import 'subtitle_styling_screen.dart';
 
-enum PlaybackSection { video, audio, behavior }
+enum PlaybackSection { video, audio, controls, behavior }
 
 class PlaybackSettingsScreen extends StatelessWidget {
   const PlaybackSettingsScreen({super.key, this.section});
@@ -71,6 +72,7 @@ class PlaybackSettingsScreen extends StatelessWidget {
           profileLayout: true,
           title: Text(switch (section) {
             PlaybackSection.audio => t.settings.audio,
+            PlaybackSection.controls => t.settings.videoPlayerControls,
             PlaybackSection.behavior => t.viewerSettings.playerBehavior,
             _ => t.settings.videoPlayback,
           }),
@@ -156,11 +158,15 @@ class PlaybackSettingsScreen extends StatelessWidget {
                 ],
               ),
 
-            if (section == null || section == PlaybackSection.behavior) ...[
+            if (section == null) const TrackSelectionSettings(),
+            if (section == null || section == PlaybackSection.controls) ...[
               _seekAndTimingGroup(),
-              _autoPlayAndSkipGroup(),
-              _behaviorGroup(context, isMobile),
+              _controlOptions(isMobile),
               if (isMobile) _gesturesGroup(),
+            ],
+            if (section == null || section == PlaybackSection.behavior) ...[
+              _autoPlayAndSkipGroup(),
+              _behaviorGroup(),
               _rememberPlayerChangesGroup(),
             ],
             const SizedBox(height: 24),
@@ -258,32 +264,14 @@ class PlaybackSettingsScreen extends StatelessWidget {
     PlayerSettingScope.title => t.settings.playerScopeTitle,
   };
 
-  Widget _behaviorGroup(BuildContext context, bool isMobile) => SettingsGroup(
+  Widget _behaviorGroup() => SettingsGroup(
     title: t.settings.behavior,
     children: [
-      SettingSwitchTile(
-        pref: SettingsService.rememberTrackSelections,
-        icon: Symbols.bookmark_rounded,
-        title: t.settings.rememberTrackSelections,
-        subtitle: '${t.settings.rememberTrackSelectionsDescription} · ${t.settings.rememberTrackSelectionsBackendRule}',
-      ),
-      SettingSwitchTile(
-        pref: SettingsService.followServerTrackSelections,
-        icon: Symbols.dns_rounded,
-        title: t.settings.followServerTrackSelections,
-        subtitle: t.settings.followServerTrackSelectionsDescription,
-      ),
       SettingSwitchTile(
         pref: SettingsService.resumeMusicOnLaunch,
         icon: Symbols.music_history_rounded,
         title: t.settings.resumeMusicOnLaunch,
         subtitle: t.settings.resumeMusicOnLaunchDescription,
-      ),
-      SettingSwitchTile(
-        pref: SettingsService.showChapterMarkersOnTimeline,
-        icon: Symbols.bookmarks_rounded,
-        title: t.settings.showChapterMarkersOnTimeline,
-        subtitle: t.settings.showChapterMarkersOnTimelineDescription,
       ),
       SettingSelectionTile<SpecialsOrdering>(
         pref: SettingsService.specialsOrdering,
@@ -291,6 +279,18 @@ class PlaybackSettingsScreen extends StatelessWidget {
         title: t.settings.specialsOrdering,
         subtitleBuilder: (mode) => '${_specialsOrderingLabel(mode)} · ${t.settings.specialsOrderingDescription}',
         options: SpecialsOrdering.values.map((m) => DialogOption(value: m, title: _specialsOrderingLabel(m))).toList(),
+      ),
+    ],
+  );
+
+  Widget _controlOptions(bool isMobile) => SettingsGroup(
+    title: t.settings.controls,
+    children: [
+      SettingSwitchTile(
+        pref: SettingsService.showChapterMarkersOnTimeline,
+        icon: Symbols.bookmarks_rounded,
+        title: t.settings.showChapterMarkersOnTimeline,
+        subtitle: t.settings.showChapterMarkersOnTimelineDescription,
       ),
       if (!isMobile)
         SettingSwitchTile(

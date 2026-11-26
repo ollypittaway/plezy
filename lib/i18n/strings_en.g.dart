@@ -587,20 +587,47 @@ class Translations$viewerSettings$en {
 	/// en: 'Playback'
 	String get playback => 'Playback';
 
+	/// en: 'Interface'
+	String get interfaceTab => 'Interface';
+
+	/// en: 'Libraries & downloads'
+	String get libraryDownloadsTab => 'Libraries & downloads';
+
+	/// en: 'System'
+	String get systemTab => 'System';
+
+	/// en: 'Picture & sound'
+	String get pictureSound => 'Picture & sound';
+
+	/// en: 'Controls & navigation'
+	String get controlsNavigation => 'Controls & navigation';
+
+	/// en: 'Seek intervals, the sleep timer and on-screen controls'
+	String get controlsHint => 'Seek intervals, the sleep timer and on-screen controls';
+
+	/// en: 'Posters, card layout, watched indicators and live TV favorites'
+	String get libraryLayoutHint => 'Posters, card layout, watched indicators and live TV favorites';
+
+	/// en: 'Library preferences'
+	String get libraryPreferences => 'Library preferences';
+
 	/// en: 'Backup & maintenance'
 	String get maintenance => 'Backup & maintenance';
 
 	/// en: 'Playback behavior'
 	String get playerBehavior => 'Playback behavior';
 
-	/// en: 'Autoplay, skipping, gestures and changes made in the player'
-	String get behaviorHint => 'Autoplay, skipping, gestures and changes made in the player';
+	/// en: 'Autoplay, skipping and preferences remembered between sessions'
+	String get behaviorHint => 'Autoplay, skipping and preferences remembered between sessions';
 
 	/// en: 'Audio output, channel mixing, volume and music quality'
 	String get audioHint => 'Audio output, channel mixing, volume and music quality';
 
 	/// en: 'Audio & subtitle languages'
 	String get languages => 'Audio & subtitle languages';
+
+	/// en: 'Track selection in GucciPlexa'
+	String get trackSelection => 'Track selection in GucciPlexa';
 
 	/// en: 'Choose the preferred tracks for your media-server account'
 	String get languageHint => 'Choose the preferred tracks for your media-server account';
@@ -707,8 +734,8 @@ class Translations$settings$en {
 	/// en: 'Video Playback'
 	String get videoPlayback => 'Video Playback';
 
-	/// en: 'Configure playback behavior'
-	String get videoPlaybackDescription => 'Configure playback behavior';
+	/// en: 'Streaming quality, video decoding and display settings'
+	String get videoPlaybackDescription => 'Streaming quality, video decoding and display settings';
 
 	/// en: 'Advanced'
 	String get advanced => 'Advanced';
@@ -8573,11 +8600,20 @@ extension on Translations {
 			'viewerSettings.myProfile' => 'My profile',
 			'viewerSettings.appSettings' => 'App settings',
 			'viewerSettings.playback' => 'Playback',
+			'viewerSettings.interfaceTab' => 'Interface',
+			'viewerSettings.libraryDownloadsTab' => 'Libraries & downloads',
+			'viewerSettings.systemTab' => 'System',
+			'viewerSettings.pictureSound' => 'Picture & sound',
+			'viewerSettings.controlsNavigation' => 'Controls & navigation',
+			'viewerSettings.controlsHint' => 'Seek intervals, the sleep timer and on-screen controls',
+			'viewerSettings.libraryLayoutHint' => 'Posters, card layout, watched indicators and live TV favorites',
+			'viewerSettings.libraryPreferences' => 'Library preferences',
 			'viewerSettings.maintenance' => 'Backup & maintenance',
 			'viewerSettings.playerBehavior' => 'Playback behavior',
-			'viewerSettings.behaviorHint' => 'Autoplay, skipping, gestures and changes made in the player',
+			'viewerSettings.behaviorHint' => 'Autoplay, skipping and preferences remembered between sessions',
 			'viewerSettings.audioHint' => 'Audio output, channel mixing, volume and music quality',
 			'viewerSettings.languages' => 'Audio & subtitle languages',
+			'viewerSettings.trackSelection' => 'Track selection in GucciPlexa',
 			'viewerSettings.languageHint' => 'Choose the preferred tracks for your media-server account',
 			'viewerSettings.diagnostics' => 'Diagnostics',
 			'viewerSettings.connections' => 'Connections & services',
@@ -8610,7 +8646,7 @@ extension on Translations {
 			'settings.theme' => 'Theme',
 			'settings.appearance' => 'Appearance',
 			'settings.videoPlayback' => 'Video Playback',
-			'settings.videoPlaybackDescription' => 'Configure playback behavior',
+			'settings.videoPlaybackDescription' => 'Streaming quality, video decoding and display settings',
 			'settings.advanced' => 'Advanced',
 			'settings.episodePosterMode' => 'Episode Poster Style',
 			'settings.seriesPoster' => 'Series Poster',

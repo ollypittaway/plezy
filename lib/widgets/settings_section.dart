@@ -68,9 +68,9 @@ class SettingsGroup extends StatelessWidget {
       return Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
+          constraints: const BoxConstraints(maxWidth: ProfileSettingsLayout.maxWidth),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: ProfileSettingsLayout.outerInset),
             child: Material(
               type: MaterialType.transparency,
               child: Column(
@@ -78,10 +78,18 @@ class SettingsGroup extends StatelessWidget {
                 children: [
                   if (title != null)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: ProfileSettingsLayout.contentInset, vertical: 14),
                       child: Text(title!, style: Theme.of(context).textTheme.titleMedium),
                     ),
-                  for (final row in children) ...[row, const Divider(height: 1, thickness: 0.5)],
+                  for (final row in children) ...[
+                    row,
+                    const Divider(
+                      height: 1,
+                      thickness: 0.5,
+                      indent: ProfileSettingsLayout.contentInset,
+                      endIndent: ProfileSettingsLayout.contentInset,
+                    ),
+                  ],
                 ],
               ),
             ),

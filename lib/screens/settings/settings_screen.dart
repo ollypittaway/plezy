@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' show SemanticsRole;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -45,7 +46,6 @@ import '../../widgets/focusable_list_tile.dart';
 import '../../widgets/library_management_sheet.dart';
 import '../../widgets/overlay_sheet.dart';
 import '../../widgets/setting_tile.dart';
-import '../../widgets/settings_builder.dart';
 import '../../widgets/settings_section.dart';
 import '../../widgets/profile_settings_layout.dart';
 import '../../widgets/system_bottom_inset.dart';
@@ -70,6 +70,24 @@ import 'settings_utils.dart';
 import 'supporter_settings_tile.dart';
 import 'tracker_service_info.dart';
 import '../../widgets/loading_indicator_box.dart';
+
+enum _SettingsArea { profile, app }
+
+enum _AppSettingsTab {
+  playback,
+  interface,
+  library,
+  connections,
+  system;
+
+  String get label => switch (this) {
+    playback => t.viewerSettings.playback,
+    interface => t.viewerSettings.interfaceTab,
+    library => PlatformDetector.isAppleTV() ? t.navigation.libraries : t.viewerSettings.libraryDownloadsTab,
+    connections => t.viewerSettings.connections,
+    system => t.viewerSettings.systemTab,
+  };
+}
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -99,12 +117,12 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
   BackgroundWorkDiagnosticsService get _backgroundWorkDiagnostics =>
       widget.backgroundWorkDiagnosticsService ?? BackgroundWorkDiagnosticsService.instance;
   late final FocusMemoryTracker _focusTracker;
-  int _tab = 0;
+  _SettingsArea _area = _SettingsArea.profile;
+  _AppSettingsTab _category = _AppSettingsTab.playback;
 
   // Focus tracking keys
   static const _kDonate = 'donate';
   static const _kSupporter = 'supporter';
-  static const _kGeneral = 'general';
   static const _kAppearance = 'appearance';
   static const _kPlayback = 'playback';
   static const _kManageLibraries = 'manage_libraries';
@@ -157,7 +175,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
   @override
   void focusActiveTabIfReady() {
     if (InputModeTracker.isKeyboardMode(context, listen: false)) {
-      _focusTracker.get('tab_$_tab').requestFocus();
+      _focusTab(_area);
     }
   }
 
@@ -166,25 +184,109 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
   }
 
   KeyEventResult _handleKeyEvent(FocusNode _, KeyEvent event) {
-    if (event is KeyDownEvent) {
-      final focused = List.generate(3, (i) => _focusTracker.get('tab_$i')).indexWhere((node) => node.hasFocus);
-      if (focused >= 0) {
-        final next = event.logicalKey == LogicalKeyboardKey.arrowRight
-            ? focused + 1
-            : event.logicalKey == LogicalKeyboardKey.arrowLeft
-            ? focused - 1
-            : -1;
-        if (next >= 0 && next < 3) {
-          _focusTracker.get('tab_$next').requestFocus();
-          return KeyEventResult.handled;
-        }
-      }
-    }
     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowLeft) {
       _navigateToSidebar();
       return KeyEventResult.handled;
     }
     return KeyEventResult.ignored;
+  }
+
+  FocusNode _tabFocus(Enum tab) => _focusTracker.get('tab_${tab.name}');
+
+  void _focusTab(Enum tab) {
+    final node = _tabFocus(tab);
+    node.requestFocus();
+    final target = node.context;
+    final box = target?.findRenderObject();
+    if (target != null && box != null) {
+      Scrollable.maybeOf(target, axis: Axis.horizontal)?.position.ensureVisible(
+        box,
+        alignment: 0.5,
+        duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  Widget _tabStrip<T extends Enum>({
+    required List<T> tabs,
+    required T selected,
+    required String Function(T) label,
+    required ValueChanged<T> select,
+    bool secondary = false,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    return Focus(
+      canRequestFocus: false,
+      onKeyEvent: (_, event) {
+        if (event is! KeyDownEvent && event is! KeyRepeatEvent) return KeyEventResult.ignored;
+        final index = tabs.indexWhere((tab) => _tabFocus(tab).hasFocus);
+        if (index < 0) return KeyEventResult.ignored;
+        final key = event.logicalKey;
+        if (key == LogicalKeyboardKey.arrowDown &&
+            !secondary &&
+            tabs[index] == _SettingsArea.app &&
+            _area == _SettingsArea.app) {
+          _focusTab(_category);
+          return KeyEventResult.handled;
+        }
+        if (key == LogicalKeyboardKey.arrowUp && secondary) {
+          _focusTab(_SettingsArea.app);
+          return KeyEventResult.handled;
+        }
+        if (key != LogicalKeyboardKey.arrowLeft && key != LogicalKeyboardKey.arrowRight) {
+          return KeyEventResult.ignored;
+        }
+        final forward = (key == LogicalKeyboardKey.arrowRight) == (Directionality.of(context) == TextDirection.ltr);
+        final next = index + (forward ? 1 : -1);
+        if (next < 0) return KeyEventResult.ignored;
+        if (next < tabs.length) {
+          _focusTab(tabs[next]);
+          if (secondary) select(tabs[next]);
+        }
+        return KeyEventResult.handled;
+      },
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Semantics(
+          role: SemanticsRole.tabBar,
+          container: true,
+          explicitChildNodes: true,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final tab in tabs)
+                MergeSemantics(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: secondary && tab == selected
+                          ? Border(bottom: BorderSide(color: colors.primary, width: 2))
+                          : null,
+                    ),
+                    child: TextButton(
+                      focusNode: _tabFocus(tab),
+                      style: TextButton.styleFrom(
+                        alignment: AlignmentDirectional.centerStart,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: ProfileSettingsLayout.contentInset,
+                          vertical: 8,
+                        ),
+                        foregroundColor: tab == selected ? colors.onSurface : colors.onSurfaceVariant,
+                        backgroundColor: !secondary && tab == selected
+                            ? colors.onSurface.withValues(alpha: 0.09)
+                            : Colors.transparent,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                      onPressed: () => select(tab),
+                      child: Semantics(role: SemanticsRole.tab, selected: selected == tab, child: Text(label(tab))),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   settings.SettingsService get _settingsService => settings.SettingsService.instance;
@@ -232,57 +334,52 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 960),
+                    constraints: const BoxConstraints(maxWidth: ProfileSettingsLayout.maxWidth),
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                      padding: const EdgeInsets.fromLTRB(
+                        ProfileSettingsLayout.outerInset,
+                        0,
+                        ProfileSettingsLayout.outerInset,
+                        12,
+                      ),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text(
-                            t.viewerSettings.subtitle,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                          ),
-                          const SizedBox(height: 18),
-                          SizedBox(
-                            width: double.infinity,
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: [
-                                  for (final (i, label) in [
-                                    t.viewerSettings.myProfile,
-                                    t.viewerSettings.appSettings,
-                                    t.viewerSettings.playback,
-                                  ].indexed)
-                                    Semantics(
-                                      selected: _tab == i,
-                                      child: TextButton(
-                                        focusNode: _focusTracker.get('tab_$i'),
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: _tab == i
-                                              ? Theme.of(context).colorScheme.onSurface
-                                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                          backgroundColor: _tab == i
-                                              ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.09)
-                                              : Colors.transparent,
-                                        ),
-                                        onPressed: () => setState(() => _tab = i),
-                                        child: Text(label),
-                                      ),
-                                    ),
-                                ],
-                              ),
+                          Padding(
+                            padding: ProfileSettingsLayout.rowPadding,
+                            child: Text(
+                              t.viewerSettings.subtitle,
+                              style: Theme.of(
+                                context,
+                              ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                           ),
-                          const Divider(),
-                          if (_tab == 0)
-                            ViewerSettingsBody(
-                              onPair: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const AnnouncementSettingsScreen()),
+                          const SizedBox(height: 18),
+                          _tabStrip(
+                            tabs: _SettingsArea.values,
+                            selected: _area,
+                            label: (area) => area == _SettingsArea.profile
+                                ? t.viewerSettings.myProfile
+                                : t.viewerSettings.appSettings,
+                            select: (area) => setState(() => _area = area),
+                          ),
+                          const SizedBox(height: 8),
+                          if (_area == _SettingsArea.app)
+                            _tabStrip(
+                              tabs: _AppSettingsTab.values,
+                              selected: _category,
+                              label: (tab) => tab.label,
+                              select: (tab) => setState(() => _category = tab),
+                              secondary: true,
+                            )
+                          else
+                            Padding(
+                              padding: ProfileSettingsLayout.rowPadding,
+                              child: ViewerSettingsBody(
+                                onPair: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const AnnouncementSettingsScreen()),
+                                ),
                               ),
                             ),
                         ],
@@ -291,84 +388,13 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
                   ),
                 ),
               ),
-              if (_tab == 2)
+              if (_area == _SettingsArea.app)
                 ProfileSettingsLayout(
                   child: SliverList.list(
                     children: [
-                      SettingsGroup(
-                        title: t.viewerSettings.playback,
-                        children: [
-                          _buildPlaybackTile(),
-                          SettingNavigationTile(
-                            icon: Symbols.speaker_rounded,
-                            title: t.settings.audio,
-                            subtitle: t.viewerSettings.audioHint,
-                            destinationBuilder: (_) => const PlaybackSettingsScreen(section: PlaybackSection.audio),
-                          ),
-                          _buildAccountPreferencesTile(sheetContext, tracks: true),
-                          SettingNavigationTile(
-                            icon: Symbols.subtitles_rounded,
-                            title: t.settings.subtitles,
-                            subtitle: t.settings.subtitleStylingDescription,
-                            destinationBuilder: (_) => const SubtitleStylingScreen(),
-                          ),
-                          SettingNavigationTile(
-                            icon: Symbols.skip_next_rounded,
-                            title: t.viewerSettings.playerBehavior,
-                            subtitle: t.viewerSettings.behaviorHint,
-                            destinationBuilder: (_) => const PlaybackSettingsScreen(section: PlaybackSection.behavior),
-                          ),
-                        ],
-                      ),
-                      if (_keyboardShortcutsSupported || PlatformDetector.shouldActAsRemoteHost(sheetContext))
-                        _buildControlsSection(sheetContext),
+                      ..._categoryGroups(sheetContext, hasLibraries: hasLibraries),
                       const SizedBox(height: 24),
                     ],
-                  ),
-                ),
-              if (_tab == 1)
-                ProfileSettingsLayout(
-                  child: SliverList(
-                    delegate: SliverChildListDelegate([
-                      SettingsGroup(
-                        title: t.viewerSettings.appSettings,
-                        children: [
-                          if (supporterBuildMode == SupporterMode.iap)
-                            SupporterSettingsTile(focusNode: _focusTracker.get(_kSupporter))
-                          else if (DonationService.isEnabled)
-                            _buildDonateTile(),
-                          _buildGeneralTile(),
-                          _buildAppearanceTile(),
-                          if (hasLibraries) _buildManageLibrariesTile(sheetContext),
-                        ],
-                      ),
-
-                      _buildConnectionsSection(sheetContext),
-
-                      if (!PlatformDetector.isAppleTV()) _buildDownloadsSection(),
-
-                      _buildAdvancedSection(),
-
-                      if (UpdateService.isUpdateCheckAvailable) ...[_buildUpdateSection()],
-
-                      // Hidden on Android TV / tvOS (no document picker); desktop in
-                      // force-TV mode keeps it — FilePickerService works there.
-                      _buildBackupSection(),
-
-                      const SizedBox(height: 24),
-                      SettingsGroup(
-                        children: [
-                          SettingNavigationTile(
-                            focusNode: _focusTracker.get(_kAbout),
-                            icon: Symbols.info_rounded,
-                            title: t.settings.about,
-                            subtitle: t.settings.aboutDescription,
-                            destinationBuilder: (context) => const AboutScreen(),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                    ]),
                   ),
                 ),
               const SliverSystemBottomInset(),
@@ -379,14 +405,93 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
     );
   }
 
-  Widget _buildGeneralTile() {
-    return SettingNavigationTile(
-      focusNode: _focusTracker.get(_kGeneral),
-      icon: Symbols.settings_rounded,
-      title: t.settings.general,
-      subtitle: t.settings.generalDescription,
-      destinationBuilder: (context) => const GeneralSettingsScreen(),
-    );
+  List<Widget> _categoryGroups(BuildContext context, {required bool hasLibraries}) {
+    switch (_category) {
+      case _AppSettingsTab.playback:
+        return [
+          SettingsGroup(
+            title: t.viewerSettings.pictureSound,
+            children: [
+              _buildPlaybackTile(),
+              SettingNavigationTile(
+                icon: Symbols.speaker_rounded,
+                title: t.settings.audio,
+                subtitle: t.viewerSettings.audioHint,
+                destinationBuilder: (_) => const PlaybackSettingsScreen(section: PlaybackSection.audio),
+              ),
+            ],
+          ),
+          SettingsGroup(
+            title: t.accountPreferences.groups.audioAndSubtitles,
+            children: [
+              _buildAccountPreferencesTile(context, tracks: true),
+              SettingNavigationTile(
+                icon: Symbols.subtitles_rounded,
+                title: t.settings.subtitles,
+                subtitle: t.settings.subtitleStylingDescription,
+                destinationBuilder: (_) => const SubtitleStylingScreen(),
+              ),
+            ],
+          ),
+          _buildControlsSection(context),
+          SettingsGroup(
+            children: [
+              SettingNavigationTile(
+                icon: Symbols.skip_next_rounded,
+                title: t.viewerSettings.playerBehavior,
+                subtitle: t.viewerSettings.behaviorHint,
+                destinationBuilder: (_) => const PlaybackSettingsScreen(section: PlaybackSection.behavior),
+              ),
+            ],
+          ),
+        ];
+      case _AppSettingsTab.interface:
+        return [
+          SettingsGroup(children: [_buildAppearanceTile()]),
+          const GeneralSettingsGroups(),
+        ];
+      case _AppSettingsTab.library:
+        final hasAccounts = context.watch<AccountPreferencesController>().accounts.isNotEmpty;
+        return [
+          SettingsGroup(
+            title: t.navigation.libraries,
+            children: [
+              if (hasLibraries) _buildManageLibrariesTile(context),
+              SettingNavigationTile(
+                icon: Symbols.grid_view_rounded,
+                title: t.settings.libraryAndCards,
+                subtitle: t.viewerSettings.libraryLayoutHint,
+                destinationBuilder: (_) => const AppearanceSettingsScreen(section: AppearanceSection.library),
+              ),
+              if (hasAccounts) _buildAccountPreferencesTile(context),
+            ],
+          ),
+          if (!PlatformDetector.isAppleTV()) _buildDownloadsSection(),
+        ];
+      case _AppSettingsTab.connections:
+        return [_buildConnectionsSection(context)];
+      case _AppSettingsTab.system:
+        return [
+          if (UpdateService.isUpdateCheckAvailable) _buildUpdateSection(),
+          _buildBackupSection(),
+          _buildAdvancedSection(),
+          SettingsGroup(
+            children: [
+              SettingNavigationTile(
+                focusNode: _focusTracker.get(_kAbout),
+                icon: Symbols.info_rounded,
+                title: t.settings.about,
+                subtitle: t.settings.aboutDescription,
+                destinationBuilder: (_) => const AboutScreen(),
+              ),
+              if (supporterBuildMode == SupporterMode.iap)
+                SupporterSettingsTile(focusNode: _focusTracker.get(_kSupporter))
+              else if (DonationService.isEnabled)
+                _buildDonateTile(),
+            ],
+          ),
+        ];
+    }
   }
 
   Widget _buildDonateTile() {
@@ -405,23 +510,15 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
     );
   }
 
-  Widget _buildAppearanceTile() {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, _) => SettingValueBuilder<int>(
-        pref: settings.SettingsService.libraryDensity,
-        builder: (context, libraryDensity, _) {
-          final summary = '${themeModeLabel(themeProvider.themeMode)} · ${t.settings.libraryDensity} $libraryDensity';
-          return SettingNavigationTile(
-            focusNode: _focusTracker.get(_kAppearance),
-            icon: Symbols.palette_rounded,
-            title: t.settings.appearance,
-            subtitle: summary,
-            destinationBuilder: (context) => const AppearanceSettingsScreen(),
-          );
-        },
-      ),
-    );
-  }
+  Widget _buildAppearanceTile() => Consumer<ThemeProvider>(
+    builder: (context, theme, _) => SettingNavigationTile(
+      focusNode: _focusTracker.get(_kAppearance),
+      icon: Symbols.palette_rounded,
+      title: t.settings.appearance,
+      subtitle: themeModeLabel(theme.themeMode),
+      destinationBuilder: (_) => const AppearanceSettingsScreen(section: AppearanceSection.interface),
+    ),
+  );
 
   Widget _buildPlaybackTile() {
     return SettingNavigationTile(
@@ -471,7 +568,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
         : t.connections.addConnectionSubtitleScoped(displayName: active.displayName);
 
     return SettingsGroup(
-      title: t.viewerSettings.connections,
       children: [
         // Connections are managed per-profile (via the Profiles section
         // and each profile's detail screen). The shortcut here just opens
@@ -495,9 +591,6 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
           subtitle: t.settings.watchTogetherRelayDescription,
           onTap: () => _showRelayUrlDialog(),
         ),
-
-        if (context.select<AccountPreferencesController, bool>((c) => c.accounts.isNotEmpty))
-          _buildAccountPreferencesTile(context),
       ],
     );
   }
@@ -512,7 +605,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
     return SettingNavigationTile(
       focusNode: _focusTracker.get(tracks ? 'track_languages' : _kAccountPreferences),
       icon: Symbols.manage_accounts_rounded,
-      title: tracks ? t.viewerSettings.languages : t.accountPreferences.sectionTitle,
+      title: tracks ? t.viewerSettings.languages : t.viewerSettings.libraryPreferences,
       subtitle: tracks ? t.viewerSettings.languageHint : subtitle,
       destinationBuilder: (context) => AccountPreferencesScreen(
         group: tracks ? AccountSettingsGroup.tracks : AccountSettingsGroup.library,
@@ -631,17 +724,20 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
     );
   }
 
-  /// Input devices: keyboard shortcuts on platforms with a physical keyboard,
-  /// and the companion-remote host on surfaces that can be controlled from a
-  /// phone. Either half may be absent; the caller skips the section when both
-  /// are.
   Widget _buildControlsSection(BuildContext context) {
     final children = <Widget>[
+      SettingNavigationTile(
+        focusNode: _focusTracker.get(_kVideoPlayerControls),
+        icon: Symbols.tune_rounded,
+        title: t.settings.videoPlayerControls,
+        subtitle: t.viewerSettings.controlsHint,
+        destinationBuilder: (_) => const PlaybackSettingsScreen(section: PlaybackSection.controls),
+      ),
       if (_keyboardService != null) ...[
         SettingNavigationTile(
-          focusNode: _focusTracker.get(_kVideoPlayerControls),
+          focusNode: _focusTracker.get('keyboard_shortcuts'),
           icon: Symbols.keyboard_rounded,
-          title: t.settings.videoPlayerControls,
+          title: t.settings.keyboardShortcuts,
           subtitle: t.settings.keyboardShortcutsDescription,
           onTap: () {
             Navigator.push(
@@ -667,10 +763,7 @@ class _SettingsScreenState extends State<SettingsScreen> with FocusableTab, Moun
           subtitle: t.settings.companionRemoteServerDescription,
         ),
     ];
-    // Keyboard platforms render nothing until the shortcuts service loads; an
-    // empty SettingsGroup would paint a bare section title.
-    if (children.isEmpty) return const SizedBox.shrink();
-    return SettingsGroup(title: t.settings.controls, children: children);
+    return SettingsGroup(title: t.viewerSettings.controlsNavigation, children: children);
   }
 
   Widget _buildAdvancedSection() {

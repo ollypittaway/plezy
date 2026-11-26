@@ -24,13 +24,20 @@ class GeneralSettingsScreen extends StatelessWidget {
   const GeneralSettingsScreen({super.key});
 
   @override
+  Widget build(BuildContext context) =>
+      SettingsPage(profileLayout: true, title: Text(t.settings.general), children: const [GeneralSettingsGroups()]);
+}
+
+class GeneralSettingsGroups extends StatelessWidget {
+  const GeneralSettingsGroups({super.key});
+
+  @override
   Widget build(BuildContext context) {
     // Watched at build level so the tiles can be excluded with a plain `if` —
     // a child that renders SizedBox.shrink() would corrupt the group corners.
     final hasMultipleProfiles = context.watch<ActiveProfileProvider>().hasMultipleProfiles;
-    return SettingsPage(
-      profileLayout: true,
-      title: Text(t.settings.general),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SettingsGroup(title: t.settings.languageAndRegion, children: [_languageSelector(context)]),
 
@@ -67,7 +74,6 @@ class GeneralSettingsScreen extends StatelessWidget {
               ),
             ],
           ),
-        const SizedBox(height: 24),
       ],
     );
   }

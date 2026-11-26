@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:background_downloader/background_downloader.dart' show RequireWiFi;
 import 'package:drift/native.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -102,27 +103,129 @@ void main() {
   testWidgets('Playback groups audio, tracks, subtitles and video in one tab', (tester) async {
     final harness = await _pumpSettingsScreen(tester);
     addTearDown(() => harness.dispose(tester));
-    expect(find.text(t.settings.videoPlayback), findsNothing);
-    await tester.tap(find.text(t.viewerSettings.playback));
-    await _pumpUi(tester);
+    expect(find.text(t.viewerSettings.playback), findsOneWidget);
+    expect(find.text(t.settings.viewLogs), findsNothing);
     for (final title in [
       t.settings.videoPlayback,
       t.settings.audio,
       t.viewerSettings.languages,
       t.settings.subtitles,
       t.viewerSettings.playerBehavior,
+      t.settings.videoPlayerControls,
     ]) {
       expect(_navigationTileFor(title), findsOneWidget);
     }
+    await tester.tap(find.text(t.settings.videoPlayerControls));
+    await _pumpUi(tester);
+    expect(find.text(t.settings.smallSkipDuration), findsOneWidget);
+    expect(find.text(t.settings.autoPlayNextEpisode), findsNothing);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.viewerSettings.languages));
+    await _pumpUi(tester);
+    expect(find.text(t.settings.rememberTrackSelections), findsOneWidget);
+    expect(find.text(t.settings.followServerTrackSelections), findsOneWidget);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
     await tester.tap(find.text(t.settings.audio));
     await _pumpUi(tester);
     expect(find.text(t.settings.quality), findsNothing);
     expect(find.text(t.settings.audio), findsWidgets);
   });
 
+  testWidgets('settings header labels line up with the copy and rows have room inside the hit area', (tester) async {
+    final harness = await _pumpSettingsScreen(tester, openAppSettings: false);
+    addTearDown(() => harness.dispose(tester));
+    final copy = find.text(t.viewerSettings.subtitle);
+    final profileTab = find.descendant(
+      of: find.widgetWithText(TextButton, t.viewerSettings.myProfile),
+      matching: find.text(t.viewerSettings.myProfile),
+    );
+    for (final width in [1800.0, 375.0]) {
+      tester.view.physicalSize = Size(width, 850);
+      await _pumpUi(tester);
+      await _selectTab(tester, t.viewerSettings.myProfile);
+      expect(tester.getTopLeft(profileTab).dx, tester.getTopLeft(copy).dx);
+      await _selectTab(tester, t.viewerSettings.appSettings);
+      expect(tester.getTopLeft(profileTab).dx, tester.getTopLeft(copy).dx);
+      final label = tester.getRect(find.text(t.settings.videoPlayback));
+      final tile = tester.getRect(_focusableTileFor(t.settings.videoPlayback));
+      expect(label.left, tester.getTopLeft(copy).dx);
+      expect(label.left - tile.left, greaterThanOrEqualTo(12));
+      expect(label.top - tile.top, greaterThanOrEqualTo(8));
+    }
+    final row = tester.getRect(_focusableTileFor(t.settings.videoPlayback));
+    final textBounds = tester.getRect(find.text(t.settings.videoPlayback));
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer();
+    addTearDown(mouse.removePointer);
+    final inset = Offset(row.left + 4, row.center.dy);
+    await mouse.moveTo(inset);
+    await _pumpUi(tester);
+    expect(tester.getRect(find.text(t.settings.videoPlayback)), textBounds);
+    await mouse.down(inset);
+    await mouse.up();
+    await tester.pumpAndSettle();
+    expect(find.text(t.settings.player), findsOneWidget);
+  });
+
+  testWidgets('a remote reaches all App Settings categories on a narrow screen', (tester) async {
+    final harness = await _pumpSettingsScreen(tester);
+    addTearDown(() => harness.dispose(tester));
+    tester.view.physicalSize = const Size(375, 780);
+    await _pumpUi(tester);
+    final app = tester.widget<TextButton>(find.widgetWithText(TextButton, t.viewerSettings.appSettings));
+    app.focusNode!.requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await _pumpUi(tester);
+
+    for (final (label, content) in [
+      (t.viewerSettings.playback, t.settings.videoPlayback),
+      (t.viewerSettings.interfaceTab, t.settings.startup),
+      (t.viewerSettings.libraryDownloadsTab, t.settings.downloads),
+      (t.viewerSettings.connections, t.connections.addConnection),
+      (t.viewerSettings.systemTab, t.viewerSettings.maintenance),
+    ]) {
+      final tab = find.widgetWithText(TextButton, label);
+      expect(tester.widget<TextButton>(tab).focusNode!.hasFocus, isTrue);
+      expect(tab.hitTestable(), findsOneWidget);
+      expect(find.text(content), findsOneWidget);
+      if (label != t.viewerSettings.systemTab) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+        await _pumpUi(tester);
+      }
+    }
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+    await _pumpUi(tester);
+    expect(app.focusNode!.hasFocus, isTrue);
+    await _selectTab(tester, t.viewerSettings.myProfile);
+    expect(find.text(t.settings.videoPlayback), findsNothing);
+    await _selectTab(tester, t.viewerSettings.appSettings);
+    expect(find.text(t.viewerSettings.maintenance), findsOneWidget);
+  });
+
+  testWidgets('library layout and app appearance open their respective settings', (tester) async {
+    final harness = await _pumpSettingsScreen(tester, category: t.viewerSettings.libraryDownloadsTab);
+    addTearDown(() => harness.dispose(tester));
+    await tester.tap(find.text(t.settings.libraryAndCards));
+    await _pumpUi(tester);
+    expect(find.text(t.settings.hideSpoilers), findsOneWidget);
+    expect(find.text(t.settings.theme), findsNothing);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await _selectTab(tester, t.viewerSettings.interfaceTab);
+    expect(find.text(t.settings.language), findsOneWidget);
+    await tester.tap(find.text(t.settings.appearance));
+    await _pumpUi(tester);
+    expect(find.text(t.settings.theme), findsOneWidget);
+    expect(find.text(t.settings.hideSpoilers), findsNothing);
+  });
+
   testWidgets('system back closes Manage Libraries without popping pushed settings', (tester) async {
     final harness = await _pumpSettingsScreen(
       tester,
+      category: t.viewerSettings.libraryDownloadsTab,
       pushSettingsRoute: true,
       initialLibraries: const [
         MediaLibrary(
@@ -149,12 +252,12 @@ void main() {
     await _pumpUi(tester);
 
     expect(find.text('Maestro Movies'), findsNothing, reason: 'system back dismisses the sheet');
-    expect(find.text(t.settings.services), findsOneWidget, reason: 'the settings route remains current');
+    expect(find.text(t.libraries.manageLibraries), findsOneWidget, reason: 'the library tab remains current');
     expect(find.text('Settings launcher'), findsNothing, reason: 'system back must not pop the settings route');
   });
 
   testWidgets('migrated rows retain the shared compact row geometry and activation', (tester) async {
-    final harness = await _pumpSettingsScreen(tester);
+    final harness = await _pumpSettingsScreen(tester, category: t.viewerSettings.systemTab);
     addTearDown(() => harness.dispose(tester));
 
     final rows = <_MigratedRow>[
@@ -181,6 +284,10 @@ void main() {
     final referenceLeft = tester.getTopLeft(find.text(t.settings.viewLogs)).dx;
 
     for (final row in rows) {
+      await _selectTab(
+        tester,
+        row.title == t.settings.watchTogetherRelay ? t.viewerSettings.connections : t.viewerSettings.systemTab,
+      );
       final navigationTile = _navigationTileFor(row.title);
       if (!row.isVisible) {
         expect(navigationTile, findsNothing, reason: '${row.title} must honor its production gate');
@@ -224,6 +331,7 @@ void main() {
 
     // Exercise both input paths against real callbacks rather than merely
     // checking that callbacks are non-null.
+    await _selectTab(tester, t.viewerSettings.connections);
     final relayMaterialTile = tester.widget<ListTile>(
       find.descendant(of: _focusableTileFor(t.settings.watchTogetherRelay), matching: find.byType(ListTile)),
     );
@@ -237,6 +345,7 @@ void main() {
     Navigator.of(tester.element(find.byType(AlertDialog))).pop();
     await _pumpUi(tester);
 
+    await _selectTab(tester, t.viewerSettings.systemTab);
     await tester.tap(find.text(t.settings.clearImageCache));
     await _pumpUi(tester);
     expect(find.byType(AlertDialog), findsOneWidget);
@@ -244,7 +353,7 @@ void main() {
   });
 
   testWidgets('special download and generic update rows keep rich content on the shared compact row', (tester) async {
-    final harness = await _pumpSettingsScreen(tester);
+    final harness = await _pumpSettingsScreen(tester, category: t.viewerSettings.libraryDownloadsTab);
     addTearDown(() => harness.dispose(tester));
 
     if (Platform.isIOS) {
@@ -276,6 +385,7 @@ void main() {
       await _pumpUi(tester);
     }
 
+    await _selectTab(tester, t.viewerSettings.systemTab);
     if (!UpdateService.isUpdateCheckAvailable) {
       expect(find.text(t.settings.checkForUpdates), findsNothing);
       return;
@@ -321,7 +431,11 @@ void main() {
     });
     final diagnostics = BackgroundWorkDiagnosticsService.forTesting(channel: channel);
     await diagnostics.refresh();
-    final harness = await _pumpSettingsScreen(tester, backgroundWorkDiagnosticsService: diagnostics);
+    final harness = await _pumpSettingsScreen(
+      tester,
+      category: t.viewerSettings.libraryDownloadsTab,
+      backgroundWorkDiagnosticsService: diagnostics,
+    );
     addTearDown(() async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
       await harness.dispose(tester);
@@ -339,7 +453,11 @@ void main() {
 
   testWidgets('unprobed background diagnostics stay unknown instead of claiming success', (tester) async {
     final diagnostics = BackgroundWorkDiagnosticsService.forTesting();
-    final harness = await _pumpSettingsScreen(tester, backgroundWorkDiagnosticsService: diagnostics);
+    final harness = await _pumpSettingsScreen(
+      tester,
+      category: t.viewerSettings.libraryDownloadsTab,
+      backgroundWorkDiagnosticsService: diagnostics,
+    );
     addTearDown(() async {
       await harness.dispose(tester);
       diagnostics.dispose();
@@ -351,7 +469,11 @@ void main() {
 
   testWidgets('background downloads tile is absent when diagnostics are unsupported', (tester) async {
     final diagnostics = BackgroundWorkDiagnosticsService.forTesting(supported: false);
-    final harness = await _pumpSettingsScreen(tester, backgroundWorkDiagnosticsService: diagnostics);
+    final harness = await _pumpSettingsScreen(
+      tester,
+      category: t.viewerSettings.libraryDownloadsTab,
+      backgroundWorkDiagnosticsService: diagnostics,
+    );
     addTearDown(() async {
       await harness.dispose(tester);
       diagnostics.dispose();
@@ -361,7 +483,7 @@ void main() {
   });
 
   testWidgets('relay dialog rejects invalid bases without persisting them', (tester) async {
-    final harness = await _pumpSettingsScreen(tester);
+    final harness = await _pumpSettingsScreen(tester, category: t.viewerSettings.connections);
     addTearDown(() => harness.dispose(tester));
 
     await tester.tap(find.text(t.settings.watchTogetherRelay));
@@ -376,7 +498,7 @@ void main() {
   });
 
   testWidgets('relay dialog saves and reopens the canonical base', (tester) async {
-    final harness = await _pumpSettingsScreen(tester);
+    final harness = await _pumpSettingsScreen(tester, category: t.viewerSettings.connections);
     addTearDown(() => harness.dispose(tester));
 
     await tester.tap(find.text(t.settings.watchTogetherRelay));
@@ -396,7 +518,7 @@ void main() {
   testWidgets('selected download folder becomes the persisted location', (tester) async {
     final selectedDirectory = Directory('${temporaryDirectory.path}/selected-downloads');
     directoryPicker.directoryPath = selectedDirectory.path;
-    final harness = await _pumpSettingsScreen(tester);
+    final harness = await _pumpSettingsScreen(tester, category: t.viewerSettings.libraryDownloadsTab);
     addTearDown(() => harness.dispose(tester));
 
     await tester.tap(find.text(t.settings.downloadLocationDefault));
@@ -411,6 +533,7 @@ void main() {
     final requirements = <RequireWiFi>[];
     final harness = await _pumpSettingsScreen(
       tester,
+      category: t.viewerSettings.libraryDownloadsTab,
       requireWiFiOverride: (requirement) async {
         requirements.add(requirement);
         return true;
@@ -432,6 +555,7 @@ void main() {
     final requirements = <RequireWiFi>[];
     final harness = await _pumpSettingsScreen(
       tester,
+      category: t.viewerSettings.systemTab,
       requireWiFiOverride: (requirement) async {
         requirements.add(requirement);
         return true;
@@ -458,7 +582,7 @@ void main() {
       '${temporaryDirectory.path}/old-downloads',
     );
     await SettingsService.instance.write(SettingsService.customDownloadPathType, 'file');
-    final harness = await _pumpSettingsScreen(tester);
+    final harness = await _pumpSettingsScreen(tester, category: t.viewerSettings.libraryDownloadsTab);
     addTearDown(() => harness.dispose(tester));
 
     await tester.tap(find.text(t.settings.downloadLocationCustom));
@@ -476,7 +600,7 @@ void main() {
       '${temporaryDirectory.path}/old-downloads',
     );
     await SettingsService.instance.write(SettingsService.customDownloadPathType, 'file');
-    final harness = await _pumpSettingsScreen(tester);
+    final harness = await _pumpSettingsScreen(tester, category: t.viewerSettings.systemTab);
     addTearDown(() => harness.dispose(tester));
 
     await tester.tap(find.text(t.settings.resetSettings));
@@ -490,7 +614,7 @@ void main() {
   });
 
   testWidgets('cancelled directory picker remains silent and leaves the dialog retryable', (tester) async {
-    final harness = await _pumpSettingsScreen(tester);
+    final harness = await _pumpSettingsScreen(tester, category: t.viewerSettings.libraryDownloadsTab);
     addTearDown(() => harness.dispose(tester));
 
     await tester.tap(find.text(t.settings.downloadLocationDefault));
@@ -506,7 +630,7 @@ void main() {
 
   testWidgets('directory picker platform failure uses shared settings feedback', (tester) async {
     directoryPicker.directoryError = PlatformException(code: 'picker_failed');
-    final harness = await _pumpSettingsScreen(tester);
+    final harness = await _pumpSettingsScreen(tester, category: t.viewerSettings.libraryDownloadsTab);
     addTearDown(() => harness.dispose(tester));
 
     await tester.tap(find.text(t.settings.downloadLocationDefault));
@@ -523,6 +647,7 @@ void main() {
     directoryPicker.directoryPath = '${temporaryDirectory.path}/selected-downloads';
     final harness = await _pumpSettingsScreen(
       tester,
+      category: t.viewerSettings.libraryDownloadsTab,
       writableChecker: (_) async => throw const FileSystemException('writable check failed'),
     );
     addTearDown(() => harness.dispose(tester));
@@ -539,7 +664,7 @@ void main() {
 
   testWidgets('late directory picker completion does not use a disposed context', (tester) async {
     directoryPicker.directoryGate = Completer<String?>();
-    final harness = await _pumpSettingsScreen(tester);
+    final harness = await _pumpSettingsScreen(tester, category: t.viewerSettings.libraryDownloadsTab);
 
     await tester.tap(find.text(t.settings.downloadLocationDefault));
     await _pumpUi(tester);
@@ -556,7 +681,7 @@ void main() {
 
   testWidgets('late directory picker failure does not use a disposed context', (tester) async {
     directoryPicker.directoryGate = Completer<String?>();
-    final harness = await _pumpSettingsScreen(tester);
+    final harness = await _pumpSettingsScreen(tester, category: t.viewerSettings.libraryDownloadsTab);
 
     await tester.tap(find.text(t.settings.downloadLocationDefault));
     await _pumpUi(tester);
@@ -573,7 +698,11 @@ void main() {
 
   testWidgets('late settings export failure does not use a disposed context', (tester) async {
     final exportGate = Completer<String?>();
-    final harness = await _pumpSettingsScreen(tester, settingsExporter: () => exportGate.future);
+    final harness = await _pumpSettingsScreen(
+      tester,
+      category: t.viewerSettings.systemTab,
+      settingsExporter: () => exportGate.future,
+    );
 
     await tester.tap(find.text(t.settings.exportSettings));
     await tester.pump();
@@ -587,7 +716,11 @@ void main() {
 
   testWidgets('late settings import failure does not use a disposed context', (tester) async {
     final importGate = Completer<ImportResult?>();
-    final harness = await _pumpSettingsScreen(tester, settingsImporter: () => importGate.future);
+    final harness = await _pumpSettingsScreen(
+      tester,
+      category: t.viewerSettings.systemTab,
+      settingsImporter: () => importGate.future,
+    );
 
     await tester.tap(find.text(t.settings.importSettings));
     await _pumpUi(tester);
@@ -604,6 +737,7 @@ void main() {
   testWidgets('settings export platform failure uses shared settings feedback', (tester) async {
     final harness = await _pumpSettingsScreen(
       tester,
+      category: t.viewerSettings.systemTab,
       settingsExporter: () async => throw PlatformException(code: 'save_failed'),
     );
     addTearDown(() => harness.dispose(tester));
@@ -618,6 +752,7 @@ void main() {
   testWidgets('settings import platform failure uses shared settings feedback', (tester) async {
     final harness = await _pumpSettingsScreen(
       tester,
+      category: t.viewerSettings.systemTab,
       settingsImporter: () async => throw PlatformException(code: 'pick_failed'),
     );
     addTearDown(() => harness.dispose(tester));
@@ -636,6 +771,13 @@ Finder _navigationTileFor(String title) =>
     find.ancestor(of: find.text(title), matching: find.byType(SettingNavigationTile));
 
 Finder _focusableTileFor(String title) => find.ancestor(of: find.text(title), matching: find.byType(FocusableListTile));
+Future<void> _selectTab(WidgetTester tester, String label) async {
+  final tab = find.widgetWithText(TextButton, label);
+  await tester.ensureVisible(tab);
+  await tester.tap(tab);
+  await _pumpUi(tester);
+}
+
 Future<void> _pumpUi(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
@@ -714,6 +856,7 @@ Future<_SettingsHarness> _pumpSettingsScreen(
   BackgroundWorkDiagnosticsService? backgroundWorkDiagnosticsService,
   bool pushSettingsRoute = false,
   bool openAppSettings = true,
+  String? category,
   List<MediaLibrary> initialLibraries = const [],
   Future<bool> Function(RequireWiFi requirement)? requireWiFiOverride,
 }) async {
@@ -851,8 +994,8 @@ Future<_SettingsHarness> _pumpSettingsScreen(
     await _pumpUi(tester);
   }
   if (openAppSettings) {
-    await tester.tap(find.text(t.viewerSettings.appSettings));
-    await _pumpUi(tester);
+    await _selectTab(tester, t.viewerSettings.appSettings);
+    if (category != null) await _selectTab(tester, category);
   }
   return harness;
 }

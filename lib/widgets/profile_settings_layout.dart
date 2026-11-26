@@ -4,6 +4,11 @@ import 'package:flutter/material.dart';
 class ProfileSettingsLayout extends InheritedWidget {
   const ProfileSettingsLayout({super.key, required super.child});
 
+  static const maxWidth = 960.0;
+  static const outerInset = 8.0;
+  static const contentInset = 12.0;
+  static const rowPadding = EdgeInsets.symmetric(horizontal: contentInset);
+
   static bool applies(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<ProfileSettingsLayout>() != null;
 

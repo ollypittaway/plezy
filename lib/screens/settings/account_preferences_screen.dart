@@ -3,6 +3,8 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../i18n/strings.g.dart';
 import '../../media/account_preferences_target.dart';
+import '../../services/settings_service.dart';
+import '../../widgets/setting_tile.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/backend_badge.dart';
 import '../../widgets/focusable_list_tile.dart';
@@ -26,15 +28,18 @@ class AccountPreferencesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = Text(
-      group == AccountSettingsGroup.tracks ? t.viewerSettings.languages : t.accountPreferences.sectionTitle,
-    );
+    final title = Text(switch (group) {
+      AccountSettingsGroup.tracks => t.viewerSettings.languages,
+      AccountSettingsGroup.library => t.viewerSettings.libraryPreferences,
+      AccountSettingsGroup.all => t.accountPreferences.sectionTitle,
+    });
 
     if (targets.isEmpty) {
       return SettingsPage.slivers(
         profileLayout: true,
         title: title,
         slivers: [
+          if (group == AccountSettingsGroup.tracks) const SliverToBoxAdapter(child: TrackSelectionSettings()),
           SliverFillRemaining(
             hasScrollBody: false,
             child: EmptyStateWidget(
@@ -51,7 +56,10 @@ class AccountPreferencesScreen extends StatelessWidget {
       return SettingsPage.slivers(
         profileLayout: true,
         title: title,
-        slivers: [AccountPreferencesBody(key: ValueKey(targets.first.ref), target: targets.first, group: group)],
+        slivers: [
+          AccountPreferencesBody(key: ValueKey(targets.first.ref), target: targets.first, group: group),
+          if (group == AccountSettingsGroup.tracks) const SliverToBoxAdapter(child: TrackSelectionSettings()),
+        ],
       );
     }
 
@@ -86,8 +94,32 @@ class AccountPreferencesScreen extends StatelessWidget {
               ),
           ],
         ),
+        if (group == AccountSettingsGroup.tracks) const TrackSelectionSettings(),
         const SizedBox(height: 24),
       ],
     );
   }
+}
+
+class TrackSelectionSettings extends StatelessWidget {
+  const TrackSelectionSettings({super.key});
+
+  @override
+  Widget build(BuildContext context) => SettingsGroup(
+    title: t.viewerSettings.trackSelection,
+    children: [
+      SettingSwitchTile(
+        pref: SettingsService.rememberTrackSelections,
+        icon: Symbols.bookmark_rounded,
+        title: t.settings.rememberTrackSelections,
+        subtitle: '${t.settings.rememberTrackSelectionsDescription} · ${t.settings.rememberTrackSelectionsBackendRule}',
+      ),
+      SettingSwitchTile(
+        pref: SettingsService.followServerTrackSelections,
+        icon: Symbols.dns_rounded,
+        title: t.settings.followServerTrackSelections,
+        subtitle: t.settings.followServerTrackSelectionsDescription,
+      ),
+    ],
+  );
 }
