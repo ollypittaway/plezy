@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../profiles/active_profile_provider.dart';
+import '../profiles/profile_avatar.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../i18n/strings.g.dart';
@@ -244,6 +247,8 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
     final colors = theme.colorScheme;
     final width = MediaQuery.sizeOf(context).width;
     final floating = homeActions != null || widget.overlayArtwork;
+    final activeProvider = context.watch<ActiveProfileProvider?>();
+    final profile = activeProvider?.active;
     final background = theme.scaffoldBackgroundColor;
     final utilityTabs = [for (final id in [NavigationTabId.search, NavigationTabId.downloads, NavigationTabId.settings]) ...tabs.where((tab) => tab.id == id)];
     return Material(
@@ -312,7 +317,19 @@ class _DesktopNavigationBarState extends State<DesktopNavigationBar> {
                         for (final tab in utilityTabs)
                           FocusableAction(debugLabel: 'desktop_utility_${tab.id.name}', icon: tab.icon, iconSize: 20, iconFill: 0, tooltip: tab.getLabel(), onPressed: () => onSelect(tab.id)),
                         if (widget.onOpenProfile != null)
-                          FocusableAction(debugLabel: 'desktop_profile', icon: Symbols.account_circle_rounded, iconSize: 28, tooltip: t.profiles.sectionTitle, onPressed: widget.onOpenProfile),
+                          FocusableAction(
+                            debugLabel: 'desktop_profile',
+                            tooltip: t.profiles.sectionTitle,
+                            onPressed: widget.onOpenProfile,
+                            builder: (context, state) => Container(
+                              width: 44, height: 44,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: state.showFocus ? colors.primary : Colors.transparent, width: 2)),
+                              child: profile == null
+                                  ? const AppIcon(Symbols.account_circle_rounded, size: 30)
+                                  : ProfileAvatar(profile: profile, size: 32, avatarUrl: activeProvider?.avatarUrlFor(profile.id), showLockBadge: false),
+                            ),
+                          ),
                       ],
                     ),
                   if (!remoteNavigation)

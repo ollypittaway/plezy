@@ -665,9 +665,9 @@ class SettingsService extends BaseSharedPreferencesService {
   static const subtitleSearchLanguage = NullableStringPref('subtitle_search_language');
   static const volume = DoublePref('volume', defaultValue: 100.0);
   static const rotationLocked = BoolPref('rotation_locked', defaultValue: true);
-  static const subtitleFontSize = IntPref('subtitle_font_size', defaultValue: 38);
+  static const subtitleFontSize = IntPref('subtitle_font_size', defaultValue: 42);
   static const subtitleTextColor = StringPref('subtitle_text_color', defaultValue: '#FFFFFF');
-  static const subtitleBorderSize = IntPref('subtitle_border_size', defaultValue: 3);
+  static const subtitleBorderSize = IntPref('subtitle_border_size', defaultValue: 2);
   static const subtitleBorderColor = StringPref('subtitle_border_color', defaultValue: '#000000');
   static const subtitleBackgroundColor = StringPref('subtitle_background_color', defaultValue: '#000000');
   static const subtitleBackgroundOpacity = IntPref('subtitle_background_opacity');
@@ -681,7 +681,7 @@ class SettingsService extends BaseSharedPreferencesService {
     values: SubtitleRenderResolution.values,
     defaultValue: SubtitleRenderResolution.screen,
   );
-  static const subtitleBold = BoolPref('subtitle_bold');
+  static const subtitleBold = BoolPref('subtitle_bold', defaultValue: true);
   static const subtitleItalic = BoolPref('subtitle_italic');
 
   /// Allow MPV text subtitles to use space outside the video rectangle.
@@ -951,7 +951,7 @@ class SettingsService extends BaseSharedPreferencesService {
   static final downmixCenterBoost = IntPref('downmix_center_boost', transform: (v) => v.clamp(0, 12));
   // mpv's sub-pos range: values above 100 move subtitles further down than
   // their default bottom margin (#2331). ExoPlayer still caps at 100.
-  static final subtitlePosition = IntPref('subtitle_position', defaultValue: 100, transform: (v) => v.clamp(0, 150));
+  static final subtitlePosition = IntPref('subtitle_position', defaultValue: 92, transform: (v) => v.clamp(0, 150));
   static final defaultPlaybackSpeed = DoublePref(
     'default_playback_speed',
     defaultValue: 1.0,
